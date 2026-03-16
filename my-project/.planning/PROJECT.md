@@ -59,19 +59,17 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - AI-generated architectural suggestions — observation is the core value, not prescription
 - Plugin/extension API — internal event system must stabilize first
 
-## Current State
+## Current Milestone: v2.1 Make It Live
 
-Shipped v2.0 with data pipeline repair (Phase 8 only). Remaining v2.0 features (Phases 9-13) deferred to next milestone.
+**Goal:** Turn the static architecture poster into a live, interactive system that a human can actually use to supervise an AI coding agent in real time.
 
-**v2.0 delivered:** Zod schema fixes, file-to-component ID translation in WebSocket broadcasts, pipeline health status dot.
-
-**Next milestone goals:**
-- Interactive Inspector Panel (component details on click)
-- Live Risk Panel (mapped risks with severity + click-to-highlight)
-- Live Activity Feed (real-time architectural events)
-- Edge interaction (hover tooltips, click highlighting, thickness legend)
-- Watch any project (directory input, env var)
-- Component glow on change (pulse/fade animations)
+**Target features:**
+- Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies in/out)
+- Live Risk Panel — mapped risks with severity badges, click-to-highlight offending components, mark-as-reviewed
+- Live Activity Feed — real-time architectural events with colored dots and relative timestamps
+- Edge Interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
+- Watch Any Project — directory input in UI, env var support, fresh scan on directory change
+- Component Glow on Change — pulse/fade animations when files in a component are modified
 
 ## Context
 
@@ -111,4 +109,4 @@ Known technical debt: Phases 9-13 not started — all interactive features still
 | Skip broadcast when all IDs unmapped | Avoids empty inference messages reaching the client | ✓ Good — reduces no-op client processing |
 
 ---
-*Last updated: 2026-03-16 after v2.0 milestone*
+*Last updated: 2026-03-16 after v2.1 milestone start*

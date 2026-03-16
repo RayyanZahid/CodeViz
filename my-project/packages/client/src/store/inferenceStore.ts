@@ -1,21 +1,24 @@
 import { create } from 'zustand';
 import type { ArchitecturalEvent, RiskSignal } from '@archlens/shared/types';
-import type { InferenceMessage } from '@archlens/shared/types';
+import type { InferenceMessage, GraphDeltaMessage } from '@archlens/shared/types';
 import { graphStore } from './graphStore.js';
-import { toSentence } from '../utils/eventSentence.js';
+import { toSentence, deltaToSentence, riskToSentence } from '../utils/eventSentence.js';
 
 // ---------------------------------------------------------------------------
 // ActivityItem — a single entry in the activity feed
 // ---------------------------------------------------------------------------
 
 export interface ActivityItem {
-  /** `${timestamp}-${event.nodeId}` */
+  /** `${timestamp}-${nodeId}` */
   id: string;
-  event: ArchitecturalEvent;
-  /** Pre-computed natural-language sentence via toSentence() */
+  /** The architectural event that generated this item — optional for delta/risk entries */
+  event?: ArchitecturalEvent;
+  /** nodeId for batching deduplication — set from event.nodeId, delta nodeId, or risk nodeId */
+  nodeId: string;
+  /** Pre-computed natural-language sentence via toSentence() / deltaToSentence() / riskToSentence() */
   sentence: string;
   timestamp: number;
-  /** #22c55e green = creation, #f97316 orange = risk, #3b82f6 blue = dependency change */
+  /** #22c55e green = creation, #f97316 orange = risk, #3b82f6 blue = dependency change, #94a3b8 gray = file modification */
   iconColor: string;
 }
 
@@ -45,6 +48,8 @@ export interface InferenceStore {
 
   /** Main entry point called by wsClient on each inference message */
   applyInference: (msg: InferenceMessage) => void;
+  /** Called by wsClient on each graph_delta message for feed sentence generation */
+  applyGraphDelta: (msg: GraphDeltaMessage) => void;
   /** Mark a risk as reviewed by its fingerprint ID */
   markRiskReviewed: (riskId: string) => void;
   /** Remove activeNodeIds entries older than 30 seconds. Call from setInterval. */
@@ -115,6 +120,42 @@ function iconColorForEvent(type: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Internal batch helper — prepends a new item to the feed, applying 2s
+// same-nodeId batching. Mutates feedArray in place and returns it.
+// ---------------------------------------------------------------------------
+
+function batchPrependItem(
+  feedArray: ActivityItem[],
+  newItem: ActivityItem,
+  now: number,
+  nodeNameFn: (id: string) => string,
+): ActivityItem[] {
+  if (feedArray.length > 0) {
+    const last = feedArray[0]; // newest first
+    const sameNode = last.nodeId === newItem.nodeId;
+    const withinWindow = now - last.timestamp < 2000;
+
+    if (sameNode && withinWindow) {
+      // Count how many items for this node are already summarized
+      const summaryMatch = last.sentence.match(/^(\d+) events for /);
+      const currentCount = summaryMatch ? parseInt(summaryMatch[1], 10) : 1;
+      const totalCount = currentCount + 1;
+      const name = nodeNameFn(newItem.nodeId);
+
+      feedArray[0] = {
+        ...last,
+        sentence: `${totalCount} events for ${name}`,
+        timestamp: now,
+      };
+      return feedArray;
+    }
+  }
+
+  feedArray.unshift(newItem);
+  return feedArray;
+}
+
+// ---------------------------------------------------------------------------
 // Store implementation — double-paren pattern for TypeScript middleware compat
 // (mirrors graphStore.ts pattern exactly)
 // ---------------------------------------------------------------------------
@@ -144,6 +185,7 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
       newItems.push({
         id: `${event.timestamp}-${event.nodeId}`,
         event,
+        nodeId: event.nodeId,
         sentence,
         timestamp: event.timestamp,
         iconColor,
@@ -161,28 +203,7 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
     let updatedFeed = [...get().activityFeed];
 
     for (const newItem of newItems) {
-      if (updatedFeed.length > 0) {
-        const last = updatedFeed[0]; // newest first
-        const sameNode = last.event.nodeId === newItem.event.nodeId;
-        const withinWindow = now - last.timestamp < 2000;
-
-        if (sameNode && withinWindow) {
-          // Count how many items for this node are already summarized
-          const summaryMatch = last.sentence.match(/^(\d+) events for /);
-          const currentCount = summaryMatch ? parseInt(summaryMatch[1], 10) : 1;
-          const totalCount = currentCount + 1;
-          const name = nodeNameFn(newItem.event.nodeId);
-
-          updatedFeed[0] = {
-            ...last,
-            sentence: `${totalCount} events for ${name}`,
-            timestamp: now,
-          };
-          continue;
-        }
-      }
-
-      updatedFeed.unshift(newItem);
+      batchPrependItem(updatedFeed, newItem, now, nodeNameFn);
     }
 
     // Cap to 50 items (auto-prune oldest)
@@ -262,6 +283,35 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
     saveReviewedRisks(newRisks);
 
     // ------------------------------------------------------------------
+    // 3b. Create feed entries for NEWLY detected risks (orange dot)
+    //     Only first detection — fingerprint dedup prevents duplicates.
+    // ------------------------------------------------------------------
+
+    const existingRisks = get().risks;
+
+    for (const signal of msg.risks) {
+      const fp = riskFingerprint(signal);
+
+      // Only add a feed entry if this fingerprint was NOT already in the store
+      // (i.e., genuinely new detection — not an update to an existing risk)
+      if (!existingRisks.has(fp)) {
+        const sentence = riskToSentence(signal, nodeNameFn);
+        const riskItem: ActivityItem = {
+          id: `risk-${now}-${fp}`,
+          nodeId: signal.nodeId,
+          sentence,
+          iconColor: '#f97316', // orange
+          timestamp: now,
+        };
+        // Risk entries don't batch with architectural events — prepend directly
+        updatedFeed.unshift(riskItem);
+      }
+    }
+
+    // Re-cap after risk items added
+    updatedFeed = updatedFeed.slice(0, 50);
+
+    // ------------------------------------------------------------------
     // 4. Update activeNodeIds — architectural event nodes + zone update nodes
     // ------------------------------------------------------------------
 
@@ -308,6 +358,50 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
       risks: newRisks,
       activeNodeIds: newActiveNodeIds,
     });
+  },
+
+  applyGraphDelta: (msg: GraphDeltaMessage) => {
+    const now = Date.now();
+    const nodes = graphStore.getState().nodes;
+
+    // nodeNameFn — resolves node ID to display name using current graphStore state
+    const nodeNameFn = (id: string): string => nodes.get(id)?.name ?? id;
+
+    // Convert delta arrays to sentence items
+    const sentenceItems = deltaToSentence(
+      msg.addedNodes,
+      msg.removedNodeIds,
+      msg.updatedNodes,
+      msg.addedEdges,
+      msg.removedEdgeIds,
+      nodeNameFn,
+    );
+
+    if (sentenceItems.length === 0) return;
+
+    let updatedFeed = [...get().activityFeed];
+    const newActiveNodeIds = new Map<string, number>(get().activeNodeIds);
+
+    for (const item of sentenceItems) {
+      const activityItem: ActivityItem = {
+        id: `delta-${now}-${item.nodeId}`,
+        nodeId: item.nodeId,
+        sentence: item.sentence,
+        iconColor: item.iconColor,
+        timestamp: now,
+      };
+
+      // Apply 2s batching: same nodeId within window → summarize
+      batchPrependItem(updatedFeed, activityItem, now, nodeNameFn);
+
+      // Update activeNodeIds so glow animations fire
+      newActiveNodeIds.set(item.nodeId, now);
+    }
+
+    // Cap at 50 items
+    updatedFeed = updatedFeed.slice(0, 50);
+
+    set({ activityFeed: updatedFeed, activeNodeIds: newActiveNodeIds });
   },
 
   markRiskReviewed: (riskId: string) => {

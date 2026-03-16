@@ -56,6 +56,6 @@ None — v1.0 shipped clean. v2.0 starts with known data pipeline gap (PIPE-01 t
 
 ## Session Continuity
 
-**Last session:** 2026-03-16
-**Stopped at:** Roadmap created for v2.0, ready to plan Phase 8
-**Resume file:** None
+**Last session:** 2026-03-16T18:58:55.222Z
+**Stopped at:** Phase 8 context gathered
+**Resume file:** .planning/phases/08-data-pipeline-repair/08-CONTEXT.md

@@ -46,7 +46,7 @@ See `milestones/v2.1-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** Complete all remaining interactive features so the architecture map becomes a live, usable supervision tool — risks surface with severity context, the activity feed streams live events, edges are interactive, changed components glow, and the user can point the tool at any codebase.
 
-- [ ] **Phase 10: Risk Panel** - Live risk list with severity badges, click-to-highlight on canvas, mark-as-reviewed
+- [x] **Phase 10: Risk Panel** - Live risk list with severity badges, click-to-highlight on canvas, mark-as-reviewed (completed 2026-03-16)
 - [ ] **Phase 11: Activity Feed** - Streaming architectural events with colored dots, natural language, and relative timestamps
 - [ ] **Phase 12: Edge Interaction and Component Glow** - Edge hover/click on canvas plus pulse/fade animations for changed components
 - [ ] **Phase 13: Watch Any Project** - Directory input in UI, env var support, fresh scan on directory change
@@ -126,7 +126,7 @@ Plans:
 | 7. React UI Shell and Activity Feed | v1.0 | 3/3 | Complete | 2026-03-16 |
 | 8. Data Pipeline Repair | v2.0 | 2/2 | Complete | 2026-03-16 |
 | 9. Inspector Panel | v2.1 | 2/2 | Complete | 2026-03-16 |
-| 10. Risk Panel | 1/2 | In Progress|  | - |
+| 10. Risk Panel | 2/2 | Complete   | 2026-03-16 | - |
 | 11. Activity Feed | v2.2 | 0/1 | Not started | - |
 | 12. Edge Interaction and Component Glow | v2.2 | 0/2 | Not started | - |
 | 13. Watch Any Project | v2.2 | 0/2 | Not started | - |

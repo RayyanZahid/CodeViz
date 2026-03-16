@@ -10,7 +10,7 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 ### Risk Panel
 
 - [x] **RISK-01**: Risk panel displays detected risks with severity badges (red for critical, orange for warning)
-- [ ] **RISK-02**: User can click a risk to highlight the offending component on the canvas and pan to it
+- [x] **RISK-02**: User can click a risk to highlight the offending component on the canvas and pan to it
 - [x] **RISK-03**: User can mark a risk as reviewed to dismiss it from the active list
 
 ### Activity Feed
@@ -80,7 +80,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | RISK-01 | Phase 10 | Complete |
-| RISK-02 | Phase 10 | Pending |
+| RISK-02 | Phase 10 | Complete |
 | RISK-03 | Phase 10 | Complete |
 | FEED-01 | Phase 11 | Pending |
 | FEED-02 | Phase 11 | Pending |

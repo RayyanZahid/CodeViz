@@ -34,6 +34,9 @@ export class ComponentAggregator {
   /** Cache of the last computed snapshot for diffing. */
   private lastSnapshot: { nodes: GraphNode[]; edges: GraphEdge[] } | null = null;
 
+  /** Cache of the file path -> component ID mapping from the last aggregation. */
+  private fileToComponentMap: Map<string, string> = new Map();
+
   constructor(graph: DependencyGraph) {
     this.graph = graph;
   }
@@ -43,6 +46,15 @@ export class ComponentAggregator {
    */
   getLastSnapshot(): { nodes: GraphNode[]; edges: GraphEdge[] } | null {
     return this.lastSnapshot;
+  }
+
+  /**
+   * Returns the current file path -> component ID mapping.
+   * The map is rebuilt on every aggregateSnapshot() call, keeping it current.
+   * Each file maps to exactly one component ID (1:1 strict mapping).
+   */
+  getFileToComponentMap(): Map<string, string> {
+    return this.fileToComponentMap;
   }
 
   /**
@@ -93,6 +105,8 @@ export class ComponentAggregator {
         fileToComp.set(file.id, compId);
       }
     }
+    // Store a copy of the mapping for external consumers (e.g., Plan 02 inference ID translation)
+    this.fileToComponentMap = new Map(fileToComp);
 
     // Build component nodes
     const nodes: GraphNode[] = [];

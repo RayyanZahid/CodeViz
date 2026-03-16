@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Users can click any component node to inspect its files, exports, and full dependency graph. Runs as a local web app alongside the developer's editor.
+A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Users can click any component node to inspect its files, exports, and full dependency graph. The architecture map is fully interactive: risks surface with severity badges, edges show dependency details on hover, changed components pulse and glow, a live activity feed streams events in natural language, and the tool can be pointed at any codebase directory. Runs as a local web app alongside the developer's editor.
 
 ## Core Value
 
@@ -34,19 +34,23 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - ✓ Inspector zone badge with color classification — v2.1
 - ✓ Dependency aggregation with count badges and clickable navigation — v2.1
 - ✓ Smooth pan animation when navigating to components — v2.1
+- ✓ Risk panel with severity badges (red=critical, orange=warning) and click-to-highlight — v2.2
+- ✓ Mark-as-reviewed with localStorage persistence and auto-resurface on signal change — v2.2
+- ✓ Activity feed streams events within 3s of file save with natural-language sentences — v2.2
+- ✓ Colored dots on feed entries (green=creation, blue=dependency, orange=risk) — v2.2
+- ✓ Live-updating relative timestamps on feed entries — v2.2
+- ✓ Edge hover tooltip with source/target/dependency count/import symbols — v2.2
+- ✓ Edge click-to-highlight both endpoint components — v2.2
+- ✓ Edge thickness legend (thin/medium/thick) — v2.2
+- ✓ Component pulse glow (2.5s sine-wave) on file change — v2.2
+- ✓ Bright border fade (30s decay) on recently changed components — v2.2
+- ✓ Directory input bar to watch any project directory — v2.2
+- ✓ ARCHLENS_WATCH_ROOT env var for initial directory — v2.2
+- ✓ Full graph/DB/pipeline reset on directory switch — v2.2
+- ✓ Scanning indicator during fresh scan — v2.2
+- ✓ Works correctly on external projects (not just self-watching) — v2.2
 
 ### Active
-
-## Current Milestone: v2.2 Make It Live — Interactive
-
-**Goal:** Complete all remaining interactive features so the architecture map becomes a live, usable supervision tool.
-
-**Target features:**
-- Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
-- Live Activity Feed — real-time architectural events with colored dots and relative timestamps
-- Edge interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
-- Watch any project — directory input in UI, env var support, fresh scan on change
-- Component glow on change — pulse/fade animations when files in a component are modified
 
 ### Future
 
@@ -69,12 +73,12 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ## Context
 
-Shipped v1.0 MVP (9,540 LOC), v2.0 data pipeline repair, and v2.1 Inspector Panel all on the same day.
+Shipped v1.0 MVP, v2.0 data pipeline repair, v2.1 Inspector Panel, and v2.2 Interactive features all on 2026-03-16.
 Tech stack: Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter (TS/JS/Python), @dagrejs/graphlib, Konva + d3-force, React 19 + Zustand, WebSocket streaming.
 Architecture: pnpm monorepo with 3 packages (server, client, shared).
-Total LOC: 9,877 TypeScript across all packages.
-All v1.0 requirements delivered (48). v2.0 delivered pipeline repair (4 requirements). v2.1 delivered Inspector Panel (6 INSP requirements).
-Remaining: 5 active requirements for next milestone (Risk Panel, Activity Feed, Edge Interaction, Watch Any Project, Component Glow).
+Total LOC: 10,086 TypeScript across all packages.
+All requirements delivered: v1.0 (48), v2.0 (4), v2.1 (6 INSP), v2.2 (16 interactive requirements).
+The architecture map is now a fully interactive live supervision tool with all planned features shipped.
 
 ## Constraints
 
@@ -107,6 +111,16 @@ Remaining: 5 active requirements for next milestone (Risk Panel, Activity Feed, 
 | Zone badge colors as inline constant | Matches app palette, no CSS variable overhead | ✓ Good — simple, co-located with component |
 | DependencyRow as extracted component | Isolates per-row hover state without parent tracking | ✓ Good — clean separation of concerns |
 | Konva.Tween for pan animation | Smooth 0.3s EaseInOut replaces jarring hard jumps | ✓ Good — much better UX for dependency navigation |
+| Module-level localStorage Set for reviewed risks | Avoids hot-path I/O on every applyInference call | ✓ Good — single read at store init |
+| Resurface by signal comparison | Clears reviewed flag when risk signal identity changes | ✓ Good — matches riskFingerprint() logic |
+| batchPrependItem() shared helper | Unified 2s batching for both inference and graph delta feed entries | ✓ Good — DRY activity feed processing |
+| applyGraphDelta called immediately (not batched) | Ensures <3s feed latency for FEED-01 | ✓ Good — user sees events instantly |
+| Konva.Arrow listening:true + hitStrokeWidth:15 | Wider invisible hit area for edge interaction | ✓ Good — natural click targets |
+| HTML tooltip overlay (not Konva text) | Crisp text and full CSS styling for edge tooltips | ✓ Good — better than Konva text rendering |
+| Two-phase glow: 2.5s pulse then 30s decay | Visible pulsing draws attention, then fades gracefully | ✓ Good — not jarring |
+| watchRoot plugin receives callbacks | Plugin decoupled from module-level state, testable | ✓ Good — clean plugin pattern |
+| graph/aggregator const, pipeline/inferenceEngine let | Stable graph refs across watch-root switches | ✓ Good — minimal re-wiring needed |
+| DirectoryBar co-located in App.tsx | Follows NavButton/PipelineStatusDot small-component pattern | ✓ Good — no unnecessary file sprawl |
 
 ---
-*Last updated: 2026-03-16 after v2.2 milestone started*
+*Last updated: 2026-03-16 after v2.2 milestone*

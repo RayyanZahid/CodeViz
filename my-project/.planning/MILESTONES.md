@@ -83,3 +83,28 @@ Milestone completed with 22 of 26 requirements unfinished (Phases 9-13 not start
 - `milestones/v2.1-REQUIREMENTS.md` — 6/6 INSP requirements (complete)
 
 ---
+
+## v2.2 Make It Live — Interactive (Shipped: 2026-03-16)
+
+**Delivered:** All remaining interactive features — the architecture map is now a live, usable supervision tool with risk panel, activity feed, edge interaction, component glow, and watch-any-project.
+
+**Phases completed:** 4 phases (10-13), 7 plans, 12 tasks
+**Files changed:** 44 (+4,811/-210 lines)
+**Total LOC:** 10,086 TypeScript
+**Git range:** 3e97ad2 → 3bfbc51
+**Timeline:** 2026-03-16 (same day)
+
+**Key accomplishments:**
+- Risk panel with severity badges (red/orange), localStorage-persisted mark-as-reviewed with auto-resurface, click-to-highlight + pan-to on canvas
+- Activity feed wired to graph deltas and risk events with natural-language sentences, colored dots, and 10s live timestamp ticking
+- Edge hover tooltips (source/target/dependency count/imports), click-to-highlight both endpoints, edge thickness legend
+- Component glow: 2.5s sine-wave pulse + 30s bright border fade on changed nodes
+- Server-side watch-root switching: REST API, SQLite purge, graph/pipeline reset, WebSocket broadcast
+- Client-side DirectoryBar with directory input, store reset, scanning indicator, env var pre-fill
+
+**Archives:**
+- `milestones/v2.2-ROADMAP.md` — full phase details
+- `milestones/v2.2-REQUIREMENTS.md` — 16/16 requirements complete
+
+---
+

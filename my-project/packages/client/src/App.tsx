@@ -5,6 +5,8 @@ import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
 import { ActivityFeed } from './panels/ActivityFeed.js';
 import { inferenceStore } from './store/inferenceStore.js';
+import { useGraphStore } from './store/graphStore.js';
+import type { ConnectionStatus } from './store/graphStore.js';
 import type { ViewportController } from './canvas/ViewportController.js';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +42,9 @@ export function App() {
   });
   const [minimapVisible, setMinimapVisible] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Pipeline health — read connection status from graphStore (updated by WsClient)
+  const connectionStatus = useGraphStore((s) => s.connectionStatus);
 
   // Ref to ViewportController — populated by ArchCanvas on init
   const viewportControllerRef = useRef<ViewportController | null>(null);
@@ -210,6 +215,13 @@ export function App() {
           </div>
         )}
 
+        {/* Pipeline health status dot — bottom-left corner of canvas area */}
+        <PipelineStatusDot
+          status={connectionStatus}
+          minimapVisible={minimapVisible}
+          selectedNodeId={selectedNodeId}
+        />
+
         {/* Minimap — bottom-right corner of canvas area */}
         <MinimapStage viewportRect={viewportRect} visible={minimapVisible} />
       </div>
@@ -286,6 +298,88 @@ function NavButton({ onClick, title, active, children }: NavButtonProps) {
     >
       {children}
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PipelineStatusDot — pipeline health indicator
+// ---------------------------------------------------------------------------
+
+function statusColor(status: ConnectionStatus): string {
+  switch (status) {
+    case 'connected':    return '#22c55e'; // green
+    case 'connecting':   return '#eab308'; // yellow
+    case 'syncing':      return '#eab308'; // yellow
+    case 'disconnected': return '#ef4444'; // red
+  }
+}
+
+function statusLabel(status: ConnectionStatus): string {
+  switch (status) {
+    case 'connected':    return 'Connected';
+    case 'connecting':   return 'Connecting...';
+    case 'syncing':      return 'Syncing...';
+    case 'disconnected': return 'Disconnected';
+  }
+}
+
+interface PipelineStatusDotProps {
+  status: ConnectionStatus;
+  minimapVisible: boolean;
+  selectedNodeId: string | null;
+}
+
+function PipelineStatusDot({ status, minimapVisible, selectedNodeId }: PipelineStatusDotProps) {
+  // Minimap height ~148px + 16px margin; selected node indicator ~32px + 8px gap
+  const minimapOffset = minimapVisible ? 164 : 0;
+  const selectedNodeOffset = selectedNodeId ? 40 : 0;
+  const bottomOffset = 16 + minimapOffset + selectedNodeOffset;
+
+  const color = statusColor(status);
+  const label = statusLabel(status);
+  const showLabel = status !== 'connected';
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: bottomOffset,
+        left: 16,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        zIndex: 200,
+        transition: 'bottom 0.15s ease',
+      }}
+      title={label}
+    >
+      {/* Status dot */}
+      <div
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: '50%',
+          backgroundColor: color,
+          flexShrink: 0,
+          transition: 'background-color 0.3s ease',
+          boxShadow: `0 0 4px ${color}88`,
+        }}
+      />
+      {/* Label — only shown when not connected to keep UI clean when healthy */}
+      {showLabel && (
+        <span
+          style={{
+            fontSize: 10,
+            color: color,
+            fontFamily: 'monospace',
+            lineHeight: 1,
+            userSelect: 'none',
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </div>
   );
 }
 

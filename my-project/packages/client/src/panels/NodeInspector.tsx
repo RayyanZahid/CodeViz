@@ -1,96 +1,146 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGraphStore } from '../store/graphStore.js';
-import { useInferenceStore } from '../store/inferenceStore.js';
-import type { ActivityItem } from '../store/inferenceStore.js';
 
 // ---------------------------------------------------------------------------
-// Relative timestamp helper
+// Zone color mapping
 // ---------------------------------------------------------------------------
 
-function relativeTime(timestamp: number): string {
-  const diffMs = Date.now() - timestamp;
-  const diffSec = Math.floor(diffMs / 1000);
+const ZONE_COLORS: Record<string, string> = {
+  frontend: '#3b82f6',
+  api: '#8b5cf6',
+  services: '#f59e0b',
+  'data-stores': '#22c55e',
+  infrastructure: '#6b7280',
+  external: '#94a3b8',
+  unknown: '#475569',
+};
 
-  if (diffSec < 30) return 'now';
-  if (diffSec < 60) return `${diffSec}s`;
-
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m`;
-
-  const diffHour = Math.floor(diffMin / 60);
-  return `${diffHour}h`;
+function getZoneColor(zone: string | null): string {
+  if (!zone) return ZONE_COLORS.unknown;
+  return ZONE_COLORS[zone] ?? ZONE_COLORS.unknown;
 }
 
 // ---------------------------------------------------------------------------
-// SectionHeader — small section label
+// CollapsibleSection — section with triangle toggle
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ label }: { label: string }) {
+interface CollapsibleSectionProps {
+  label: string;
+  count?: number;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}
+
+function CollapsibleSection({ label, count, children, defaultOpen = true }: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const headerLabel = count !== undefined ? `${label} (${count})` : label;
+
   return (
     <div
       style={{
-        fontSize: 10,
-        fontFamily: 'monospace',
-        color: '#ffffff66',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginTop: 12,
-        marginBottom: 4,
-        padding: '0 8px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      {label}
+      {/* Section header — clickable */}
+      <div
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '7px 10px',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 9,
+            color: '#ffffff66',
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+        >
+          {open ? '▼' : '▶'}
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: '#ffffff66',
+            fontWeight: 500,
+          }}
+        >
+          {headerLabel}
+        </span>
+      </div>
+
+      {/* Collapsible content */}
+      {open && (
+        <div style={{ paddingBottom: 8 }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// RecentChangeItem — a single recent change row
+// ShowMoreToggle — expand/collapse for lists
 // ---------------------------------------------------------------------------
 
-function RecentChangeItem({ item }: { item: ActivityItem }) {
+interface ShowMoreToggleProps {
+  extraCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+function ShowMoreToggle({ extraCount, expanded, onToggle }: ShowMoreToggleProps) {
   return (
-    <div
+    <button
+      onClick={onToggle}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '4px 8px',
+        display: 'block',
+        marginTop: 4,
+        marginLeft: 10,
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        fontSize: 11,
+        color: '#ffffff55',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        textDecoration: 'underline',
+        textDecorationColor: 'rgba(255,255,255,0.2)',
       }}
     >
-      <div
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: '50%',
-          backgroundColor: item.iconColor,
-          flexShrink: 0,
-        }}
-      />
-      <span
-        style={{
-          flex: 1,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          color: '#ffffffaa',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {item.sentence}
-      </span>
-      <span
-        style={{
-          fontSize: 10,
-          fontFamily: 'monospace',
-          color: '#ffffff55',
-          flexShrink: 0,
-        }}
-      >
-        {relativeTime(item.timestamp)}
-      </span>
-    </div>
+      {expanded ? 'Show less' : `Show ${extraCount} more`}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CountBadge — small pill for dependency count
+// ---------------------------------------------------------------------------
+
+function CountBadge({ count, unit = 'imports' }: { count: number; unit?: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        color: '#ffffff55',
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        borderRadius: 4,
+        padding: '1px 5px',
+        marginLeft: 4,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {count} {unit}
+    </span>
   );
 }
 
@@ -101,21 +151,30 @@ function RecentChangeItem({ item }: { item: ActivityItem }) {
 interface InspectorContentProps {
   selectedNodeId: string;
   onHighlightNode?: (nodeId: string) => void;
+  onClose?: () => void;
 }
 
-function InspectorContent({ selectedNodeId, onHighlightNode }: InspectorContentProps) {
+function InspectorContent({ selectedNodeId, onHighlightNode, onClose }: InspectorContentProps) {
   const node = useGraphStore((s) => s.nodes.get(selectedNodeId));
   const edges = useGraphStore((s) => s.edges);
   const nodes = useGraphStore((s) => s.nodes);
-  const activityFeed = useInferenceStore((s) => s.activityFeed);
+
+  // Track whether file list and exports list are expanded
+  const [filesExpanded, setFilesExpanded] = useState(false);
+  const [exportsExpanded, setExportsExpanded] = useState(false);
+
+  // Reset expand states when the selected node changes
+  useEffect(() => {
+    setFilesExpanded(false);
+    setExportsExpanded(false);
+  }, [selectedNodeId]);
 
   if (!node) {
     return (
       <div
         style={{
-          padding: '12px 8px',
+          padding: '12px 10px',
           fontSize: 11,
-          fontFamily: 'monospace',
           color: '#ffffff44',
         }}
       >
@@ -124,195 +183,325 @@ function InspectorContent({ selectedNodeId, onHighlightNode }: InspectorContentP
     );
   }
 
-  // Compute outgoing edges (depends on) and incoming edges (depended by)
-  const outgoingEdges = Array.from(edges.values()).filter(
+  // -------------------------------------------------------------------------
+  // Files data
+  // -------------------------------------------------------------------------
+  const fileList = node.fileList ?? [];
+  const fileCount = node.fileCount ?? fileList.length;
+  const FILE_INITIAL = 5;
+  const visibleFiles = filesExpanded ? fileList : fileList.slice(0, FILE_INITIAL);
+  const extraFileCount = fileList.length - FILE_INITIAL;
+
+  // -------------------------------------------------------------------------
+  // Key Exports data
+  // -------------------------------------------------------------------------
+  const keyExports = node.keyExports ?? [];
+  const EXPORT_INITIAL = 10;
+  const visibleExports = exportsExpanded ? keyExports : keyExports.slice(0, EXPORT_INITIAL);
+  const extraExportCount = keyExports.length - EXPORT_INITIAL;
+
+  // -------------------------------------------------------------------------
+  // Dependencies Out — aggregate by targetId
+  // -------------------------------------------------------------------------
+  const outgoingRaw = Array.from(edges.values()).filter(
     (e) => e.sourceId === selectedNodeId
   );
-  const incomingEdges = Array.from(edges.values()).filter(
+
+  interface DepEntry {
+    nodeId: string;
+    name: string;
+    count: number;
+  }
+
+  const outgoingMap = new Map<string, DepEntry>();
+  for (const edge of outgoingRaw) {
+    const existing = outgoingMap.get(edge.targetId);
+    const addCount = edge.dependencyCount ?? 1;
+    if (existing) {
+      existing.count += addCount;
+    } else {
+      const targetNode = nodes.get(edge.targetId);
+      outgoingMap.set(edge.targetId, {
+        nodeId: edge.targetId,
+        name: targetNode?.name ?? edge.targetId,
+        count: addCount,
+      });
+    }
+  }
+  const outgoingDeps = Array.from(outgoingMap.values()).sort((a, b) => b.count - a.count);
+
+  // -------------------------------------------------------------------------
+  // Dependencies In — aggregate by sourceId
+  // -------------------------------------------------------------------------
+  const incomingRaw = Array.from(edges.values()).filter(
     (e) => e.targetId === selectedNodeId
   );
 
-  // Filter recent changes for this node
-  const recentChanges = activityFeed
-    .filter(
-      (item) =>
-        item.event.nodeId === selectedNodeId ||
-        item.event.targetNodeId === selectedNodeId
-    )
-    .slice(0, 5);
+  const incomingMap = new Map<string, DepEntry>();
+  for (const edge of incomingRaw) {
+    const existing = incomingMap.get(edge.sourceId);
+    const addCount = edge.dependencyCount ?? 1;
+    if (existing) {
+      existing.count += addCount;
+    } else {
+      const sourceNode = nodes.get(edge.sourceId);
+      incomingMap.set(edge.sourceId, {
+        nodeId: edge.sourceId,
+        name: sourceNode?.name ?? edge.sourceId,
+        count: addCount,
+      });
+    }
+  }
+  const incomingDeps = Array.from(incomingMap.values()).sort((a, b) => b.count - a.count);
 
-  // File list (max 10 shown)
-  const fileList = node.fileList ?? [];
-  const visibleFiles = fileList.slice(0, 10);
-  const extraFileCount = fileList.length - visibleFiles.length;
+  const zoneColor = getZoneColor(node.zone);
 
   return (
     <div>
-      {/* Section 1: Files */}
-      <SectionHeader label="Files" />
-      <div style={{ padding: '0 8px' }}>
-        {visibleFiles.length === 0 ? (
+      {/* ------------------------------------------------------------------ */}
+      {/* Header: component name + zone badge + X button                     */}
+      {/* ------------------------------------------------------------------ */}
+      <div
+        style={{
+          position: 'relative',
+          padding: '12px 36px 12px 12px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Component name */}
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#ffffffdd',
+            lineHeight: 1.3,
+            flex: '1 1 0',
+            minWidth: 0,
+            wordBreak: 'break-word',
+          }}
+        >
+          {node.name}
+        </span>
+
+        {/* Zone badge */}
+        {node.zone && (
           <span
             style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: '#ffffff44',
+              fontSize: 10,
+              color: '#ffffff',
+              backgroundColor: zoneColor,
+              borderRadius: 4,
+              padding: '2px 7px',
+              flexShrink: 0,
+              opacity: 0.9,
+              alignSelf: 'flex-start',
+              marginTop: 2,
             }}
           >
-            No files
+            {node.zone}
           </span>
+        )}
+
+        {/* X close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            title="Close inspector"
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 22,
+              height: 22,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              borderRadius: 4,
+              color: '#ffffff66',
+              fontSize: 14,
+              cursor: 'pointer',
+              padding: 0,
+              lineHeight: 1,
+              transition: 'color 0.15s ease, background 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffffcc';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#ffffff66';
+              e.currentTarget.style.background = 'none';
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 1: Files                                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <CollapsibleSection label="Files" count={fileCount}>
+        {fileList.length === 0 ? (
+          <div style={{ padding: '0 10px', fontSize: 11, color: '#ffffff44' }}>
+            No files
+          </div>
         ) : (
-          visibleFiles.map((filePath) => (
+          <>
+            {visibleFiles.map((filePath) => (
+              <div
+                key={filePath}
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: '#ffffffaa',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  padding: '2px 10px',
+                  lineHeight: 1.4,
+                }}
+                title={filePath}
+              >
+                {filePath}
+              </div>
+            ))}
+            {extraFileCount > 0 && (
+              <ShowMoreToggle
+                extraCount={extraFileCount}
+                expanded={filesExpanded}
+                onToggle={() => setFilesExpanded((v) => !v)}
+              />
+            )}
+          </>
+        )}
+      </CollapsibleSection>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 2: Key Exports                                             */}
+      {/* ------------------------------------------------------------------ */}
+      <CollapsibleSection label="Key Exports" count={keyExports.length}>
+        {keyExports.length === 0 ? (
+          <div style={{ padding: '0 10px', fontSize: 11, color: '#ffffff44' }}>
+            No exports detected
+          </div>
+        ) : (
+          <>
+            {visibleExports.map((symbol) => (
+              <div
+                key={symbol}
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: '#ffffffaa',
+                  padding: '2px 10px',
+                  lineHeight: 1.4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title={symbol}
+              >
+                {symbol}
+              </div>
+            ))}
+            {extraExportCount > 0 && (
+              <ShowMoreToggle
+                extraCount={extraExportCount}
+                expanded={exportsExpanded}
+                onToggle={() => setExportsExpanded((v) => !v)}
+              />
+            )}
+          </>
+        )}
+      </CollapsibleSection>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 3: Dependencies Out                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <CollapsibleSection label="Dependencies Out" count={outgoingDeps.length}>
+        {outgoingDeps.length === 0 ? (
+          <div style={{ padding: '0 10px', fontSize: 11, color: '#ffffff44' }}>
+            None
+          </div>
+        ) : (
+          outgoingDeps.map((dep) => (
             <div
-              key={filePath}
+              key={dep.nodeId}
+              onClick={() => onHighlightNode?.(dep.nodeId)}
               style={{
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: '#ffffffaa',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                padding: '1px 0',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '3px 10px',
+                cursor: onHighlightNode ? 'pointer' : 'default',
               }}
-              title={filePath}
             >
-              {filePath}
+              <span
+                style={{
+                  fontSize: 12,
+                  color: onHighlightNode ? '#ffffffcc' : '#ffffffaa',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  textDecoration: onHighlightNode ? 'underline' : 'none',
+                  textDecorationColor: 'rgba(255,255,255,0.2)',
+                }}
+                title={dep.nodeId}
+              >
+                {dep.name}
+              </span>
+              <CountBadge count={dep.count} />
             </div>
           ))
         )}
-        {extraFileCount > 0 && (
-          <div
-            style={{
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: '#ffffff55',
-              padding: '2px 0',
-            }}
-          >
-            +{extraFileCount} more
-          </div>
-        )}
-      </div>
+      </CollapsibleSection>
 
-      {/* Section 2: Dependencies */}
-      <SectionHeader label="Dependencies" />
-      <div style={{ padding: '0 8px' }}>
-        {/* Depends on (outgoing) */}
-        <div
-          style={{
-            fontSize: 10,
-            fontFamily: 'monospace',
-            color: '#ffffff55',
-            marginBottom: 2,
-          }}
-        >
-          Depends on ({outgoingEdges.length})
-        </div>
-        {outgoingEdges.length === 0 ? (
-          <div
-            style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: '#ffffff44',
-              padding: '1px 0',
-            }}
-          >
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 4: Dependencies In                                         */}
+      {/* ------------------------------------------------------------------ */}
+      <CollapsibleSection label="Dependencies In" count={incomingDeps.length}>
+        {incomingDeps.length === 0 ? (
+          <div style={{ padding: '0 10px', fontSize: 11, color: '#ffffff44' }}>
             None
           </div>
         ) : (
-          outgoingEdges.map((edge) => {
-            const targetNode = nodes.get(edge.targetId);
-            const displayName = targetNode?.name ?? edge.targetId;
-            return (
-              <div
-                key={edge.id}
-                onClick={() => onHighlightNode?.(edge.targetId)}
+          incomingDeps.map((dep) => (
+            <div
+              key={dep.nodeId}
+              onClick={() => onHighlightNode?.(dep.nodeId)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '3px 10px',
+                cursor: onHighlightNode ? 'pointer' : 'default',
+              }}
+            >
+              <span
                 style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#ffffffaa',
-                  padding: '1px 0',
-                  cursor: onHighlightNode ? 'pointer' : 'default',
+                  fontSize: 12,
+                  color: onHighlightNode ? '#ffffffcc' : '#ffffffaa',
+                  flex: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  textDecoration: onHighlightNode ? 'underline' : 'none',
+                  textDecorationColor: 'rgba(255,255,255,0.2)',
                 }}
-                title={edge.targetId}
+                title={dep.nodeId}
               >
-                {displayName}
-              </div>
-            );
-          })
+                {dep.name}
+              </span>
+              <CountBadge count={dep.count} />
+            </div>
+          ))
         )}
-
-        {/* Depended by (incoming) */}
-        <div
-          style={{
-            fontSize: 10,
-            fontFamily: 'monospace',
-            color: '#ffffff55',
-            marginTop: 6,
-            marginBottom: 2,
-          }}
-        >
-          Depended by ({incomingEdges.length})
-        </div>
-        {incomingEdges.length === 0 ? (
-          <div
-            style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: '#ffffff44',
-              padding: '1px 0',
-            }}
-          >
-            None
-          </div>
-        ) : (
-          incomingEdges.map((edge) => {
-            const sourceNode = nodes.get(edge.sourceId);
-            const displayName = sourceNode?.name ?? edge.sourceId;
-            return (
-              <div
-                key={edge.id}
-                onClick={() => onHighlightNode?.(edge.sourceId)}
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#ffffffaa',
-                  padding: '1px 0',
-                  cursor: onHighlightNode ? 'pointer' : 'default',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-                title={edge.sourceId}
-              >
-                {displayName}
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* Section 3: Recent Changes */}
-      <SectionHeader label="Recent Changes" />
-      {recentChanges.length === 0 ? (
-        <div
-          style={{
-            padding: '4px 8px',
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: '#ffffff44',
-          }}
-        >
-          No recent changes
-        </div>
-      ) : (
-        recentChanges.map((item) => (
-          <RecentChangeItem key={item.id} item={item} />
-        ))
-      )}
+      </CollapsibleSection>
     </div>
   );
 }
@@ -325,9 +514,8 @@ function EmptyState() {
   return (
     <div
       style={{
-        padding: '16px 8px',
+        padding: '20px 12px',
         fontSize: 12,
-        fontFamily: 'monospace',
         color: '#ffffff44',
         textAlign: 'center',
       }}
@@ -344,113 +532,35 @@ function EmptyState() {
 interface NodeInspectorProps {
   selectedNodeId: string | null;
   onHighlightNode?: (nodeId: string) => void;
+  onClose?: () => void;
 }
 
 // ---------------------------------------------------------------------------
 // NodeInspector — main panel component
 //
-// Displays three sections for the selected node: files, dependencies, and
-// recent changes. Supports collapse/expand via local useState.
+// When a node is selected, renders InspectorContent with 4 collapsible
+// sections (Files, Key Exports, Dependencies Out, Dependencies In), a zone
+// badge, and an X close button. Supports ESC dismissal via onClose prop.
 // ---------------------------------------------------------------------------
 
-export function NodeInspector({ selectedNodeId, onHighlightNode }: NodeInspectorProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Look up node name for header badge
-  const nodeName = useGraphStore((s) =>
-    selectedNodeId ? (s.nodes.get(selectedNodeId)?.name ?? null) : null
-  );
-
+export function NodeInspector({ selectedNodeId, onHighlightNode, onClose }: NodeInspectorProps) {
   return (
     <div
       style={{
-        background: 'transparent',
+        background: '#12121a',
         borderTop: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: selectedNodeId ? 0 : 0,
       }}
     >
-      {/* Header */}
-      <div
-        onClick={() => setCollapsed((c) => !c)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 8px',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        {/* Collapse triangle */}
-        <span
-          style={{
-            fontSize: 10,
-            color: '#ffffff66',
-            lineHeight: 1,
-          }}
-        >
-          {collapsed ? '▶' : '▼'}
-        </span>
-
-        {/* Title */}
-        <span
-          style={{
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: '#ffffff99',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            flex: 1,
-          }}
-        >
-          Inspector
-        </span>
-
-        {/* Node name badge — shown when a node is selected */}
-        {nodeName && (
-          <span
-            style={{
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: '#ffffff88',
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              padding: '1px 5px',
-              borderRadius: 3,
-              maxWidth: 100,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={nodeName}
-          >
-            {nodeName}
-          </span>
-        )}
-      </div>
-
-      {/* Collapsible content area */}
-      <div
-        style={{
-          maxHeight: collapsed ? 0 : 400,
-          overflow: 'hidden',
-          transition: 'max-height 0.2s ease',
-        }}
-      >
-        <div
-          style={{
-            maxHeight: 400,
-            overflowY: 'auto',
-          }}
-        >
-          {selectedNodeId ? (
-            <InspectorContent
-              selectedNodeId={selectedNodeId}
-              onHighlightNode={onHighlightNode}
-            />
-          ) : (
-            <EmptyState />
-          )}
-        </div>
-      </div>
+      {selectedNodeId ? (
+        <InspectorContent
+          selectedNodeId={selectedNodeId}
+          onHighlightNode={onHighlightNode}
+          onClose={onClose}
+        />
+      ) : (
+        <EmptyState />
+      )}
     </div>
   );
 }

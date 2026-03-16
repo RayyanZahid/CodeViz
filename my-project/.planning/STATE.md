@@ -5,22 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** Planning next milestone
+**Current focus:** v2.0 Make It Live
 
 ## Current Position
 
-**Milestone:** v1.0 MVP — SHIPPED 2026-03-16
-**Status:** Milestone complete
-**Last Activity:** 2026-03-16
-
-Progress: [██████████] 100%
-
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 21
-- Phases: 7
-- Total execution time: ~75min
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-16 — Milestone v2.0 started
 
 ## Accumulated Context
 
@@ -40,5 +32,5 @@ None — v1.0 shipped clean.
 ## Session Continuity
 
 **Last session:** 2026-03-16
-**Stopped at:** v1.0 milestone archived
+**Stopped at:** Milestone v2.0 initialization
 **Resume file:** None

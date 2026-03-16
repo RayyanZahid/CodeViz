@@ -31,6 +31,16 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ### Active
 
+- [ ] Fix data pipeline — Zod schemas pass all component fields, file-to-component ID mapping in WebSocket broadcasts
+- [ ] Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies)
+- [ ] Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
+- [ ] Live Activity Feed — real-time architectural events with colored dots and relative timestamps
+- [ ] Edge interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
+- [ ] Watch any project — directory input in UI, env var support, fresh scan on change
+- [ ] Component glow on change — pulse/fade animations when files in a component are modified
+
+### Future
+
 - [ ] Time-travel replay — scrub through architecture evolution over time
 - [ ] Intent inference from code change patterns (commit messages, file groupings)
 - [ ] Intent panel showing inferred agent objectives and subtasks
@@ -48,12 +58,25 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - AI-generated architectural suggestions — observation is the core value, not prescription
 - Plugin/extension API — internal event system must stabilize first
 
+## Current Milestone: v2.0 Make It Live
+
+**Goal:** Turn the static architecture poster into a live, interactive system that a human can actually use to supervise an AI coding agent in real time.
+
+**Target features:**
+- Fix data pipeline (Zod schema gaps + file-to-component ID mapping)
+- Interactive Inspector Panel (component details on click)
+- Live Risk Panel (mapped risks with severity + click-to-highlight)
+- Live Activity Feed (real-time architectural events)
+- Edge interaction (hover tooltips, click highlighting, thickness legend)
+- Watch any project (directory input, env var)
+- Component glow on change (pulse/fade animations)
+
 ## Context
 
 Shipped v1.0 MVP with 9,540 LOC TypeScript in a single day.
 Tech stack: Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter (TS/JS/Python), @dagrejs/graphlib, Konva + d3-force, React 19 + Zustand, WebSocket streaming.
 Architecture: pnpm monorepo with 3 packages (server, client, shared).
-All 48 v1 requirements delivered. Next priorities are time-travel replay and intent inference.
+All 48 v1 requirements delivered. v2.0 focuses on making the system interactive and live — fixing the data pipeline, populating all sidebar panels, and adding real-time visual feedback.
 
 ## Constraints
 
@@ -81,4 +104,4 @@ All 48 v1 requirements delivered. Next priorities are time-travel replay and int
 | WebSocket delta-only streaming | Minimal bandwidth, version-tagged for ordering | ✓ Good — reconnect recovery works cleanly |
 
 ---
-*Last updated: 2026-03-16 after v1.0 milestone*
+*Last updated: 2026-03-16 after v2.0 milestone start*

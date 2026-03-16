@@ -68,12 +68,18 @@ Phase 11 Plan 01 decisions:
 
 None.
 
+### Roadmap Evolution
+
+- Phase 11.1 inserted after Phase 11: Fix: Journey "Build and Start" completes successfully (blocker) (URGENT)
+- Phase 11.2 inserted after Phase 11: Fix journey test Phase 10 Risk Panel no matching test files found (URGENT)
+- Phase 11.3 inserted after Phase 11: Fix journey test - Phase 11 Activity Feed - no matching test files found (URGENT)
+
 ### Blockers/Concerns
 
 None — all v2.2 server-side infrastructure is in place. All four phases are UI-forward work building on existing pipelines.
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T21:30:00Z
-**Stopped at:** Phase 11 Plan 01 complete (11-01-SUMMARY.md created)
-**Resume file:** .planning/phases/11-activity-feed/11-01-SUMMARY.md
+**Last session:** 2026-03-16T21:58:48.929Z
+**Stopped at:** Phase 12 context gathered
+**Resume file:** .planning/phases/12-edge-interaction-and-component-glow/12-CONTEXT.md

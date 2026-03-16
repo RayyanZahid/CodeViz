@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 10 of 13 (Risk Panel) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Phase 10 complete. Next: Phase 11 (Event Feed)
-Last activity: 2026-03-16 — Phase 10 Plan 02 complete (RISK-02 human-verified, all RISK-01/02/03 confirmed)
+Phase: 11 of 13 (Activity Feed) — IN PROGRESS
+Plan: 1 of 1 in current phase — COMPLETE
+Status: Phase 11 Plan 01 complete. Activity feed fully wired.
+Last activity: 2026-03-16 — Phase 11 Plan 01 complete (FEED-01/02/03/04 satisfied)
 
-Progress: [██████████░░░] 77% (10/13 phases complete)
+Progress: [███████████░░] 84% (11/13 phases complete)
 
 ## Performance Metrics
 
 **Velocity (reference):**
-- Total plans completed: 25 (v1.0: 21, v2.0: 2, v2.1: 2)
+- Total plans completed: 26 (v1.0: 21, v2.0: 2, v2.1: 2, v2.2: 1)
 - v1.0 average: ~30 min/plan
 - v2.0 average: ~1.5 min/plan
 - v2.1 average: ~3 min/plan
@@ -34,6 +34,7 @@ Progress: [██████████░░░] 77% (10/13 phases complete)
 | 09 P02 | 2 | 3 min | Complete |
 | 10 P01 | 2 | 4 min | Complete |
 | 10 P02 | 1 | 3 min | Complete (human-verified) |
+| 11 P01 | 2 | 3 min | Complete |
 
 ## Accumulated Context
 
@@ -57,6 +58,12 @@ Phase 10 Plan 01 decisions:
 - severityBadgeStyle() returns full CSSProperties object — consistent with inline styles pattern throughout app
 - [Phase 10-risk-panel]: nodeId || affectedNodeIds[0] fallback in risk click handler for safe multi-node risk highlighting
 
+Phase 11 Plan 01 decisions:
+- batchPrependItem() extracted as shared helper used by both applyInference and applyGraphDelta
+- ActivityItem.event made optional and nodeId added as first-class field for clean batching
+- applyGraphDelta called immediately (not batched with queueDelta) for <3s feed latency (FEED-01)
+- Risk feed entries prepended directly without architectural-event batching (separate concerns)
+
 ### Pending Todos
 
 None.
@@ -67,6 +74,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T21:06:10.549Z
-**Stopped at:** Phase 11 context gathered
-**Resume file:** .planning/phases/11-activity-feed/11-CONTEXT.md
+**Last session:** 2026-03-16T21:30:00Z
+**Stopped at:** Phase 11 Plan 01 complete (11-01-SUMMARY.md created)
+**Resume file:** .planning/phases/11-activity-feed/11-01-SUMMARY.md

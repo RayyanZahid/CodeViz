@@ -15,10 +15,10 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 
 ### Activity Feed
 
-- [ ] **FEED-01**: Activity feed shows architectural events within 3 seconds of a file save
-- [ ] **FEED-02**: Events display in natural language (e.g., "Parser modified — 2 files changed")
-- [ ] **FEED-03**: Each feed item has a colored dot indicating event type (green = creation, blue = dependency change, orange = risk)
-- [ ] **FEED-04**: Each feed item shows a relative timestamp ("3s ago", "1m ago")
+- [x] **FEED-01**: Activity feed shows architectural events within 3 seconds of a file save
+- [x] **FEED-02**: Events display in natural language (e.g., "Parser modified — 2 files changed")
+- [x] **FEED-03**: Each feed item has a colored dot indicating event type (green = creation, blue = dependency change, orange = risk)
+- [x] **FEED-04**: Each feed item shows a relative timestamp ("3s ago", "1m ago")
 
 ### Edge Interaction
 
@@ -82,10 +82,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RISK-01 | Phase 10 | Complete |
 | RISK-02 | Phase 10 | Complete |
 | RISK-03 | Phase 10 | Complete |
-| FEED-01 | Phase 11 | Pending |
-| FEED-02 | Phase 11 | Pending |
-| FEED-03 | Phase 11 | Pending |
-| FEED-04 | Phase 11 | Pending |
+| FEED-01 | Phase 11 | Complete |
+| FEED-02 | Phase 11 | Complete |
+| FEED-03 | Phase 11 | Complete |
+| FEED-04 | Phase 11 | Complete |
 | EDGE-01 | Phase 12 | Pending |
 | EDGE-02 | Phase 12 | Pending |
 | EDGE-03 | Phase 12 | Pending |

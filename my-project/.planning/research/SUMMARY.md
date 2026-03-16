@@ -1,256 +1,195 @@
 # Project Research Summary
 
-**Project:** ArchLens — Real-Time Architecture Visualization for AI Coding Agents
-**Domain:** Real-time code analysis, incremental parsing, dependency graph visualization, AI agent supervision tooling
-**Researched:** 2026-03-15
+**Project:** ArchLens v3.0 — Time-Travel Replay and AI Agent Intent Inference
+**Domain:** Developer tooling — real-time architecture visualization with temporal navigation and heuristic intent detection
+**Researched:** 2026-03-16
 **Confidence:** MEDIUM-HIGH
 
 ## Executive Summary
 
-ArchLens occupies a genuinely novel niche: it is not a static diagram tool or a post-hoc code analysis tool, but a live architectural dashboard designed for developers supervising AI coding agents. The core value is "glance at the screen and understand what the agent is building right now" — without reading code. Research confirms no existing tool (CodeScene, Sourcetrail, dependency-cruiser, AppMap) serves this use case: all surveyed tools are either retrospective, batch-processed, IDE-bound, or lack real-time streaming. The recommended approach is a local web app with a Node.js backend pipeline feeding a browser-based Canvas renderer over WebSocket, with incremental parsing using tree-sitter as the performance-critical foundation.
+ArchLens v3.0 adds two capabilities on top of a fully-validated foundation: time-travel replay of architecture evolution and heuristic inference of what an AI coding agent is trying to accomplish. The research is unambiguous on approach: both features are best built as thin layers over existing infrastructure, not as new subsystems. The `changeEvents` SQLite table already constitutes an event log; the `InferenceEngine` already emits the architectural event stream required for intent classification; `graphStore.applySnapshot()` already accepts any node/edge set. The implementation risk is not "can we build this" but "can we avoid breaking what already works."
 
-The recommended technical approach centers on five non-negotiable choices: (1) tree-sitter for incremental AST parsing — the only parser that avoids full re-parse on every file change and can meet the 1-2 second latency target at 500-5000 file scale; (2) Konva + react-konva for Canvas-based rendering — DOM/SVG renderers fail above ~200 nodes with real-time animation; (3) semantic zone layout with sticky node coordinates — full force-directed resimulation destroys the user's mental map and is the most common failure mode in graph visualization tools; (4) delta-only WebSocket push — full graph snapshots on every update are unacceptable for both latency and bandwidth; and (5) SQLite with an append-only event log — enables both persistence and the time-travel replay feature.
+The recommended stack additions are minimal: one new client dependency (`zundo@^2.3.0` for timeline state history, 700 bytes gzipped), two new SQLite tables (`graph_snapshots`, `intent_sessions`), and roughly 8 new TypeScript files across server and client. Intent inference is explicitly rule-based with no LLM, no ML model, and no network dependency — ArchLens's offline-only constraint makes this non-negotiable. The heuristic classifier consuming component names, zone distribution, and event-type ratios covers the practical AI agent workload at sub-millisecond cost.
 
-The primary risks are architectural rather than technology-selection risks. The three critical failure modes are: (1) layout instability from naive force-directed relayout — must be avoided from the first rendered node, retrofitting is a rewrite; (2) file watcher event storms causing parse cascades during AI agent burst writes — requires debounce/batch architecture before first line of watcher code; and (3) architectural inference noise producing a spammy activity feed that users learn to ignore — requires multi-signal corroboration thresholds and a confidence scoring system. These are all design decisions that cannot be deferred to a later phase.
-
----
+The single highest-risk area is mode isolation: when the user enters replay mode, live WebSocket deltas must be completely blocked from mutating the displayed graph — and this guard must be enforced at the `wsClient` entry point, not inside individual store actions. Every other pitfall (unbounded snapshot growth, O(N) reconstruction, missing layout positions in snapshots, stale intent in replay mode) is recoverable mid-implementation. A broken mode state machine corrupts the core value proposition and is expensive to retrofit. The mode state machine must be the first piece of replay infrastructure built.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The full stack is Node.js 22 LTS + TypeScript 5 on both backend and frontend, sharing types across the WebSocket boundary. The backend pipeline uses Fastify v5 with @fastify/websocket v11, chokidar v5 for file watching (ESM-only, Node 20+ required), tree-sitter 0.25.x with native Node.js bindings for incremental parsing, @dagrejs/graphlib 3.0.x for the in-memory graph model, @dagrejs/dagre 2.0.x for layout, and better-sqlite3 12.8.x with Drizzle ORM 0.40.x for persistence. The frontend uses React 19, Vite 8, Konva 10.2.x + react-konva 19.2.x for Canvas rendering, and Zustand v5 for state management. Key version constraint: react-konva version must mirror React major version (19.x requires React 19).
+The base stack (Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter, graphlib, Konva + d3-force, React 19 + Zustand v5, WebSocket streaming, chokidar, Zod) is unchanged. v3.0 requires exactly one new npm dependency and two schema additions.
 
-**Core technologies:**
-- **tree-sitter 0.25.x (native Node.js binding):** Incremental AST parsing — the only parser with `tree.edit()` incremental API; avoids full file re-parse on every change; critical for sub-2s latency target at scale
-- **Konva 10.2.x + react-konva 19.2.x:** HTML5 Canvas rendering with built-in hit detection, layer system for animation isolation, handles 20,000+ interactive nodes — required because DOM/SVG renderers fail at animation-heavy interactive graphs past ~200 nodes
-- **@dagrejs/graphlib 3.0.x + @dagrejs/dagre 2.0.x:** In-memory directed multigraph with topological sort, cycle detection, serializable to JSON; layout engine supports incremental positioning with stable prior-node coordinates
-- **Fastify v5 + @fastify/websocket v11:** 2-4x faster than Express; first-class TypeScript; route-scoped WebSocket handlers; local app does not need the complexity overhead of socket.io
-- **better-sqlite3 12.8.x + Drizzle ORM 0.40.x:** Synchronous SQLite — the sync API is the correct fit for write-heavy event logging; append-only event table enables time-travel replay; no server process for local-only app
-- **chokidar v5:** Cross-platform file watcher normalizing OS-specific events; handles atomic write patterns used by AI agents; requires ESM module project configuration
-- **Zustand v5:** Minimal store (~3KB) with `useSyncExternalStore`; suited for graph state + UI state that syncs from WebSocket; avoids React Context re-render cascade on every 1-2 second update
+**Core technologies (new in v3.0):**
+- `zundo@^2.3.0`: Timeline scrubber state history in Zustand — the only new client dependency; provides `partialize`, `limit`, and diff-based storage; officially supports Zustand v5 (released November 2024); ~700 bytes gzipped
+- `graph_snapshots` SQLite table: Periodic graph checkpoints stored as JSON blob (nodes + edges + positions) using existing Drizzle tooling; one row per snapshot, ~8KB each at 50-component scale; includes `positions_json` from day one (required for correct replay layout)
+- `intent_sessions` SQLite table: Inferred agent work sessions (label, confidence, version range); feeds the IntentPanel; cleared on watch-root switch
+- HTML `<input type="range">`: Native range input for the timeline scrubber — no slider library needed for a single-thumb control with event-count axis
+- Rule-based `IntentAnalyzer` in TypeScript: Heuristic classifier over `changeEvents` window; no LLM, no ML, no network; runs in <1ms; works offline
 
-**Critical version compatibility warnings:**
-- `chokidar@5` requires Node 20+ and ESM-only project (`"type": "module"`)
-- `@fastify/websocket@11` targets Fastify v5 only; do not use v9/v10
-- `react-konva@19.2.x` requires `react@19.x` — version mismatch causes runtime failures
-- tree-sitter grammar packages must be version-compatible with the core binding (ABI errors on mismatch)
-- Vite 8 (Rolldown-based) is very recent; verify current release on project start
+**Critical version constraint:** `zundo@^2.3.0` is required for Zustand v5 compatibility. Do not use zundo v2.2.x or earlier.
 
 ### Expected Features
 
-ArchLens's differentiators cluster around three capabilities that no existing tool provides: (1) natural-language narration of architectural changes in real time, (2) semantic zone layout that gives instant spatial orientation, and (3) first-class AI agent supervision as the primary use case rather than an add-on. All table-stakes features from competing tools must also be present or the product feels broken.
+The research identifies a clean v3.0 core set plus a validated set of enhancements for v3.x. No existing tool combines architecture-level time-travel with automatic intent inference from code change patterns — ArchLens v3.0 occupies an unoccupied competitive space.
 
-**Must have (table stakes — v1 launch):**
-- Dependency graph rendering derived from parsed code — the baseline expectation of any visualization tool
-- Real-time live updates within 1-2 seconds — the entire value proposition; a static snapshot defeats the purpose
-- Stable layout (no reshuffling on update) — a hard UX requirement; instability makes the tool unusable as a live display
-- Zoom and pan navigation — universal expectation since 2018; Canvas/WebGL required for smooth performance
-- Circular dependency detection — expected minimum correctness signal from any architecture tool
-- Node click-to-inspect — drill-down is a standard interaction (Sourcetrail reference pattern)
-- Multiple abstraction levels — flat file graphs don't scale mentally; architectural grouping is required
-- Activity overlay (glow/pulse on active nodes) — highest-impact visual feature; tells developer exactly where agent is working
-- Natural-language activity feed — core differentiator; validates the "without reading code" value claim
-- Architectural event detection — backbone intelligence layer powering the activity feed and risk panel
-- Risk heuristics panel (circular deps, boundary violations, fan-out) — safety net catching architectural mistakes in real time
-- Persistent graph state — visualization must survive process restarts
+**Must have (v3.0 table stakes):**
+- Snapshot reconstruction endpoint (`GET /api/timeline` + `GET /api/snapshot/:id`) — the backend engine for all replay
+- Timeline scrubber UI with event-count axis (not wall-clock), playback controls, timestamp labels
+- Replay mode indicator — prominent banner preventing live/historical confusion (the most common UX failure for time-travel tools)
+- Exit replay to live — single action restoring current live state via `wsClient.requestSnapshot()`
+- Intent classifier (heuristic) — objective label, confidence score, and inferred subtasks from `ArchitecturalEvent` stream
+- Intent panel UI — sidebar panel parallel to RiskPanel and ActivityFeed; collapses when confidence < 0.6
 
-**Should have (competitive differentiation):**
-- Semantic zone layout (frontend left, API center, data right) — key UX innovation absent from all surveyed tools; provides instant orientation with no manual configuration
-- Time-travel replay — graph state scrubbing across a session; Gource and CodeScene offer temporal views but not structured architectural replay
-- Intent inference panel — higher-level summary of agent objectives inferred from change patterns (v1.x, after activity feed matures)
-- Export (SVG/screenshot) — every surveyed tool offers this; useful for sharing with team
+**Should have (v3.x competitive differentiators):**
+- Activity feed synchronized with scrubber position — contextualizes the map replay
+- Epoch/milestone markers on timeline — auto-detected significant moments (first component, first risk, zone migration)
+- Architecture diff overlay — before/after delta coloring on the canvas
+- Intent history log — review past objectives across a session
+- Risk-correlated intent display — join inferred objective with concurrent risk detection
+- Replay speed control (0.5x, 1x, 2x, 4x)
 
-**Defer (v2+):**
-- Go and Rust language support — tree-sitter grammars exist; add on user demand
-- Multi-session architectural diff — time-travel establishes the foundation; comparison UI is a separate problem
-- Plugin/extension API — internal event system must stabilize before exposing extension points
-- Multi-user/collaboration — scope explosion for v1; single-user local app is the correct architecture
+**Defer to v4+:**
+- Cross-session comparison — requires session boundary persistence and multi-session query; high complexity for medium value
+- Subtask completion indicators — "done" detection is inherently ambiguous without LLM; defer until intent baseline is proven
+- LLM-enhanced intent descriptions — viable only after heuristic baseline is measurably accurate enough to fine-tune against
 
-**Anti-features to explicitly reject:**
-- Manual node drag-and-drop — conflicts with semantic zone layout; creates position override state management complexity
-- IDE extensions — agent-agnostic file-watcher approach is more durable; no IDE lock-in
-- AI-generated architectural suggestions — LLM calls add latency and cost; observation/awareness is the core value, not prescription
-- Cloud deployment/SaaS — sensitive source code must not leave developer's machine; add only after explicit demand
+**Hard anti-features (do not build):**
+- LLM/ML-based intent inference — violates offline constraint, adds latency/cost/API key management
+- Full event-sourcing reconstruction of individual file changes — wrong abstraction level for ArchLens
+- Video recording of architecture evolution — out of scope per PROJECT.md; replay mode is the interactive equivalent
+- Manual intent labeling — creates hybrid human/machine inference model that complicates UX
 
 ### Architecture Approach
 
-The system is a two-process local application: a Node.js backend running a sequential analysis pipeline (file watcher → debounce/batch → tree-sitter parser in worker threads → dependency graph builder → architectural inference engine → SQLite persistence → WebSocket server) communicating with a React browser frontend (WebSocket client → Zustand state store → Konva canvas renderer + React UI panels). The critical architectural insight is that the Canvas renderer must NOT go through React's render cycle — React manages the UI panels (activity feed, risk panel, inspector), while Konva/Pixi subscribes to the Zustand store imperatively. This separation is what enables 60fps rendering with real-time graph updates. All pipeline stages communicate through a typed internal event bus (Node.js EventEmitter), which decouples stages for independent testing and replacement.
+The architecture follows a clean layered extension model: a new `replay/` server module (`SnapshotRecorder`, `IntentAnalyzer`) subscribes to the existing `graph.on('delta')` event alongside the existing `InferenceEngine`; a new `timelinePlugin` exposes two REST endpoints; three new WebSocket message types extend the existing `ServerMessage` union; and a new `timelineStore` on the client mediates replay mode for all existing panels. The `ArchCanvas`, `NodeInspector`, `RiskPanel`, and `ActivityFeed` components remain completely unmodified — replay is achieved entirely through `graphStore` state substitution, not canvas-layer logic.
 
-**Major components:**
-1. **File Watcher (chokidar v5 + ChangeQueue)** — detects filesystem changes, debounces 150-400ms, batches events within window, deduplicates same-file changes, emits single batch to parse scheduler
-2. **Tree-sitter Parser (worker thread pool)** — incremental AST generation per changed file using `tree.edit()` API; parse cache with explicit `oldTree.delete()` lifecycle management; extracts imports/exports/calls; runs in worker threads to keep main event loop free for WebSocket I/O
-3. **Dependency Graph Builder (graphlib + GraphDiff)** — maintains in-memory directed graph; computes delta (added/removed nodes and edges) from each parse result; write-through persistence to SQLite
-4. **Architectural Inference Engine** — maps file-level dependencies to architectural concepts (zones, services, boundaries); detects architectural events with multi-signal corroboration; runs risk heuristics; infers agent intent from change patterns
-5. **WebSocket Server (Fastify + @fastify/websocket)** — pushes only graph deltas (not full state) with version tags; handles reconnect by sending missed events since last client version
-6. **SQLite Persistence (better-sqlite3 + Drizzle)** — append-only event log for time-travel replay; graph node/edge tables; layout position cache; periodic snapshots for fast replay bootstrap; WAL mode required
-7. **Client State Store (Zustand v5)** — single source of truth on client; `applyDelta()` patches from WebSocket; separate subscriptions for canvas renderer (imperative) and React panels (declarative)
-8. **Konva Canvas Renderer** — layer-separated architecture (static graph layer + animation overlay layer); viewport culling with spatial index; sticky zone-constrained layout with only new nodes free to move; 60fps target with mid-range hardware
+**Major components (new and modified):**
+1. `SnapshotRecorder` (NEW, server) — subscribes to `graph.on('delta')`; persists snapshot every 5 deltas or on structural change; includes positions; broadcasts `snapshot_created` WS message
+2. `IntentAnalyzer` (NEW, server) — reads 5-minute `changeEvents` window every 30s; clusters by 90-second activity gaps; applies ordered heuristics (4-6 coarse categories); persists `intent_sessions`; broadcasts `intent_update`
+3. `timelinePlugin` (NEW, server) — `GET /api/timeline` (list snapshot metas) and `GET /api/snapshot/:id` (restore one snapshot; checkpoint-based O(50) reconstruction)
+4. `timelineStore` (NEW, client) — Zustand store holding snapshot list, current replay position, `isReplaying` flag, historical intent sessions; owns the `scrubToSnapshot()` and `exitReplay()` actions
+5. `TimelineSlider` (NEW, client) — bottom-bar `<input type="range">` over snapshot list; event-count axis; wall-clock timestamp tooltip; density strip; Live/Pause controls
+6. `IntentPanel` (NEW, client) — sidebar panel showing inferred objective, confidence indicator, and subtask list; mode-aware (shows historical intent during replay; collapses when inactive)
+7. `graphStore` + `inferenceStore` (MODIFIED) — each gains a `replayMode: boolean` flag; WsClient gates live delta application on this flag
+8. `WsClient` (MODIFIED) — handles 3 new message types; checks `replayMode` before applying live messages; buffers live deltas during replay for seamless live-resume
 
-**Key patterns to follow:**
-- Pipeline with typed event bus decoupling (never direct function call chains between pipeline stages)
-- Incremental parse cache with explicit tree lifecycle (never accumulate trees; call `oldTree.delete()` before replacement)
-- Graph delta with version-tagged WebSocket push (never send full graph state on every change)
-- Stable layout with zone-constrained placement (pin all existing nodes; only new nodes simulate; 50-tick limit)
-- Event sourcing for time-travel (append-only event log + periodic snapshots; graph state always reconstructable)
+**Build order is dependency-determined:** Schema + shared types (Phase A) → server replay layer (Phase B, parallel to Phase C after A) → client state layer (Phase C) → client UI (Phase D) → watch-root integration (Phase E).
 
 ### Critical Pitfalls
 
-1. **Layout instability from force-directed resimulation** — Prevention: implement sticky node coordinates (pin `fx`/`fy`) from the first rendered node; only run simulation on new nodes constrained to their zone bounding box; never run global re-layout after initial placement. Recovery cost is HIGH (complete layout subsystem rewrite).
+1. **Live view corrupted during replay — missing mode state machine (P1, CRITICAL)** — Without an enforced mode state machine, incoming live WebSocket deltas continue mutating the historical graph view, producing a corrupted hybrid graph. Prevention: `timelineStore` owns the `mode: 'live' | 'replay'` state machine; ALL `applyDelta` calls in `wsClient` are gated on this flag at the call site; the pipeline NEVER pauses — only the display path freezes. Must be the first piece of replay infrastructure built. Recovery cost is HIGH.
 
-2. **File watcher event storms during AI agent burst writes** — Prevention: 150-400ms debounce window per file before triggering any parse; accumulate events within window into a single batch; parse deduplicated set of changed files once; emit one consolidated WebSocket message per batch. Must be in the architecture before the first line of watcher code.
+2. **Snapshot storage growing without bound (P2, CRITICAL)** — Full snapshots at every event balloon the SQLite file to hundreds of MB for long sessions. Prevention: delta-threshold snapshotting (every 5 deltas or structural change), not wall-clock intervals; component-level node/edge/position data only (no source content); checkpoint snapshots every 50 events for O(50-max) reconstruction. Must be designed in the schema phase — retrofitting is expensive.
 
-3. **Tree-sitter memory leaks from undisposed syntax trees** — Prevention: call `oldTree.delete()` explicitly before replacing any cached tree; keep exactly one tree per file; test RSS growth over a 30-minute session against a 200+ file project. The Node.js GC does not manage native C heap allocations.
+3. **Layout positions absent from snapshots (P4, HIGH)** — Snapshots omitting `layoutPositions` cause replay to show current node positions, not historical positions; deleted nodes appear at canvas origin (0,0). Prevention: include `positions_json` in the `graph_snapshots` schema from day one and feed historical positions through `graphStore.applySnapshot()` during replay.
 
-4. **Architectural inference noise (spammy activity feed)** — Prevention: require multiple corroborating signals before firing architectural events (e.g., new directory + entry point + 2+ files within 5 minutes); never infer architectural significance from a single file edit; implement confidence scoring (only promote inferences above 0.7); add 30-second suppression window before showing "component created" events.
+4. **Timeline slider with wall-clock time axis — dead zones (P8, HIGH)** — Mapping scrub position to wall-clock time creates unnavigable dead zones during idle periods; dense activity periods are compressed to tiny sliver fractions. Prevention: event-count axis (scrub position = snapshot index) as the primary axis; wall-clock as tooltip; density strip. Lock the API contract to `GET /api/snapshot/:id` (by index), not `?before=timestamp`, before building the slider.
 
-5. **Canvas performance collapse at 200+ nodes with animation** — Prevention: viewport culling with quadtree spatial index from day one; two-layer canvas (static graph + animation overlay); stop the `requestAnimationFrame` loop when graph is idle; cap label rendering below zoom threshold; benchmark at 100/300/500 nodes as part of the canvas phase definition of done.
+5. **Intent taxonomy too granular — 80% "Unknown" output (P7, HIGH)** — Starting with 15+ fine-grained categories results in most real sessions classified as "Unknown" because heuristics cannot distinguish subtle variations in messy agent workflows. Prevention: start with 4-6 coarse categories only (building/modifying/infrastructure/testing); require 3+ corroborating signals for each; treat "Uncertain" as a valid first-class output.
 
-6. **Semantic zone assignment failing on non-standard project structures** — Prevention: use multi-signal classification (path patterns + import topology + file naming + framework signals); provide a visible "unknown" zone rather than silent misclassification; support `.archlens.json` configuration override; test against Next.js and Python FastAPI project structures before committing to the layout system.
+6. **Historical intent showing live intent during replay (P10, MEDIUM)** — IntentPanel reads from `inferenceStore` (live state); during replay it shows today's objective while the canvas shows a historical graph. Prevention: `timelineStore` carries historical intent sessions; IntentPanel reads from `timelineStore.historicalState` in replay mode, not from `inferenceStore`.
 
----
+7. **Pipeline pausing during replay (P5, CRITICAL)** — Stopping the file watcher or pipeline to "pause" the display causes file changes during replay to be missed; returning to live shows stale state. Prevention: the pipeline never pauses; only the client-side WS display path is frozen; replay reconstruction uses a read-only SQLite connection separate from the write connection.
 
 ## Implications for Roadmap
 
-The architecture research provides an explicit build order based on component dependencies. The critical path is: Schema → Parser → Graph → Inference → WebSocket → Canvas. UI panels and time-travel are parallelizable after WebSocket is established. The pitfalls research reinforces that certain design decisions (layout stability, parse memory management, debounce architecture) must be correct from the start of their respective phases — they cannot be deferred as "optimizations."
+Based on the dependency chain documented in ARCHITECTURE.md and the pitfall-to-phase mapping in PITFALLS.md, the build order is well-determined. Five natural phases emerge with clear rationale.
 
-### Phase 1: Foundation — Schema, Persistence, and Project Scaffold
+### Phase 1: Schema Foundation and Shared Types
 
-**Rationale:** SQLite schema and repositories are the foundation that all other components write to. Establishing the monorepo structure and shared types early prevents coordination overhead in later phases. This is explicitly the first step in ARCHITECTURE.md's build order.
-**Delivers:** Working monorepo (`packages/server`, `packages/client`), shared TypeScript types for graph events and WebSocket messages, Drizzle ORM schema (graph_nodes, graph_edges, change_events, layout_positions), database connection with WAL mode enabled, basic Fastify server skeleton.
-**Addresses:** Persistent graph state (table stakes feature), event sourcing schema for time-travel replay
-**Avoids:** Schema changes mid-build that require migration of downstream components; missing WAL mode causing write lock errors under concurrent load
+**Rationale:** Schema must exist before any server code can write to it; shared types must exist before both server and client can reference them. This is the hard constraint that blocks everything else. No UI work in this phase — pure infrastructure. Pitfalls P2, P4, and P9 (unbounded storage, missing positions, full table scans) must all be addressed here in the schema design because they are expensive to retrofit.
+**Delivers:** `graph_snapshots` Drizzle table definition with `positions_json` included from day one; `intent_sessions` Drizzle table; Drizzle migration; `session_id` and `sequence_in_session` columns added to `changeEvents` with composite index for O(log N) replay queries; `shared/src/types/timeline.ts` with `SnapshotMeta`, `IntentSession`, `SnapshotCreatedMessage`, `IntentUpdateMessage`, `TimelineMetaMessage`; extended `ServerMessage` union in `messages.ts`
+**Addresses:** Pre-conditions for all replay and intent infrastructure
+**Avoids:** P2 (storage design locked in), P4 (positions in schema from day one), P9 (composite index prevents full table scans)
 
-### Phase 2: File Watching and Parsing Pipeline
+### Phase 2: Server Replay Layer
 
-**Rationale:** The file watcher and tree-sitter parser are the system's input — nothing else can be built or tested without them. These two components have no upstream dependencies within the project. The pitfalls research is unambiguous: debounce architecture and tree memory lifecycle management must be built correctly here, not retrofitted.
-**Delivers:** chokidar v5 watcher with 200ms debounce and batch accumulation; tree-sitter parser in worker thread pool with incremental parse cache; explicit `oldTree.delete()` lifecycle; TypeScript and Python grammar support; typed `parse:complete` event bus emission; integration test: modify single file in 500-file project, verify parse time <50ms and single event emitted.
-**Uses:** chokidar v5, tree-sitter 0.25.x, tree-sitter-typescript 0.23.x, tree-sitter-python 0.25.x, worker_threads, typed EventBus
-**Avoids:** Pitfall 2 (event storms), Pitfall 3 (memory leaks), anti-pattern of synchronous parsing on event loop
-**Research flag:** Needs phase research — tree-sitter worker thread integration and incremental API usage have specific patterns that benefit from deeper investigation before implementation
+**Rationale:** Server must produce snapshots before the client can consume them. `SnapshotRecorder` and `timelinePlugin` are data producers; no end-to-end testing is possible until they exist. `IntentAnalyzer` is co-located in `server/src/replay/` and can be built in the same phase. This phase can be developed in parallel with Phase 3 (client state) once Phase 1 is complete.
+**Delivers:** `SnapshotRecorder` (delta-threshold snapshot persistence with positions, checkpoint every 50 events); `timelinePlugin` (`GET /api/timeline`, `GET /api/snapshot/:id` with checkpoint-based reconstruction); `IntentAnalyzer` (activity-gap clustering at 90-second gaps, 4-6 coarse category heuristics with 3+ signal requirements, confidence scoring, "Uncertain" as first-class output); `index.ts` wiring for startup and `switchWatchRoot()` cleanup; `websocketPlugin` modification to send `timeline_meta` on WS connect
+**Uses:** No new server dependencies — all existing `better-sqlite3`, Drizzle, Fastify plugin pattern
+**Implements:** `SnapshotRecorder`, `IntentAnalyzer`, `timelinePlugin`
+**Avoids:** P2 (delta-threshold not wall-clock intervals), P3 (checkpoint every 50 events for O(50-max) reconstruction), P5 (pipeline never pauses — read-only replay DB connection), P6 (activity-gap session boundaries, not fixed window), P7 (4-6 coarse categories)
 
-### Phase 3: Dependency Graph Model and Incremental Updates
+### Phase 3: Client State Layer
 
-**Rationale:** Depends on the parser output shape established in Phase 2. The in-memory graph model is the data structure that all downstream components (inference, WebSocket, persistence) read from. GraphDiff computation must be implemented here because delta-only push is a core architectural constraint — full graph rebuild is explicitly listed as "never acceptable" in pitfalls.
-**Delivers:** @dagrejs/graphlib-based in-memory directed graph; GraphDiff computation (added/removed nodes and edges); write-through persistence to SQLite via GraphRepository; circular dependency detection algorithm; graph state versioning; integration test: simulate 10 rapid file changes and verify single consolidated graph diff is produced.
-**Addresses:** Dependency graph rendering, circular dependency detection (table stakes)
-**Avoids:** Pitfall 5 (full-rebuild fallback accumulation), anti-pattern of full graph rebuild on every file change
+**Rationale:** Client state infrastructure must exist before any UI component can be built. The mode state machine is the most critical deliverable — it is the foundational piece that prevents live/replay corruption (P1). This phase can be developed in parallel with Phase 2 after Phase 1 types are available.
+**Delivers:** `timelineStore` (Zustand store: snapshot list, current replay position, `isReplaying` flag, historical intent sessions, `scrubToSnapshot()` action, `exitReplay()` action); `zundo@^2.3.0` installed and wired as middleware; `graphStore` modification (`replayMode: boolean`); `inferenceStore` modification (`replayMode: boolean`); `WsClient` modifications (3 new message type handlers, `replayMode` gate on ALL `applyDelta` calls at the wsClient entry point, live delta buffering during replay)
+**Uses:** `zundo@^2.3.0` — install in this phase
+**Avoids:** P1 (mode state machine is the centerpiece — live/replay isolation enforced at wsClient entry, not inside store actions), P10 (timelineStore carries historical intent state, IntentPanel reads from it during replay)
 
-### Phase 4: Architectural Inference Engine
+### Phase 4: Client UI — Timeline Slider and Intent Panel
 
-**Rationale:** Depends on a stable graph structure from Phase 3. The inference engine is the system's intelligence layer — zone classification, boundary detection, event detection, risk analysis. Pitfall 4 (inference noise) and Pitfall 7 (rigid zone assignment) must be addressed here with multi-signal heuristics and confidence scoring before the activity feed is built on top.
-**Delivers:** ZoneClassifier (multi-signal: path + import topology + framework signals + `.archlens.json` override); BoundaryDetector; EventDetector with multi-signal corroboration and confidence scoring; RiskAnalyzer (circular deps, fan-out, boundary violations); zone assignment tested against Express+React, Next.js, and Python FastAPI project structures; < 20% unknown-zone rate target on real projects.
-**Addresses:** Semantic zone layout, architectural event detection, risk heuristics panel (differentiators + table stakes)
-**Avoids:** Pitfall 4 (inference noise), Pitfall 7 (zone rigidity)
-**Research flag:** May benefit from phase research — architectural inference heuristics for non-standard project layouts are novel territory with limited prior art
+**Rationale:** UI components are pure consumers of the state layer (Phase 3) and the API (Phase 2). Building UI before the state layer is complete leads to rework when mode isolation requirements surface. Both `TimelineSlider` and `IntentPanel` can be built in parallel within this phase since they read from different slices of `timelineStore`.
+**Delivers:** `TimelineSlider` (bottom-bar `<input type="range">`, event-count axis, wall-clock timestamp tooltip, density strip above slider, Live/Pause/play controls, replay speed control); `IntentPanel` (sidebar panel: objective label, confidence indicator, subtask list, "Analyzing..." fallback state, collapses when confidence < 0.6); `App.tsx` layout additions (TimelineSlider below DirectoryBar, IntentPanel in sidebar panel list); replay mode visual indicator (prominent "VIEWING HISTORY — [timestamp] — Return to live" banner)
+**Avoids:** P8 (event-count axis, not wall-clock), P10 (IntentPanel reads from timelineStore.historicalState in replay mode), P11 (Konva batchDraw, throttled auto-play step rate, suppressed live animations during replay)
 
-### Phase 5: WebSocket Streaming and Client State
+### Phase 5: Watch-Root Integration and Validation
 
-**Rationale:** With the full backend pipeline functional (Phases 1-4), the WebSocket layer connects backend to frontend. The delta serialization protocol and client-side patch application must be defined together — they share the GraphDelta message schema. Reconnect handling must be built correctly here to avoid Pitfall 5 (full-rebuild fallback accumulation on reconnect).
-**Delivers:** Fastify WebSocket server with delta push and version tagging; DeltaSerializer producing GraphDelta JSON; WebSocket client with reconnect and version-aware sync request; Zustand graphStore with `applyDelta()` patch logic; MessageHandler; reconnect test: close browser tab mid-session, verify graph state restored within 2 seconds without re-layout.
-**Uses:** Fastify v5, @fastify/websocket v11, Zustand v5, zod for message validation
-**Avoids:** Pitfall 5 (full-rebuild on reconnect), security mistake of binding to 0.0.0.0
-
-### Phase 6: Canvas Renderer and Layout Engine
-
-**Rationale:** Depends on the client state store (Phase 5) providing the node/edge schema. The renderer must be built with Konva's Canvas layer architecture from the start — viewport culling, layer separation (static graph + animation overlay), and the imperative store subscription pattern (bypassing React's render cycle). These cannot be added as optimizations later; performance benchmarks are part of the definition of done.
-**Delivers:** Konva Stage with two layers (static graph, animation); NodeRenderer and EdgeRenderer with precomputed geometry; ViewportController with zoom/pan and quadtree spatial index for culling; IncrementalPlacer with zone-constrained force simulation (50 ticks, existing nodes pinned); AnimationQueue for glow/pulse with 30-second decay; performance benchmark: 300 nodes at 60fps on mid-range hardware with animations active; canvas binds imperatively to Zustand store (NOT React re-render).
-**Addresses:** Canvas/WebGL renderer (table stakes), zoom/pan, activity overlay glow/pulse (differentiator), stable layout
-**Avoids:** Pitfall 1 (layout instability), Pitfall 6 (canvas performance collapse), anti-pattern of rendering graph through React DOM
-**Research flag:** Standard patterns — Konva documentation and react-konva examples cover these patterns well; phase research likely not needed
-
-### Phase 7: React UI Shell and Activity Feed
-
-**Rationale:** The React panels (activity feed, intent panel, risk panel, node inspector) can be built in parallel with or after the canvas renderer, once the WebSocket client and Zustand stores are available (Phase 5). This phase completes the MVP by connecting the inference output to the user-facing UI.
-**Delivers:** ActivityFeed component (natural-language event narration, architectural-level events only, file-level batching); RiskPanel (new-risk-only visibility, "reviewed" state); NodeInspector (click-to-inspect with file list, dependency list, recent changes); IntentPanel scaffold (placeholder until event stream matures in v1.x); App layout with panel management; UX: viewport state preserved across graph updates; glow decay logic.
-**Addresses:** Natural-language activity feed, risk heuristics panel, click-to-inspect (all table stakes + differentiators)
-**Avoids:** UX pitfalls: activity feed showing every file change, glow that never decays, risk panel that is always visible
-
-### Phase 8: Time-Travel Replay and v1.x Features
-
-**Rationale:** Time-travel replay depends on the append-only event log established in Phase 1 and the graph state infrastructure from Phases 3-5. It is explicitly a "v1.x" feature (add after validation), not launch-critical. The intent inference panel also belongs here, after the event stream has matured enough to identify patterns.
-**Delivers:** ReplayControls component (change-count slider, not time-axis); server-side replay endpoint (load nearest snapshot, stream events to timestamp T); snapshot compaction to prevent unbounded database growth; IntentInferrer (heuristic classification of agent objectives from event patterns); SVG/screenshot export.
-**Addresses:** Time-travel replay, intent inference panel, export (v1.x features)
+**Rationale:** `switchWatchRoot()` must clear snapshot and intent session data when the user changes the watched directory, matching the existing behavior for `graph_nodes` and `graph_edges`. Treating this as a separate phase ensures it is tested explicitly and not forgotten. End-to-end validation of the full v3.0 feature set also belongs here.
+**Delivers:** `switchWatchRoot()` extension (destroy `SnapshotRecorder`, clear `graph_snapshots` + `intent_sessions` tables, create new `SnapshotRecorder` + `IntentAnalyzer` for new root); client-side `timelineStore.reset()` on watch-root switch; full "Looks Done But Isn't" checklist verification: mode isolation test (write file during replay, confirm no canvas change), live resume after replay, 4-hour session storage < 20MB, 500-event session scrub < 200ms, historical positions accurate, intent session boundaries, auto-play frame rate > 30fps at 200 nodes
+**Avoids:** Anti-Pattern 5 from ARCHITECTURE.md (stale snapshot data across watch-root switches)
 
 ### Phase Ordering Rationale
 
-- Phases 1-3 follow the strict component dependency chain: schema before repositories, repositories before graph, graph before inference
-- Phase 4 (inference) must precede Phase 5 (WebSocket) because the WebSocket layer transmits arch events that the inference engine produces — the GraphDelta schema depends on ArchEvent schema
-- Phase 6 (canvas) is placed after Phase 5 because it depends on the wire protocol and client store shape; however, Konva canvas scaffolding can begin in parallel with Phase 5 completion
-- Phase 7 (React UI) is last among MVP phases because it is the least technically risky — React component work is fast and can absorb scope changes; the hard technical problems are in Phases 2-6
-- Phase 8 is explicitly post-validation because time-travel and intent inference require mature data from real agent sessions to tune correctly
+- Phase 1 (schema + types) is a hard pre-condition for Phases 2 and 3; no server or client code can reference the new types until this exists
+- Phase 2 (server) and Phase 3 (client state) can be developed in parallel after Phase 1 — they are decoupled during construction; their interface is the shared types from Phase 1 and the REST/WS contracts
+- Phase 4 (UI) strictly follows Phase 3 because the mode state machine in Phase 3 is the foundation UI components plug into; building UI before the mode gate is in place creates rework when mode isolation bugs surface
+- Phase 5 (watch-root + validation) must come last; it depends on all prior phases being stable enough to test the destroy/recreate lifecycle
+- Pitfalls P1, P2, P4, P5, P9 are functional pre-conditions, not polish — they must be addressed in Phases 1-3, not deferred
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 2 (File Watching + Parsing):** Tree-sitter worker thread integration has specific patterns for passing parse results back from worker threads (structured clone cannot transfer parse trees; only extracted plain-object results). Incremental API (`tree.edit()` call signature) warrants verification against the specific version in use before implementation.
-- **Phase 4 (Architectural Inference):** Zone classification heuristics for non-standard project structures (Next.js, Python monorepos, flat `src/` layouts) are novel territory with sparse prior art. The multi-signal corroboration thresholds need calibration against real agent sessions — the research flags this as needing a calibration period, which implies prototype-and-measure approach rather than design-up-front.
+**Phases that may benefit from `/gsd:research-phase` during planning:**
+- **Phase 2, `IntentAnalyzer` heuristics:** The activity-gap threshold (90 seconds) and coarse taxonomy categories are research-supported starting points but not validated against real ArchLens agent sessions. Inspecting actual `changeEvents` timing data from the existing database before implementing the classifier would improve the first implementation and avoid the P6 and P7 pitfalls in practice.
+- **Phase 4, Konva auto-play performance:** The `batchDraw()` + throttle approach is the correct pattern, but the safe auto-play step interval depends on the actual render time of the canvas at production node counts. A brief spike measuring render time at 200+ nodes before building auto-play speed levels would prevent the P11 canvas freeze pitfall.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** Drizzle ORM + better-sqlite3 setup is thoroughly documented; monorepo TypeScript configuration is well-understood
-- **Phase 5 (WebSocket):** Fastify WebSocket plugin documentation covers delta sync patterns; zod validation of WebSocket messages is a standard pattern
-- **Phase 6 (Canvas):** Konva two-layer architecture and react-konva imperative store subscription patterns are covered in official documentation and community examples
-- **Phase 7 (React UI):** Standard React component work; no novel technical territory
-
----
+**Phases with standard, well-documented patterns (skip research-phase):**
+- **Phase 1 (Schema Foundation):** Drizzle schema additions and SQLite table design are mechanical; composite index pattern is standard SQL
+- **Phase 3 (Client State Layer):** Zustand store design, `zundo` middleware, and `replayMode` flag pattern are all well-documented with high-confidence official sources
+- **Phase 5 (Watch-Root Integration):** Follows the existing `switchWatchRoot()` destroy/recreate pattern; no new patterns introduced
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Core library choices verified via npm/official sources; version numbers spot-checked; alternatives systematically evaluated with clear rationale |
-| Features | MEDIUM-HIGH | Table stakes and differentiators well-researched against 10+ competitor tools; AI agent supervision use case is novel with fewer precedents for "correct" feature set |
-| Architecture | MEDIUM-HIGH | Core pipeline patterns well-established and sourced to peer-reviewed benchmarks; ArchLens-specific architectural inference patterns are novel and estimated rather than empirically validated |
-| Pitfalls | MEDIUM-HIGH | Critical technical pitfalls verified through official documentation, GitHub issues, and community sources; inference accuracy pitfalls based on general static analysis community knowledge rather than ArchLens-specific data |
+| Stack | HIGH | Only one new dependency (`zundo`); version compatibility confirmed from official release notes; all other technologies are the existing validated stack; no speculative choices |
+| Features | MEDIUM | Table stakes derived from Redux DevTools, Replay.io, and session replay tool patterns (well-documented); intent inference UX patterns are from an emerging field with fewer direct precedents; competitor gap analysis is strong |
+| Architecture | HIGH | Based on direct codebase inspection of all integration points; component boundaries are explicit; build order is dependency-determined, not speculative; minimal surface area principle (ArchCanvas unmodified) reduces integration risk |
+| Pitfalls | MEDIUM-HIGH | Core pitfalls (mode state machine, unbounded storage, O(N) reconstruction) are grounded in event sourcing literature and Redux DevTools lessons; intent inference pitfalls follow general heuristic classifier lessons; some recovery costs are estimated, not empirically measured |
 
 **Overall confidence:** MEDIUM-HIGH
 
 ### Gaps to Address
 
-- **Architectural inference thresholds:** The exact confidence thresholds and corroboration signal combinations for zone classification and event detection cannot be determined from research alone — they require calibration against real AI agent sessions. Plan for a "calibration sprint" after Phase 4 MVP is functional.
-- **Vite 8 stability:** Vite 8 (Rolldown-based) is marked as very recent in STACK.md. Verify the current release and stability before starting the frontend build setup in Phase 1. If Vite 8 proves unstable, Vite 6/7 is a safe fallback with minimal architectural impact.
-- **Worker thread parse result serialization:** The exact API surface for passing tree-sitter extraction results from worker threads back to the main thread needs verification — parse trees themselves cannot be transferred via structured clone, only plain-object extracted data. Verify this constraint against tree-sitter 0.25.x Node.js binding documentation before Phase 2 implementation.
-- **@dagrejs/dagre incremental layout:** The research recommends dagre for layout but the primary rendering uses Konva with zone-constrained force placement (IncrementalPlacer). Clarify whether dagre is used for initial layout only, zone layout constraints, or replaced entirely by the custom zone-constrained force simulation. This decision affects the Phase 6 scope.
-- **WebSocket reconnect delta strategy:** The research specifies that reconnects should send "events since last known client sequence number" rather than full state, but the exact protocol (sequence numbers in client storage, server-side session state) needs design before Phase 5 implementation.
-
----
+- **Intent session threshold calibration:** The 90-second activity-gap boundary and 60-second inference window are educated starting points, not empirically validated against real ArchLens agent session data. During Phase 2 planning, inspect actual `changeEvents` timing patterns from the existing database to validate or adjust these thresholds before committing to the implementation.
+- **Konva auto-play frame budget:** The safe auto-play step interval (estimated at ~60ms for a 300-node canvas rendering in 30ms) needs measurement against the actual codebase before auto-play speed levels are built. Add a render-time measurement spike to Phase 4 planning.
+- **`changeEvents` schema migration:** Adding `session_id` and `sequence_in_session` columns to the existing `changeEvents` table requires a Drizzle migration that handles pre-v3.0 rows. The strategy for existing rows (null session_id, or synthesized session_id from timestamp clustering) needs a decision before Phase 1 schema work begins.
+- **Snapshot compaction TTL:** Research recommends a 30-day TTL for snapshot compaction but does not specify the trigger mechanism (server startup, scheduled timer, or API). The schema should be designed to support TTL from day one (e.g., a `createdAt` index on `graph_snapshots`), but the compaction implementation is a v3.x concern.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [chokidar GitHub / npm](https://github.com/paulmillr/chokidar) — v5 ESM-only, Node 20+, debounce patterns, atomic write handling
-- [Fastify npm / OpenJS Foundation](https://openjsf.org/blog/fastifys-growth-and-success) — v5.8.x stable, 70-80k req/s vs Express 20-30k
-- [@fastify/websocket npm](https://www.npmjs.com/package/@fastify/websocket) — v11.x built on ws@8, Fastify v5 target
-- [konva npm](https://www.npmjs.com/package/konva) + [20,000 nodes demo](https://konvajs.org/docs/sandbox/20000_Nodes.html) — v10.2.1, hitgraph optimization at scale
-- [react-konva npm](https://www.npmjs.com/package/react-konva) — v19.2.3, React 19 compatibility
-- [@dagrejs/graphlib npm](https://www.npmjs.com/package/@dagrejs/graphlib) — v3.0.2, actively maintained DagreJS org fork
-- [@dagrejs/dagre npm](https://www.npmjs.com/package/@dagrejs/dagre) — v2.0.4, incremental layout with prior positions
-- [better-sqlite3 npm](https://www.npmjs.com/package/better-sqlite3) — v12.8.0, Node 20+, synchronous API rationale
-- [Drizzle ORM SQLite docs](https://orm.drizzle.team/docs/get-started/sqlite-new) — better-sqlite3 driver, TypeScript schema
-- [Zustand npm](https://www.npmjs.com/package/zustand) — v5.0.11, useSyncExternalStore
-- [Tree-sitter incremental parsing benchmarks](https://dasroot.net/posts/2026/02/incremental-parsing-tree-sitter-code-analysis/) — 70% parse time reduction, 100ms per 10k lines (2026)
-- [Graph visualization efficiency — peer reviewed](https://pmc.ncbi.nlm.nih.gov/articles/PMC12061801/) — Canvas/WebGL threshold benchmarks at 3k-10k nodes
-- [Martin Fowler EventSourcing](https://martinfowler.com/eaaDev/EventSourcing.html) — event sourcing pattern for time-travel
+- `zundo` GitHub (charkour/zundo) + releases page — v2.3.0 Zustand v5 support confirmed; partialize/limit/diff options; <700 bytes gzipped; November 2024 release
+- Martin Fowler — Event Sourcing — foundational reference for event log reconstruction; state reconstruction by replaying events forward
+- Konva official docs — batchDraw(), performance tips, undo/redo state-substitution pattern as idiomatic replay approach
+- SQLite WAL official docs — concurrent reader behavior, WAL file growth patterns, PRAGMA journal_mode
+- Drizzle ORM SQLite docs — text column with mode:'json', schema migration patterns
+- ArchLens codebase direct inspection (`graphStore.ts`, `inferenceStore.ts`, `Pipeline.ts`, `schema.ts`, `InferenceEngine.ts`, `websocketPlugin.ts`) — all integration points identified from live code
 
 ### Secondary (MEDIUM confidence)
-- [Sourcetrail GitHub](https://github.com/CoatiSoftware/Sourcetrail) — archived 2021; feature reference for click-to-inspect, zoom/pan patterns
-- [IcePanel top 9 visual modelling tools](https://icepanel.io/blog/2025-09-02-top-9-visual-modelling-tools-for-software-architecture) — feature comparison across 9 tools
-- [AppMap documentation](https://appmap.io/docs/appmap-docs.html) — runtime capture approach, IDE plugin constraints
-- [Cytoscape.js WebGL preview](https://blog.js.cytoscape.org/2025/01/13/webgl-preview/) — confirms WebGL renderer is preview-only
-- [dependency-cruiser vs Madge maintainer comparison](https://github.com/sverweij/dependency-cruiser/issues/203) — rule enforcement vs simplicity
-- [Sticky Force Layout — D3 Observable](https://observablehq.com/@d3/sticky-force-layout) — pinned node position pattern
-- [Scale Up D3 with PixiJS](https://graphaware.com/blog/scale-up-your-d3-graph-visualisation-webgl-canvas-with-pixi-js/) — decoupled rendering pattern
-- [xyflow performance docs](https://github.com/xyflow/xyflow/issues/5442) — canvas renderer recommendation for 100+ nodes
-- [WebSocket architecture best practices — Ably](https://ably.com/topic/websocket-architecture-best-practices) — delta sync, backpressure
-- [Tree-sitter large file memory issue #1277](https://github.com/tree-sitter/tree-sitter/issues/1277) — 1.6MB file, 300MB memory, tree lifecycle
-- [Canvas optimisation — AG Grid blog](https://blog.ag-grid.com/optimising-html5-canvas-rendering-best-practices-and-techniques/) — quadtree culling, layer separation
-- [Vite 8 announcement / releasebot](https://vite.dev/blog/announcing-vite6) — Rolldown-based build; verify stability on project start
+- AeonG temporal graph database (VLDB Journal 2025) — anchor+delta snapshot strategy and reconstruction algorithms
+- Redux DevTools time-travel documentation — action-list navigation, slider monitor, state reconstruction pattern; separate DevTools store pattern
+- CodeOpinion — snapshots in event sourcing for rehydrating aggregates; checkpoint strategies
+- Replay.io time-travel documentation — record/replay architecture and temporal navigation UI patterns
+- Smashing Magazine — UX strategies for real-time dashboards with historical replay (mode confusion, data freshness indicators)
+- Augment Code Intent workspace blog — intent display UX patterns for agent orchestration tools
+- SQLite event sourcing patterns (sqliteforum.com) — periodic snapshot + replay-from-checkpoint pattern
+- MSR '26 on mining coding agent activity (arxiv, abstract only) — heuristic detection approaches for agent intent
 
 ### Tertiary (LOW confidence)
-- [Agentic coding trends 2026 — teamday.ai](https://www.teamday.ai/blog/complete-guide-to-agentic-coding-2026) — active monitoring requirements for AI coding agents (single source; validates the supervision use case framing)
-- [PixiJS v8 Canvas renderer discussion](https://github.com/pixijs/pixijs/discussions/10682) — Canvas renderer in v8 is experimental (relevant if Konva requires WebGPU upgrade later)
+- Medium — intent detection for AI systems — confidence scoring approaches; single non-authoritative source; used for framing only
+- Agentic UI patterns (agenticpathdesign.com) — emerging field with limited documentation; used for UX framing only
 
 ---
-
-*Research completed: 2026-03-15*
+*Research completed: 2026-03-16*
 *Ready for roadmap: yes*

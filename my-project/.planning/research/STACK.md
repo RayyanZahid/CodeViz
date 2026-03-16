@@ -1,123 +1,158 @@
 # Stack Research
 
-**Domain:** Real-time architecture visualization (local web app, code parsing, graph analysis, 2D canvas)
-**Researched:** 2026-03-15
-**Confidence:** MEDIUM-HIGH (core libraries verified via npm/official sources; version numbers spot-checked)
+**Domain:** ArchLens v3.0 — Time-travel replay and AI agent intent inference additions
+**Researched:** 2026-03-16
+**Confidence:** HIGH for persistence and state approaches; MEDIUM for intent inference (heuristic approach rationale is evidence-based but domain is novel)
+
+> **Scope note:** This document covers ONLY the stack additions and changes required for v3.0.
+> The base stack (Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter, graphlib, Konva + d3-force,
+> React 19 + Zustand v5, WebSocket streaming, chokidar, Zod) is already validated and documented
+> in the pre-v3.0 STACK.md. Do not re-add or re-justify those dependencies here.
 
 ---
 
-## Recommended Stack
+## New Dependencies Required
 
-### Core Technologies
+### Server Package Additions
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Node.js | 22.x LTS | Backend runtime | Required by chokidar v5, Fastify v5, better-sqlite3 v12; minimum v20 for the whole stack |
-| TypeScript | 5.x | End-to-end type safety | Fastify v5, Drizzle ORM, and Zustand v5 all have first-class TS support; prevents mismatched graph event shapes between backend and frontend |
-| Fastify | 5.8.x | HTTP + WebSocket server | 2-4x faster than Express; first-class TS; `@fastify/websocket` plugin is official and maintained; low overhead matters for sub-2s latency target |
-| @fastify/websocket | 11.x | WebSocket streaming to frontend | Built on `ws@8`; route-scoped WebSocket handlers; integrates with Fastify's plugin model; no extra wrapper needed |
-| React | 19.x | Frontend UI framework | Standard choice; react-konva v19.x requires React 19; concurrent features help with streaming updates |
-| Vite | 8.x | Frontend build tool | Rolldown-based (v8); replaces Create React App; instant HMR critical for development; `npm create vite@latest -- --template react-ts` |
-| TypeScript | 5.x | Frontend type safety | Shared types between backend graph events and frontend canvas state |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| *(none required)* | — | — | All server-side time-travel and snapshot logic uses existing better-sqlite3, Drizzle ORM, and in-memory graphlib. No new server packages needed. |
 
-### Parsing Layer
+The snapshot persistence strategy (see Architecture section below) stores component-level graph snapshots as JSON blobs in a new `graph_snapshots` SQLite table. This is a schema addition using existing Drizzle tooling, not a new dependency.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| tree-sitter | 0.25.x | Node.js binding for incremental parsing | Native Node.js addon; synchronous API; built-in incremental parse via `tree.edit()` — no full re-parse on file change |
-| web-tree-sitter | 0.26.x | WASM fallback (if needed in browser) | Not needed for this stack (parsing stays on backend); noted for reference only |
-| tree-sitter-typescript | 0.23.x | TypeScript + TSX grammar | Official grammar maintained by tree-sitter org; covers both `.ts` and `.tsx` dialects |
-| tree-sitter-python | 0.25.x | Python grammar | Official grammar; matches tree-sitter core version |
+### Client Package Additions
 
-**Rationale for tree-sitter over alternatives:** tree-sitter is the only parser that provides incremental re-parsing (supply only changed byte ranges via `tree.edit()`), error recovery on broken code, and a query language (`tree-sitter queries`) for structural pattern matching. Babel/TypeScript compiler API parse whole files on every change — fatal for the 1-2 second latency target with 500-5000 file codebases.
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `zundo` | `^2.3.0` | Timeline scrubbing state — snapshot history in Zustand | Provides a parallel temporal store alongside the existing graphStore. The `partialize` option lets us track only the fields relevant to replay (nodes, edges, version) and exclude UI state (connectionStatus, scanning). Adds ~700 bytes gzipped. Verified: v2.3.0 officially supports Zustand v5 (released November 2024). |
 
-### File Watching
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| chokidar | 5.x | Cross-platform file system watcher | ESM-only in v5; requires Node 20+; uses native `fs.watch` (not polling); handles debouncing, rename detection, and atomic write patterns from editors; ~88M downloads/week; used in Vite/webpack |
-
-**Rationale:** Node's built-in `fs.watch` is unreliable cross-platform (especially on Windows and network drives). chokidar normalizes events and handles the common AI-agent write patterns (atomic replace, temp file swap) correctly. chokidar v5 drops glob support — use explicit path arrays or handle glob expansion separately.
-
-### Graph Data Structure
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| @dagrejs/graphlib | 3.0.x | In-memory directed multigraph | The actively maintained fork (not the legacy `graphlib` package); node/edge CRUD with adjacency queries; cycles detection; serializable to JSON for SQLite persistence |
-| @dagrejs/dagre | 2.0.x | Hierarchical directed graph layout | Supports incremental layout by passing prior node positions; produces stable left-to-right or top-to-bottom layered layouts; compatible with semantic zone constraints |
-
-**Rationale for graphlib + dagre over alternatives:** This pair is the standard for dependency/architecture graphs in JS tooling. graphlib provides the raw graph model with algorithms (topological sort, cycle detection, shortest path); dagre provides a layout algorithm tuned for directed graphs — exactly what architecture dependency graphs are. Cytoscape.js bundles both visualization and graph model together (hard to separate); graphlib lets us own the graph model independently and render with Konva separately.
-
-### Rendering Layer
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Konva | 10.2.x | 2D Canvas rendering engine | HTML5 Canvas (not DOM); handles 20,000+ interactive nodes with hitgraph optimization; layer system for animation isolation; built-in pan/zoom via `Stage.draggable()` and scale transforms |
-| react-konva | 19.2.x | React bindings for Konva | Declarative canvas components in React; matches React 19; most downloaded React canvas library; allows mixing React state with Canvas rendering |
-
-**Rationale for Konva over alternatives:**
-- **Over PixiJS v8:** PixiJS targets WebGL/WebGPU game rendering. Konva's strength is interactive node-and-edge diagrams with click/hover event handling built in. PixiJS requires manual hit detection implementation for custom shapes.
-- **Over Cytoscape.js:** Cytoscape is DOM-based by default (SVG renderer) and bundles its own graph data model, making it hard to separate from our graphlib model. Its WebGL preview (v3.31+) is not production-ready. Konva gives us full control.
-- **Over D3.js:** D3 manipulates SVG DOM nodes — doesn't meet the Canvas/WebGL rendering constraint from PROJECT.md. DOM-based graphs degrade badly past ~500 nodes.
-- **Over native Canvas API:** react-konva gives declarative React components, event delegation, and layer caching without sacrificing performance. The hitgraph renderer handles hit detection automatically.
-
-### State Management
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Zustand | 5.0.x | Frontend graph state | `useSyncExternalStore`-based in v5; ~3KB bundle; no provider boilerplate; suited for the graph model + UI state (selected node, zoom level, panel visibility) that needs to sync with WebSocket streams |
-
-### Persistence Layer
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| better-sqlite3 | 12.8.x | Synchronous SQLite driver for Node.js | Fastest synchronous SQLite in Node.js; synchronous API is the right fit for a write-heavy event log (no async callback hell); full transaction support for atomic graph snapshots; local-only |
-| Drizzle ORM | 0.40.x | Schema definition + typed queries | TypeScript-first; `drizzle-kit push` for dev-time schema evolution; generates SQL migrations for schema changes; works with better-sqlite3 driver natively |
-| drizzle-kit | 0.30.x | Migration tooling for Drizzle | CLI for schema push/generate/migrate; required alongside drizzle-orm |
-
-**Rationale for SQLite + Drizzle over alternatives:**
-- Local-only deployment eliminates need for PostgreSQL/MySQL server
-- better-sqlite3's synchronous API means graph events can be written in-line with processing (no async queuing needed)
-- Drizzle's TypeScript schema gives compile-time safety on the event log schema
-- Time-travel replay is a first-class SQLite use case: append-only event table with indexed timestamps
-
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| `tsx` | Run TypeScript in Node.js without compile step | Faster than `ts-node`; uses esbuild; for backend dev server |
-| `vitest` | Unit + integration testing | Co-located with Vite; same config; fast with ESM; test tree-sitter queries and graph algorithms in isolation |
-| `eslint` + `@typescript-eslint` | Linting | Standard for TS projects; catches unsafe graph mutation patterns |
-| `prettier` | Formatting | Single style across backend + frontend |
+That is the only new client dependency. The timeline scrubber UI component uses HTML's native `<input type="range">` — no slider library needed. The intent panel is a plain React component like the existing Inspector and Risk panels.
 
 ---
 
-## Supporting Libraries
+## Recommended Stack for Each New Feature
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `zod` | 3.x | Runtime validation of WebSocket message shapes | Validate graph event payloads from backend before entering Zustand store; prevents bad state from malformed events |
-| `immer` | 10.x | Immutable graph state updates in Zustand | When graph state updates involve nested node/edge mutations; use with Zustand's `immer` middleware |
-| `ws` | 8.x | WebSocket client in tests / scripting | `@fastify/websocket` wraps ws; use directly only for integration test harnesses |
-| `tsup` | 8.x | Bundle backend TypeScript for distribution | If packaging the backend as a standalone binary later; not needed for dev |
+### Feature 1: Time-Travel Replay — Server Side (Graph Snapshot Persistence)
+
+**Approach:** Periodic snapshot writes to SQLite using existing Drizzle schema extension.
+
+**New schema table** (add to `packages/server/src/db/schema.ts`):
+
+```typescript
+export const graphSnapshots = sqliteTable('graph_snapshots', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  version: integer('version').notNull(),
+  watchRoot: text('watch_root').notNull(),
+  snapshotData: text('snapshot_data', { mode: 'json' })
+    .$type<{ nodes: ComponentNode[]; edges: ComponentEdge[] }>()
+    .notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+```
+
+**Trigger strategy:** Write a snapshot after every N graph deltas (configurable, default 5) OR after a time interval (e.g., 30 seconds of inactivity). This keeps snapshot count manageable (hundreds, not thousands) for a typical AI coding session.
+
+**Why JSON blob in SQLite over row-per-node approach:** The component graph at any point in time has ~10-200 component nodes (not file-level). Serializing the full component-level snapshot as a single JSON blob is simpler, faster to read back for replay (one row fetch vs. JOIN across potentially thousands of node rows), and idiomatic for time-series snapshots in SQLite. A snapshot for a 200-node graph is approximately 40-80 KB — well within SQLite's practical limits.
+
+**Why not a separate time-series database (InfluxDB, TimescaleDB, etc.):** ArchLens is a local single-user app. The overhead of running a time-series server defeats the "zero infrastructure" constraint. SQLite WAL handles this workload trivially.
+
+**New REST endpoint** (extend existing snapshot plugin):
+- `GET /api/snapshots` — returns list of `{ id, version, createdAt }` (no payload, for timeline scrubber)
+- `GET /api/snapshots/:id` — returns full snapshot for replay
+
+No new Fastify plugins or HTTP libraries needed — standard Fastify route handlers in the existing plugin pattern.
+
+---
+
+### Feature 2: Time-Travel Replay — Client Side (Timeline Scrubber UI)
+
+**Approach:** HTML native `<input type="range">` for scrubbing + `zundo` for state history.
+
+**Why zundo over manual history array in Zustand:**
+The naive alternative is storing an array of past graph states in a custom Zustand slice. Zundo provides this with correct undo/redo semantics, configurable `partialize` to exclude irrelevant fields, a `limit` cap to prevent unbounded memory growth, and `diff`-based storage to avoid storing full state copies when only a few nodes changed. It is ~700 bytes gzipped and has no transitive dependencies.
+
+**Why `<input type="range">` over a slider library:**
+The timeline scrubber is a single-thumb slider that maps scrub position to a snapshot index. Native HTML range input handles this with zero dependencies, is fully keyboard-accessible, and is styleable with CSS. Libraries like `react-range` or `rc-slider` are warranted when you need multi-thumb ranges or complex tick rendering — neither applies here.
+
+**Replay mode isolation:** During replay, the client must freeze incoming WebSocket updates to the graphStore (to prevent live changes overwriting the historical view). This is a state flag in the existing graphStore (`isReplaying: boolean`), not a new dependency. The wsClient already has the pattern for conditional dispatch from the watch-root switching feature.
+
+**HTML overlay positioning:** The timeline panel renders as an absolutely positioned HTML div below the Konva canvas, following the same pattern as the existing Inspector panel and Risk panel. No `react-konva-utils` `<Html>` portal needed — the panel is a sibling DOM element, not embedded in the canvas.
+
+---
+
+### Feature 3: Intent Inference — No External ML/LLM Dependencies
+
+**Approach:** Pure rule-based heuristic classification in TypeScript on the server.
+
+**Why rule-based over LLM/ML:**
+- ArchLens operates fully offline (localhost-only constraint in PROJECT.md)
+- LLM inference requires either a remote API (violates offline constraint) or a local model (adds 1-10 GB dependency — inappropriate for a dev tool)
+- The inference signal is structural (file zones changed, component types added, dependency patterns) not semantic (natural language). Rule-based classification of structural signals has sufficient precision for the use case.
+- Research confirms rule-based approaches work well for tightly-scoped, structurally-defined domains. Code structure patterns (frontend files added, service layer expanded, test files created alongside implementation files) map cleanly to regex/heuristic rules.
+
+**Intent classifier implementation** (no new packages):
+
+The IntentClassifier is a new TypeScript class in `packages/server/src/inference/` that:
+1. Consumes a rolling window of `ArchitecturalEvent` objects already produced by `InferenceEngine`
+2. Applies rule sets against accumulated events (e.g., "3+ component_created events in frontend zone within 60s → likely building a new feature")
+3. Emits a typed `AgentIntent` result: `{ objective: string; confidence: 'high'|'medium'|'low'; subtasks: string[]; activeZones: ZoneName[] }`
+
+**Why this fits the existing pipeline:** `InferenceEngine` already emits typed `ArchitecturalEvent` objects at the right granularity. The IntentClassifier subscribes to the same `inference` event and accumulates a rolling window in memory (no additional DB writes needed for the classifier state itself — only the output `AgentIntent` is persisted/broadcast).
+
+**New shared type** (add to `packages/shared/src/types/inference.ts`):
+
+```typescript
+export interface AgentIntent {
+  objective: string;       // e.g. "Building new API layer", "Refactoring service boundaries"
+  confidence: 'high' | 'medium' | 'low';
+  subtasks: string[];      // e.g. ["Adding 3 frontend components", "Establishing API routes"]
+  activeZones: ZoneName[];
+  timestamp: number;
+}
+
+export interface IntentMessage {
+  type: 'intent_update';
+  intent: AgentIntent | null;
+}
+```
+
+No new npm packages required. The existing Zod, TypeScript, and event-driven pattern handle all of this.
+
+---
+
+### Feature 4: Intent Panel — Client Side
+
+**Approach:** Plain React component, same pattern as InspectorPanel and RiskPanel.
+
+- New `intentStore.ts` in `packages/client/src/store/` (mirrors pattern of inferenceStore.ts)
+- New `IntentPanel.tsx` component (mirrors pattern of existing panels in the UI)
+- Receives `intent_update` WebSocket messages via existing wsClient dispatch
+- No new React libraries, CSS frameworks, or animation libraries required
+
+---
+
+## New Schema Changes (Drizzle Migration Required)
+
+The only schema change is adding the `graph_snapshots` table. Run `drizzle-kit generate` after updating `schema.ts` to produce the migration SQL.
+
+```bash
+# After adding graphSnapshots to schema.ts:
+pnpm --filter @archlens/server exec drizzle-kit generate
+```
+
+No other migration changes are needed for intent inference (intent state is transient, broadcast over WebSocket, not persisted between sessions).
 
 ---
 
 ## Installation
 
 ```bash
-# Backend — Node.js server
-npm install fastify @fastify/websocket tree-sitter tree-sitter-typescript tree-sitter-python chokidar @dagrejs/graphlib @dagrejs/dagre better-sqlite3 drizzle-orm zod
-
-# Backend — types and dev
-npm install -D typescript @types/node @types/better-sqlite3 drizzle-kit tsx vitest eslint @typescript-eslint/eslint-plugin prettier
-
-# Frontend — React + Canvas
-npm install react react-dom konva react-konva zustand immer zod
-
-# Frontend — types and build tools
-npm install -D typescript @types/react @types/react-dom vite @vitejs/plugin-react eslint prettier
+# Client package — only new dependency
+pnpm --filter @archlens/client add zundo@^2.3.0
 ```
+
+All other v3.0 work is schema additions + new TypeScript files within existing packages.
 
 ---
 
@@ -125,56 +160,27 @@ npm install -D typescript @types/react @types/react-dom vite @vitejs/plugin-reac
 
 | Category | Recommended | Alternative | Why Not |
 |----------|-------------|-------------|---------|
-| File watching | chokidar v5 | Node.js `fs.watch` natively | `fs.watch` is unreliable on Windows and macOS; AI agents often use atomic file writes that `fs.watch` misses |
-| File watching | chokidar v5 | `@parcel/watcher` | More complex API; less ecosystem adoption for this use case; chokidar is battle-tested at 88M/week downloads |
-| Parsing | tree-sitter | Babel parser | Babel parses whole files (no incremental); errors halt parsing; JS/TS only (no Python) |
-| Parsing | tree-sitter | TypeScript compiler API (tsc) | Full compile on every change; too slow for 1-2s latency target; no Python support |
-| Graph model | @dagrejs/graphlib | Cytoscape.js | Cytoscape bundles visualization with model, making it hard to use Konva for rendering; over-engineered for pure data model use |
-| Graph model | @dagrejs/graphlib | Custom adjacency map | Re-inventing cycle detection, topological sort, serialization; not worth it |
-| Rendering | Konva + react-konva | PixiJS v8 | PixiJS is game-oriented (sprites, shaders); lacks built-in hit detection for custom shapes; requires manual event handling; steeper learning curve for diagram use cases |
-| Rendering | Konva + react-konva | Cytoscape.js | DOM/SVG renderer by default; WebGL preview is experimental; forces its own graph data model |
-| Rendering | Konva + react-konva | D3.js | SVG/DOM manipulation; fails the Canvas/WebGL rendering constraint; degrades past ~500 DOM nodes |
-| Rendering | Konva + react-konva | React Flow | Excellent for small graphs; DOM-based under the hood; will struggle with hundreds of nodes at real-time update frequency |
-| Backend framework | Fastify v5 | Express | Express WebSocket support is bolted on; no native HTTP/2; 2-4x slower; no first-class TypeScript |
-| Backend framework | Fastify v5 | Hono | Hono is edge-first; overkill complexity for local app; smaller ecosystem for WebSocket patterns |
-| Database | better-sqlite3 + Drizzle | PostgreSQL | No server process needed for local app; PostgreSQL is over-engineering for a single-user local tool |
-| Database | better-sqlite3 + Drizzle | lowdb / JSON files | No transaction support; no indexed queries; time-travel replay would require loading entire JSON file |
-| State management | Zustand v5 | Redux Toolkit | Redux boilerplate is excessive for a single-page visualization tool; Zustand's store slices work well for graph + UI state separation |
-| State management | Zustand v5 | React Context | Context re-renders entire subtrees on any state change; fatal for a canvas that updates every 1-2 seconds |
+| Timeline scrubber state | `zundo` middleware | Custom history array in Zustand | Zundo handles diff storage, limits, partialize, and undo/redo semantics correctly. Custom array re-implements this less robustly. |
+| Timeline scrubber UI | Native `<input type="range">` | `rc-slider`, `react-range` | Single-thumb slider with CSS styling covers the use case. No reason to add a library dependency. |
+| Snapshot persistence | JSON blob in `graph_snapshots` table | Row-per-node snapshot | JSON blob is 1 row per snapshot vs. N×200 rows; simpler replay query; appropriate for component-level granularity. |
+| Snapshot persistence | SQLite (existing) | Separate time-series DB | ArchLens is localhost-only, zero-infrastructure. Adding a time-series server contradicts the deployment constraint. |
+| Intent inference | Rule-based TypeScript classifier | LLM API (OpenAI, Anthropic) | Requires remote API — violates offline constraint. Adds latency, cost, and API key management. |
+| Intent inference | Rule-based TypeScript classifier | Local LLM (llama.cpp, Ollama) | Adds 1-10GB dependency; startup time; GPU requirement. Inappropriate for a dev tool. |
+| Intent inference | Rule-based TypeScript classifier | Trained ML classifier (BERT, etc.) | Requires a Python runtime or WASM model. Structural signals are well-defined enough that rules suffice. |
+| Intent persistence | Persist to SQLite | Keep transient (WebSocket only) | Intent inference represents the current moment's agent objective, not historical state. Replaying intent from snapshots can be re-computed from snapshot events. Transient is simpler. |
 
 ---
 
-## What NOT to Use
+## What NOT to Add
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `graphlib` (legacy, not `@dagrejs/graphlib`) | Unmaintained; last published years ago; the DagreJS org fork is the only actively maintained version | `@dagrejs/graphlib@3.0.x` |
-| `dagre` (legacy) | Same issue — the non-scoped package is not maintained | `@dagrejs/dagre@2.0.x` |
-| Create React App (CRA) | Officially deprecated; webpack-based; no longer receives updates | Vite 8 |
-| `react-flow` / `reactflow` | DOM-based rendering; will degrade at hundreds of real-time updating nodes; not built for the Canvas rendering constraint in PROJECT.md | react-konva + custom layout |
-| `socket.io` | Large dependency with its own protocol overhead (polling fallback, namespaces); unnecessary for a local app where WebSocket reliability is guaranteed | `@fastify/websocket` (raw ws) |
-| `ts-node` | Slower than `tsx` for development; requires separate compilation for some ESM edge cases | `tsx` |
-| `chokidar@3.x` / `chokidar@4.x` | Older versions; v5 (ESM-only, Node 20+) is the current stable; v3 has more dependencies | `chokidar@5.x` |
-| DOM-based graph renderers (Cytoscape default, D3 SVG) | PROJECT.md explicitly requires Canvas/WebGL rendering for performance at hundreds of nodes | Konva + react-konva |
-| `web-tree-sitter` (WASM) | Parsing happens on the backend (Node.js); WASM bindings are for browser environments; adds WASM loading overhead unnecessarily | `tree-sitter` (native Node.js binding) |
-
----
-
-## Stack Patterns by Variant
-
-**If adding WebGPU/WebGL acceleration later:**
-- PixiJS v8 can replace Konva for the rendering layer
-- The graph model (@dagrejs/graphlib) and layout (@dagrejs/dagre) are renderer-agnostic and do not need to change
-- WebGPU becomes relevant only if benchmarks show Konva struggling past ~1000 nodes
-
-**If parsing more languages (Go, Rust in future):**
-- tree-sitter has grammars for both (`tree-sitter-go`, `tree-sitter-rust`)
-- The parsing pipeline is language-agnostic by design — add grammar + query file per language
-- No architectural changes needed; this is a data concern only
-
-**If exposing an HTTP API for external tools:**
-- Fastify's plugin system handles REST routes alongside WebSocket routes in the same server
-- Add `@fastify/cors` for cross-origin access from external tools
+| Any LLM/ML library (transformers.js, llama-node, openai SDK) | Offline constraint, binary size, latency | Rule-based TypeScript classifier |
+| `rc-slider`, `react-timeline-range-slider`, GSAP | Unnecessary for a single-thumb range input | Native `<input type="range">` with CSS |
+| `immer` | Not needed for the new stores — the existing graphStore/inferenceStore patterns use explicit Map copies which is correct for this data shape | Explicit Map copies (existing pattern) |
+| A separate event sourcing library (EventStore, Eventide, etc.) | The `changeEvents` table already provides an append-only event log; time-travel uses periodic snapshots, not full event replay | Existing `changeEvents` table + new `graph_snapshots` table |
+| IndexedDB / localStorage for snapshot storage | Snapshots belong server-side (they capture server graph state); client-side storage would require pushing all snapshot data to the browser | SQLite `graph_snapshots` table on the server |
+| `@melfore/konva-timeline` | Canvas-based Gantt/scheduler library — far heavier than needed for a simple horizontal scrubber bar | HTML range input with CSS |
 
 ---
 
@@ -182,38 +188,25 @@ npm install -D typescript @types/react @types/react-dom vite @vitejs/plugin-reac
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| `react-konva@19.2.x` | `react@19.x`, `konva@10.x` | react-konva version mirrors React major version (19.x = React 19); do not mix |
-| `tree-sitter@0.25.x` | `tree-sitter-typescript@0.23.x`, `tree-sitter-python@0.25.x` | Grammar packages should be at or near core version; version mismatch causes ABI errors |
-| `@fastify/websocket@11.x` | `fastify@5.x` | v11 explicitly targets Fastify v5; do not use v9/v10 with Fastify v5 |
-| `chokidar@5.x` | `node@20+` | ESM-only; requires `"type": "module"` or `.mjs` extensions in Node.js backend |
-| `better-sqlite3@12.x` | `node@20+` | Native addon; requires Node.js ABI to match; use `node-gyp` rebuild after Node.js version changes |
-| `vite@8.x` | `node@18+`, `react@19.x` | Vite 8 uses Rolldown; `@vitejs/plugin-react@6` recommended (Oxc-based, no Babel) |
-| `drizzle-orm@0.40.x` | `better-sqlite3@12.x`, `drizzle-kit@0.30.x` | drizzle-orm and drizzle-kit minor versions should be kept in sync |
+| `zundo@2.3.0` | `zustand@5.0.x` | v2.3.0 explicitly added Zustand v5 support (November 2024). Do not use zundo v2.2.x or earlier with Zustand v5. |
+| `zundo@2.3.0` | `react@19.x` | No direct React dependency; works via Zustand which already supports React 19 |
+| `drizzle-orm@0.40.x` | `better-sqlite3@11.x` | Existing versions already installed in server package; schema addition requires `drizzle-kit generate`, no version bumps |
 
 ---
 
 ## Sources
 
-- [tree-sitter npm](https://www.npmjs.com/package/tree-sitter) — v0.25.0, native Node.js binding — MEDIUM confidence
-- [tree-sitter Node.js docs](https://tree-sitter.github.io/node-tree-sitter/) — v0.25.0 API, incremental parsing via `tree.edit()` — MEDIUM confidence
-- [tree-sitter-typescript npm](https://www.npmjs.com/package/tree-sitter-typescript) — v0.23.2 — MEDIUM confidence
-- [tree-sitter-python npm](https://www.npmjs.com/package/tree-sitter-python) — v0.25.0 — MEDIUM confidence
-- [chokidar GitHub](https://github.com/paulmillr/chokidar) — v5 ESM-only, Node 20+ minimum — HIGH confidence (search + GitHub README)
-- [Fastify npm / OpenJS Foundation announcement](https://openjsf.org/blog/fastifys-growth-and-success) — v5.8.x current stable — HIGH confidence
-- [@fastify/websocket npm](https://www.npmjs.com/package/@fastify/websocket) — v11.x, built on ws@8 — HIGH confidence
-- [konva npm](https://www.npmjs.com/package/konva) — v10.2.1 — HIGH confidence
-- [react-konva npm](https://www.npmjs.com/package/react-konva) — v19.2.3 — HIGH confidence
-- [Konva 20,000 nodes demo](https://konvajs.org/docs/sandbox/20000_Nodes.html) — Canvas performance at scale — HIGH confidence
-- [@dagrejs/graphlib npm](https://www.npmjs.com/package/@dagrejs/graphlib) — v3.0.2, actively maintained — HIGH confidence
-- [@dagrejs/dagre npm](https://www.npmjs.com/package/@dagrejs/dagre) — v2.0.4, incremental layout — HIGH confidence
-- [Cytoscape.js WebGL preview](https://blog.js.cytoscape.org/2025/01/13/webgl-preview/) — confirms WebGL renderer is preview-only, not production — MEDIUM confidence
-- [better-sqlite3 npm](https://www.npmjs.com/package/better-sqlite3) — v12.8.0, Node 20+ — HIGH confidence
-- [Drizzle ORM SQLite docs](https://orm.drizzle.team/docs/get-started/sqlite-new) — better-sqlite3 driver, TypeScript schema — HIGH confidence
-- [Zustand npm](https://www.npmjs.com/package/zustand) — v5.0.11 — HIGH confidence
-- [Vite 8 announcement](https://vite.dev/blog/announcing-vite6) / [releasebot](https://releasebot.io/updates/vite) — v8.x with Rolldown — MEDIUM confidence (Vite 8 is very recent; verify on project start)
-- [PixiJS v8 Canvas renderer discussion](https://github.com/pixijs/pixijs/discussions/10682) — Canvas renderer in v8 is experimental — MEDIUM confidence
+- [zundo GitHub (charkour/zundo)](https://github.com/charkour/zundo) — v2.3.0 Zustand v5 support confirmed, partialize/limit/diff options, <700 bytes gzipped — HIGH confidence
+- [zundo releases page](https://github.com/charkour/zundo/releases) — v2.3.0 released November 17, 2024, "officially supports zustand v5" — HIGH confidence
+- [SQLite sqlite3_snapshot API](https://sqlite.org/c3ref/snapshot.html) — SQLite WAL snapshot capability — HIGH confidence
+- [Drizzle ORM SQLite column types](https://orm.drizzle.team/docs/column-types/sqlite) — text with mode:'json' for blob storage — HIGH confidence
+- [better-sqlite3 performance docs](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/performance.md) — synchronous WAL write patterns — HIGH confidence
+- [Conventional Commits spec](https://www.conventionalcommits.org/en/v1.0.0/) — commit type taxonomy for intent classifier rule design — HIGH confidence
+- [LLM vs rule-based for code change classification (ÉTS Montréal)](https://www.etsmtl.ca/en/news/grands-modeles-langage-classification-intentions-changement-code) — LLM outperforms rules for semantic commit classification, but structural signal classification (zone changes, component creation patterns) is different domain — MEDIUM confidence
+- [react-konva-utils Html component](https://github.com/konvajs/react-konva-utils) — HTML overlay positioning over Konva canvas — HIGH confidence (confirmed existing app uses this pattern for edge tooltips)
+- [Konva performance tips](https://konvajs.org/docs/performance/All_Performance_Tips.html) — listening:false for non-interactive layers — HIGH confidence
 
 ---
 
-*Stack research for: ArchLens — Real-Time Architecture Visualization*
-*Researched: 2026-03-15*
+*Stack research for: ArchLens v3.0 — Time-travel replay and intent inference additions*
+*Researched: 2026-03-16*

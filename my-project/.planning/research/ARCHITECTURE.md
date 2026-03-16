@@ -1,551 +1,590 @@
 # Architecture Research
 
-**Domain:** Real-time code analysis and architecture visualization system
-**Researched:** 2026-03-15
-**Confidence:** MEDIUM-HIGH (core pipeline patterns well-established; some ArchLens-specific inference patterns are novel territory)
+**Domain:** Time-travel replay + intent inference integration with ArchLens v2.2
+**Researched:** 2026-03-16
+**Confidence:** HIGH — based on direct codebase inspection of all existing components
+
+> This file supersedes the prior v1.0 architecture research. It focuses exclusively
+> on how the v3.0 features (time-travel replay, intent inference) integrate with the
+> existing codebase. The original system architecture notes are preserved at the bottom
+> of this file for reference.
+
+---
 
 ## Standard Architecture
 
-### System Overview
+### System Overview — v3.0 Target State
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            FRONTEND (Browser)                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │ Canvas/WebGL │  │  UI Shell    │  │  Activity    │  │  Intent/Risk   │  │
-│  │  Renderer    │  │  (React)     │  │   Feed       │  │   Panels       │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └───────┬────────┘  │
-│         │                 │                  │                  │           │
-│  ┌──────┴─────────────────┴──────────────────┴──────────────────┴────────┐  │
-│  │                    Client State Store                                  │  │
-│  │         (graph state, layout coords, animation queue)                 │  │
-│  └──────────────────────────────┬─────────────────────────────────────── ┘  │
-│                                 │  WebSocket (ws://)                        │
-└─────────────────────────────────┼───────────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────┼───────────────────────────────────────────┐
-│                          BACKEND (Node.js)                                  │
-├─────────────────────────────────┼───────────────────────────────────────────┤
-│                                 │                                           │
-│  ┌──────────────────────────────┴──────────────────────────────────────┐    │
-│  │                    WebSocket Server (Fastify)                        │    │
-│  │             (delta push, session state, message routing)             │    │
-│  └──────────────────────────────┬──────────────────────────────────────┘    │
-│                                 │                                           │
-│  ┌──────────────────────────────┴──────────────────────────────────────┐    │
-│  │                    Event Bus (EventEmitter / in-process)             │    │
-│  │              (decouples pipeline stages from transport)              │    │
-│  └────────┬───────────────────────────────────────────────┬────────────┘    │
-│           │                                               │                 │
-│  ┌────────┴────────┐                          ┌──────────┴─────────────┐    │
-│  │  Analysis       │                          │  Persistence Layer      │    │
-│  │  Pipeline       │                          │  (SQLite + better-     │    │
-│  │                 │                          │   sqlite3)              │    │
-│  │ ┌─────────────┐ │                          │                        │    │
-│  │ │File Watcher │ │                          │ ┌────────────────────┐ │    │
-│  │ │(chokidar v5)│ │                          │ │  graph_nodes       │ │    │
-│  │ └──────┬──────┘ │                          │ │  graph_edges       │ │    │
-│  │        │        │                          │ │  change_events     │ │    │
-│  │ ┌──────┴──────┐ │                          │ │  layout_positions  │ │    │
-│  │ │  Debounce / │ │                          │ └────────────────────┘ │    │
-│  │ │  Batch      │ │                          └────────────────────────┘    │
-│  │ └──────┬──────┘ │                                                        │
-│  │        │        │                                                        │
-│  │ ┌──────┴──────┐ │                                                        │
-│  │ │Tree-sitter  │ │  (Worker Thread)                                       │
-│  │ │  Parser     │ │                                                        │
-│  │ └──────┬──────┘ │                                                        │
-│  │        │        │                                                        │
-│  │ ┌──────┴──────┐ │                                                        │
-│  │ │Dependency   │ │                                                        │
-│  │ │Graph Builder│ │                                                        │
-│  │ └──────┬──────┘ │                                                        │
-│  │        │        │                                                        │
-│  │ ┌──────┴──────┐ │                                                        │
-│  │ │Architectural│ │                                                        │
-│  │ │Inference    │ │                                                        │
-│  │ └─────────────┘ │                                                        │
-│  └─────────────────┘                                                        │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                          CLIENT (React 19 + Zustand)                      │
+├──────────────────┬───────────────────────────────┬────────────────────────┤
+│   Canvas Layer   │        Sidebar (280px)         │    NEW: Bottom Bar     │
+│                  │                                │                        │
+│  ArchCanvas      │  NodeInspector (existing)      │  TimelineSlider        │
+│  (Konva/d3)      │  RiskPanel (existing)          │  (HTML range input     │
+│  UNMODIFIED      │  ActivityFeed (existing)       │   + playback controls) │
+│                  │  IntentPanel (NEW)             │                        │
+├──────────────────┴───────────────────────────────┴────────────────────────┤
+│                         State Layer (Zustand stores)                      │
+│  graphStore (MODIFIED) │  inferenceStore (MODIFIED) │  timelineStore (NEW) │
+│  +replayMode flag       │  +replayMode flag           │  snapshots[], pos   │
+│                         │                             │  isReplaying, mode  │
+│                         │                             │  intentSessions[]   │
+├─────────────────────────────────────────────────────────────────────────┬─┤
+│                        WsClient (MODIFIED)                              │ │
+│  +handles: snapshot_created, intent_update, timeline_meta messages      │ │
+│  +respects replayMode: buffers (not drops) live messages during replay  │ │
+└─────────────────────────────────────────────────────────────────────────┴─┘
+                                    │ WebSocket + REST
+┌───────────────────────────────────┴───────────────────────────────────────┐
+│                          SERVER (Fastify 5)                               │
+├──────────────────┬────────────────────────┬───────────────────────────────┤
+│  Existing        │  NEW: Replay Layer     │  NEW: Intent Layer            │
+│                  │                        │                                │
+│  Pipeline        │  SnapshotRecorder      │  IntentAnalyzer               │
+│  DependencyGraph │  (graph.on('delta')    │  (reads changeEvents window   │
+│  ComponentAgg.   │   → periodic persist   │   every 30s OR on snapshot;   │
+│  InferenceEngine │   to graph_snapshots)  │   writes intent_sessions)     │
+│  websocketPlugin │                        │                                │
+│  snapshotPlugin  │  timelinePlugin        │  intent_update broadcast via  │
+│                  │  GET /api/timeline     │  existing broadcast()         │
+│                  │  GET /api/snapshot/:id │                                │
+│                  │                        │                                │
+└──────────────────┴────────────────────────┴───────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴───────────────────────────────────────┐
+│                           SQLite (Drizzle ORM)                            │
+│                                                                           │
+│  graph_nodes (existing)    │  graph_edges (existing)                     │
+│  change_events (existing)  │  layout_positions (existing)                │
+│                            │                                              │
+│  graph_snapshots (NEW)     │  intent_sessions (NEW)                      │
+│  id, version, timestamp,   │  id, startVersion, endVersion,              │
+│  nodes_json, edges_json,   │  label, confidence, detectedAt,             │
+│  positions_json            │  filePatterns_json                          │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| File Watcher | Detect file system changes with debouncing | chokidar v5 (ESM, Node 20+), 400ms debounce |
-| Parse Scheduler | Batch changed files, manage parse queue, priority ordering | Worker thread queue with backpressure |
-| Tree-sitter Parser | Incremental AST generation per changed file | tree-sitter Node.js native bindings (not WASM for perf) |
-| Dependency Graph Builder | Maintain in-memory graph of imports/exports/calls | In-process graph (Map of nodes/edges), write-through to SQLite |
-| Architectural Inference | Map file-level deps to architectural concepts (services, containers, zones) | Heuristic rule engine: path patterns + import topology |
-| Event Bus | Decouple pipeline stages; fan-out change events | Node.js EventEmitter or mitt (tiny typed alternative) |
-| WebSocket Server | Push delta updates to browser clients | Fastify + @fastify/websocket |
-| Persistence Layer | Store graph state, layout positions, change history | better-sqlite3 (synchronous, fast, embedded) |
-| Client State Store | Maintain graph state, layout coords, animation queue | Zustand or lightweight plain store |
-| Canvas Renderer | Render nodes/edges at 60fps with animations | Pixi.js v8 (WebGL, Canvas fallback) |
-| Layout Engine | Assign stable positions to nodes; add new nodes without reshuffling | Constrained force-directed with pinned existing nodes |
-| UI Shell | React panels: activity feed, intent panel, risk panel | React 19 + minimal UI library |
+| Component | Status | Responsibility |
+|-----------|--------|----------------|
+| `SnapshotRecorder` | NEW (server) | Subscribes to `graph.on('delta')`, persists snapshot every 5 deltas or on structural change |
+| `IntentAnalyzer` | NEW (server) | Reads 5-minute `changeEvents` window, clusters by 90-second gap, applies heuristics, emits `intent_update` broadcasts |
+| `timelinePlugin` | NEW (server) | Fastify plugin — `GET /api/timeline` (list all metas), `GET /api/snapshot/:id` (restore one) |
+| `timelineStore` | NEW (client) | Zustand store — snapshot list, current replay position, `isReplaying` flag, intent sessions |
+| `TimelineSlider` | NEW (client) | Bottom bar `<input type="range">` over snapshot list; Live/Pause controls; timestamp labels |
+| `IntentPanel` | NEW (client) | Sidebar panel showing inferred agent objective + subtask list for current session window |
+| `graphStore` | MODIFIED | Add `replayMode: boolean` — WsClient skips live `graph_delta` application when true |
+| `inferenceStore` | MODIFIED | Add `replayMode: boolean` — ActivityFeed/RiskPanel show historical data during replay |
+| `WsClient` | MODIFIED | Handle 3 new WS message types; check `replayMode` before applying live messages |
+| `db/schema.ts` | MODIFIED | Add `graphSnapshots` and `intentSessions` Drizzle table definitions + migration |
+| `index.ts` | MODIFIED | Wire `SnapshotRecorder` + `IntentAnalyzer` into startup and `switchWatchRoot()` |
+| `ArchCanvas` | UNMODIFIED | Already reads from graphStore; replay works by substituting store data — no canvas changes |
+| `NodeInspector` | UNMODIFIED | No changes needed |
+| `RiskPanel` | UNMODIFIED | No changes needed |
+| `ActivityFeed` | UNMODIFIED | No changes needed (replayMode handled in inferenceStore, not the panel) |
+
+---
 
 ## Recommended Project Structure
 
+New files only (existing folder structure unchanged):
+
 ```
-archlens/
-├── packages/
-│   ├── server/                    # Node.js backend (Fastify + pipeline)
-│   │   ├── src/
-│   │   │   ├── watcher/           # File system watching
-│   │   │   │   ├── FileWatcher.ts         # chokidar wrapper with debounce
-│   │   │   │   └── ChangeQueue.ts         # Batching and priority queue
-│   │   │   ├── parser/            # Tree-sitter parsing layer
-│   │   │   │   ├── ParserPool.ts          # Worker thread pool for parsing
-│   │   │   │   ├── TreeSitterParser.ts    # Incremental parse + cache
-│   │   │   │   ├── grammars/              # TS/JS and Python grammar configs
-│   │   │   │   └── extractors/
-│   │   │   │       ├── typescript.ts      # Import/export/call extraction
-│   │   │   │       └── python.ts          # Import/call extraction
-│   │   │   ├── graph/             # Dependency graph management
-│   │   │   │   ├── DependencyGraph.ts     # In-memory graph (nodes + edges)
-│   │   │   │   ├── GraphDiff.ts           # Compute deltas between versions
-│   │   │   │   └── GraphStore.ts          # Write-through persistence
-│   │   │   ├── inference/         # Architectural concept mapping
-│   │   │   │   ├── ZoneClassifier.ts      # Assign nodes to semantic zones
-│   │   │   │   ├── BoundaryDetector.ts    # Infer service/module boundaries
-│   │   │   │   ├── EventDetector.ts       # Detect architectural change events
-│   │   │   │   ├── RiskAnalyzer.ts        # Circular deps, fan-out heuristics
-│   │   │   │   └── IntentInferrer.ts      # Infer agent objectives from patterns
-│   │   │   ├── transport/         # WebSocket server
-│   │   │   │   ├── WebSocketServer.ts     # Fastify WS plugin, message routing
-│   │   │   │   └── DeltaSerializer.ts     # Serialize graph deltas for wire
-│   │   │   ├── db/                # SQLite persistence
-│   │   │   │   ├── Database.ts            # better-sqlite3 setup, migrations
-│   │   │   │   ├── GraphRepository.ts     # Node/edge CRUD
-│   │   │   │   ├── EventRepository.ts     # Change event log (for time-travel)
-│   │   │   │   └── LayoutRepository.ts    # Persist node positions
-│   │   │   ├── events/            # Internal event bus
-│   │   │   │   └── EventBus.ts            # Typed event emitter
-│   │   │   └── index.ts           # Server entry point
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── client/                    # Browser frontend (React + Pixi.js)
-│       ├── src/
-│       │   ├── canvas/            # Pixi.js rendering layer
-│       │   │   ├── ArchCanvas.ts          # Main Pixi Application setup
-│       │   │   ├── NodeRenderer.ts        # Draw nodes (zones, types, glow)
-│       │   │   ├── EdgeRenderer.ts        # Draw edges (calls, deps, owns)
-│       │   │   ├── AnimationQueue.ts      # Smooth transitions and pulses
-│       │   │   └── ViewportController.ts  # Zoom, pan, hit-testing
-│       │   ├── layout/            # Layout computation
-│       │   │   ├── LayoutEngine.ts        # Constrained force-directed layout
-│       │   │   ├── ZonePositioner.ts      # Zone-based initial placement
-│       │   │   └── IncrementalPlacer.ts   # Add nodes without reshuffling
-│       │   ├── store/             # Client-side state
-│       │   │   ├── graphStore.ts          # Graph nodes/edges state
-│       │   │   ├── uiStore.ts             # Panel states, selection
-│       │   │   └── replayStore.ts         # Time-travel replay state
-│       │   ├── ws/                # WebSocket client
-│       │   │   ├── WSClient.ts            # Connection management, reconnect
-│       │   │   └── MessageHandler.ts      # Apply delta patches to store
-│       │   ├── components/        # React UI components
-│       │   │   ├── App.tsx                # Root layout
-│       │   │   ├── ActivityFeed.tsx       # Natural-language event stream
-│       │   │   ├── IntentPanel.tsx        # Inferred agent objectives
-│       │   │   ├── RiskPanel.tsx          # Architectural warnings
-│       │   │   ├── NodeInspector.tsx      # Click-to-inspect details
-│       │   │   └── ReplayControls.tsx     # Time-travel scrubber
-│       │   └── main.tsx           # Entry point
-│       ├── package.json
-│       └── tsconfig.json
+packages/
+├── server/src/
+│   ├── replay/                        # NEW folder — temporal intelligence layer
+│   │   ├── SnapshotRecorder.ts        # Persists periodic graph snapshots
+│   │   └── IntentAnalyzer.ts         # Infers agent objectives from change patterns
+│   └── plugins/
+│       └── timeline.ts               # NEW — GET /api/timeline, GET /api/snapshot/:id
 │
-├── package.json                   # Workspace root
-└── tsconfig.base.json
+├── client/src/
+│   ├── store/
+│   │   └── timelineStore.ts          # NEW — Zustand store: snapshots, replay, intents
+│   ├── panels/
+│   │   └── IntentPanel.tsx           # NEW — sidebar panel (intent + subtask display)
+│   └── timeline/                     # NEW folder — bottom bar components
+│       └── TimelineSlider.tsx        # NEW — scrubber + playback controls
+│
+└── shared/src/types/
+    └── timeline.ts                   # NEW — SnapshotMeta, IntentSession, new WS msgs
 ```
 
 ### Structure Rationale
 
-- **packages/server/src/watcher/:** File watching isolated so debounce/batch strategies can evolve independently of parsing
-- **packages/server/src/parser/:** Worker thread pool encapsulated here; rest of server doesn't know parsing is async
-- **packages/server/src/inference/:** The "brain" — all heuristic rule logic co-located for easy iteration
-- **packages/server/src/transport/:** WebSocket layer separated from business logic; swap to SSE later if needed
-- **packages/client/src/canvas/:** Pixi.js layer fully isolated from React; React manages state, Pixi renders it imperatively
-- **packages/client/src/layout/:** Layout computation separated from rendering; can move to Web Worker later
+- **`server/src/replay/`**: Separates temporal intelligence from real-time inference (`inference/`). The `inference/` folder owns zone/risk/event detection per-delta. `replay/` owns periodic persistence and pattern analysis across time. Mixing them would bloat `inference/`.
+- **`client/src/timeline/`**: The slider lives below the canvas in `App.tsx` layout, not inside the sidebar panel area. It warrants its own folder separate from `panels/`, which is the sidebar-only zone.
+- **`shared/src/types/timeline.ts`**: New domain, new type file — follows the existing `graph.ts` / `inference.ts` / `messages.ts` per-domain convention.
+
+---
 
 ## Architectural Patterns
 
-### Pattern 1: Pipeline with Event Bus Decoupling
+### Pattern 1: Periodic Snapshot on Delta Threshold (not wall-clock interval)
 
-**What:** Each stage in the analysis pipeline (watcher → parser → graph → inference → transport) communicates via a typed internal event bus rather than direct function calls.
+**What:** `SnapshotRecorder` subscribes to `graph.on('delta')` with an internal counter. Every 5 deltas OR when a structural change occurs (component added/removed), it calls `aggregator.aggregateSnapshot()` + `positionsRepository.findAll()` and persists one row to `graph_snapshots`.
 
-**When to use:** Always — this is the core structural pattern. Enables stages to be tested independently, replaced, and run at different rates.
+**When to use:** Always. Delta-threshold snapshotting is correct because the graph version counter is the natural clock for architecture evolution. Wall-clock intervals create empty snapshots during idle periods that pollute the timeline with noise.
 
-**Trade-offs:** Slight added complexity vs. direct calls; prevents tight coupling that would make the pipeline brittle as it grows.
-
-**Example:**
-```typescript
-// EventBus.ts — typed events for each stage transition
-interface PipelineEvents {
-  'file:changed': { path: string; mtime: number };
-  'parse:complete': { path: string; tree: SyntaxTree; imports: Import[] };
-  'graph:updated': { diff: GraphDiff };
-  'arch:event': { type: ArchEventType; payload: ArchEvent };
-  'risk:detected': { risks: Risk[] };
-}
-
-const bus = new TypedEventEmitter<PipelineEvents>();
-
-// Watcher emits, parser subscribes — no direct coupling
-bus.on('file:changed', ({ path }) => parserPool.enqueue(path));
-bus.on('parse:complete', (result) => graphBuilder.apply(result));
-bus.on('graph:updated', (diff) => inferenceEngine.analyze(diff));
-bus.on('arch:event', (event) => wsServer.broadcast(event));
-```
-
-### Pattern 2: Incremental Parse Cache + Diff
-
-**What:** Keep the previous syntax tree for each file in memory. When a file changes, pass the edit range to Tree-sitter's incremental parser. Compare the new dependency list against the cached list to compute only what changed.
-
-**When to use:** Always — this is what keeps latency under 1 second for large codebases. Full re-parse on every change is 10-20x slower (verified: Tree-sitter benchmarks show 70% reduction in parse time with incremental updates).
-
-**Trade-offs:** Memory overhead for caching trees. For a 5000-file codebase with average 10KB files, tree cache ~50MB — acceptable.
+**Trade-offs:** Storage grows linearly with graph activity. At ~8KB per snapshot (JSON of 50-component graph), 100 file saves per session produces ~20 snapshots = ~160KB. SQLite handles this trivially. No pruning needed initially; add TTL (30-day expiry) in a future phase.
 
 **Example:**
 ```typescript
-// TreeSitterParser.ts
-class IncrementalParser {
-  private treeCache = new Map<string, SyntaxTree>();
-  private contentCache = new Map<string, string>();
+// server/src/replay/SnapshotRecorder.ts
+export class SnapshotRecorder {
+  private deltaCount = 0;
+  private readonly SNAPSHOT_INTERVAL = 5;
 
-  async parse(filePath: string, newContent: string): Promise<ParseResult> {
-    const prevTree = this.treeCache.get(filePath);
-    const prevContent = this.contentCache.get(filePath);
+  constructor(
+    private readonly graph: DependencyGraph,
+    private readonly aggregator: ComponentAggregator,
+  ) {
+    graph.on('delta', (delta) => this.onDelta(delta));
+  }
 
-    let tree: SyntaxTree;
-    if (prevTree && prevContent) {
-      const edit = computeEdit(prevContent, newContent);
-      prevTree.edit(edit);  // Tree-sitter edit in-place
-      tree = this.parser.parse(newContent, prevTree);  // Incremental
-    } else {
-      tree = this.parser.parse(newContent);  // Full parse (first time)
+  private onDelta(delta: GraphDelta): void {
+    const isStructural =
+      delta.addedNodes.length > 0 || delta.removedNodeIds.length > 0;
+    this.deltaCount++;
+
+    if (isStructural || this.deltaCount >= this.SNAPSHOT_INTERVAL) {
+      this.deltaCount = 0;
+      this.persist(delta.version);
     }
+  }
 
-    this.treeCache.set(filePath, tree);
-    this.contentCache.set(filePath, newContent);
-    return extractDependencies(tree, filePath);
+  private persist(version: number): void {
+    const { nodes, edges } = this.aggregator.aggregateSnapshot(graph, db);
+    const positions = positionsRepository.findAll();
+    const id = db.insert(graphSnapshots).values({
+      version,
+      timestamp: new Date(),
+      nodesJson: JSON.stringify(nodes),
+      edgesJson: JSON.stringify(edges),
+      positionsJson: JSON.stringify(positions),
+    }).run().lastInsertRowid;
+
+    broadcast({ type: 'snapshot_created', snapshot: { id, version, timestamp: Date.now() } });
+  }
+
+  destroy(): void {
+    this.graph.off('delta', this.deltaHandler);
   }
 }
 ```
 
-### Pattern 3: Graph Delta + Version-Tagged WebSocket Push
+### Pattern 2: Replay Mode via Store Flag (not canvas-side logic)
 
-**What:** The server maintains a versioned graph state. When the graph changes, it computes a diff (added nodes, removed nodes, changed edges). Only the diff is pushed to the browser over WebSocket. The client applies patches to its local copy.
+**What:** `graphStore` gains a `replayMode: boolean` flag. When `true`, WsClient stops applying live `graph_delta` and `inference` messages to the stores. The timeline slider drives graph state by calling `graphStore.getState().applySnapshot()` with data fetched from `GET /api/snapshot/:id`. Exiting replay clears the flag and calls the existing `GET /api/snapshot` recovery endpoint to resync to live state.
 
-**When to use:** Always — sending full graph state on every change would be wasteful and would cause the client to re-render everything.
+**When to use:** Always for replay. The critical design principle: the canvas is unmodified. `ArchCanvas` reads from graphStore regardless of whether the source was a live WS message or a historical fetch. Replay is achieved entirely by graphStore state substitution.
 
-**Trade-offs:** Requires server to maintain version counter and client to track its version. Reconnection must re-send full state or missed deltas.
-
-**Example:**
-```typescript
-// GraphDiff.ts
-interface GraphDelta {
-  version: number;
-  timestamp: number;
-  addedNodes: ArchNode[];
-  removedNodeIds: string[];
-  updatedNodes: Partial<ArchNode>[];
-  addedEdges: ArchEdge[];
-  removedEdgeIds: string[];
-  archEvents: ArchEvent[];  // Detected architectural changes
-}
-
-// DeltaSerializer.ts
-function serializeDelta(prev: GraphState, next: GraphState): GraphDelta {
-  return {
-    version: next.version,
-    timestamp: Date.now(),
-    addedNodes: next.nodes.filter(n => !prev.nodeIndex.has(n.id)),
-    removedNodeIds: [...prev.nodeIndex.keys()].filter(id => !next.nodeIndex.has(id)),
-    updatedNodes: computeChangedNodes(prev, next),
-    addedEdges: next.edges.filter(e => !prev.edgeIndex.has(e.id)),
-    removedEdgeIds: [...prev.edgeIndex.keys()].filter(id => !next.edgeIndex.has(id)),
-    archEvents: next.pendingEvents,
-  };
-}
-```
-
-### Pattern 4: Stable Layout with Zone-Constrained Force Simulation
-
-**What:** Use a force-directed layout algorithm where existing nodes have their positions pinned (frozen), and only newly added nodes are simulated to find position. Nodes are constrained to their semantic zone (frontend left, API center-left, etc.) to enforce zone semantics.
-
-**When to use:** Always — avoids the catastrophic full-reshuffle problem that destroys user's mental map.
-
-**Trade-offs:** Layout is not globally optimal for the whole graph; it's locally optimal per addition. Acceptable tradeoff for stability.
+**Trade-offs:** ActivityFeed and RiskPanel continue receiving live WS messages unless `inferenceStore.replayMode` is also set. Both flags must be set together. Live messages received during replay should be buffered (not dropped) so the transition back to live is seamless — but buffering is an optimization; V1 can simply trigger a fresh snapshot fetch on exit.
 
 **Example:**
 ```typescript
-// IncrementalPlacer.ts
-function placeNewNode(
-  newNode: ArchNode,
-  existingNodes: ArchNode[],
-  zone: SemanticZone
-): Position {
-  // Pin all existing nodes — they won't move
-  const pinnedNodes = existingNodes.map(n => ({ ...n, fx: n.x, fy: n.y }));
+// client/src/store/timelineStore.ts — replay actions
+async function scrubToSnapshot(snapshotId: number): Promise<void> {
+  graphStore.setState({ replayMode: true });
+  inferenceStore.setState({ replayMode: true });
 
-  // Zone constraint: restrict starting position and force walls
-  const zoneBox = ZONE_BOUNDS[zone];
-  const startPos = randomInBox(zoneBox);
+  const res = await fetch(`/api/snapshot/${snapshotId}`);
+  const data = await res.json() as HistoricalSnapshot;
 
-  // Run limited simulation with only new node free to move
-  const sim = forceSimulation([...pinnedNodes, { ...newNode, x: startPos.x, y: startPos.y }])
-    .force('link', forceLink(getRelevantEdges(newNode, existingNodes)))
-    .force('collide', forceCollide(NODE_RADIUS))
-    .force('zone', zoneWallForce(zoneBox))
-    .stop();
+  // Re-use the existing applySnapshot — no canvas changes needed
+  graphStore.getState().applySnapshot({
+    type: 'initial_state',
+    version: data.version,
+    nodes: data.nodes,
+    edges: data.edges,
+    layoutPositions: data.positions,
+  });
 
-  sim.tick(50);  // Limited ticks — enough to settle new node
-  return { x: newNode.x!, y: newNode.y! };
+  timelineStore.setState({ currentSnapshotId: snapshotId });
+}
+
+function exitReplay(): void {
+  graphStore.setState({ replayMode: false });
+  inferenceStore.setState({ replayMode: false });
+  // Trigger existing recovery path to resync to live state
+  wsClient.requestSnapshot();
 }
 ```
 
-### Pattern 5: Event Sourcing for Time-Travel Replay
+### Pattern 3: Intent Inference by File Co-Change Clustering (heuristic, no LLM)
 
-**What:** Every architectural change event is appended to an immutable log in SQLite. The current graph state is a materialized view derived from replaying all events. Time-travel scrubs back by replaying events up to a given timestamp.
+**What:** `IntentAnalyzer` runs every 30 seconds (or on each `snapshot_created` event). It queries `changeEvents` for the last 5 minutes, then clusters events by 90-second temporal gaps. For each cluster it applies ordered heuristics to produce a labeled `IntentSession`.
 
-**When to use:** Required for the time-travel replay feature. Also provides audit trail and resilience — graph state is always recoverable from events.
+**Heuristics (ordered by priority):**
+1. `component_created` dominates + single zone → "Adding [ComponentName] to [zone]"
+2. `dependency_added` chain A→B→C + no new components → "Wiring [zone] dependencies"
+3. `component_merged` or `component_split` events → "Refactoring [zone] structure"
+4. Files span multiple zones + `dependency_added` → "Connecting [zone1] to [zone2]"
+5. Fallback → "Working in [zone]" (confidence 0.5 — always produces output)
 
-**Trade-offs:** Replay from origin gets slow for long-lived sessions. Mitigate with periodic snapshots (store full graph state at checkpoint, replay only events after snapshot).
+**When to use:** Always. No LLM. Heuristics run in <1ms, work offline, are deterministic, and cover the patterns developers actually care about. ArchLens is a local observation tool with no cloud dependency requirement (PROJECT.md constraint).
+
+**Trade-offs:** Heuristics miss unusual agent behaviors. Confidence score surfaces uncertainty. Fallback label prevents empty panel.
 
 **Example:**
 ```typescript
-// EventRepository.ts — append-only event log
-interface ChangeEvent {
-  id: number;          // Auto-increment, serves as version
-  timestamp: number;
-  event_type: string;  // 'node_added' | 'edge_added' | 'node_removed' etc.
-  payload: string;     // JSON
-  snapshot_id?: number; // If snapshot taken at this point
-}
+// server/src/replay/IntentAnalyzer.ts
+export function inferSession(events: ChangeEvent[]): IntentSession {
+  const zones = [...new Set(events.map(e => getZoneFromPayload(e.payload)))];
+  const hasCreated = events.some(e => e.eventType === 'component_created');
+  const hasDepsAdded = events.some(e => e.eventType === 'dependency_added');
+  const hasRefactor = events.some(
+    e => e.eventType === 'component_merged' || e.eventType === 'component_split'
+  );
 
-// GraphRepository.ts — snapshots for fast replay
-interface Snapshot {
-  id: number;
-  timestamp: number;
-  event_id: number;   // Latest event included in this snapshot
-  graph_state: string; // Full JSON of graph at this point
+  if (hasRefactor) {
+    return { label: `Refactoring ${zones.join(' + ')} structure`, confidence: 0.75 };
+  }
+  if (hasCreated && zones.length === 1) {
+    const createdEvent = events.find(e => e.eventType === 'component_created');
+    const name = getComponentNameFromPayload(createdEvent?.payload);
+    return { label: `Adding ${name ?? 'component'} in ${zones[0]}`, confidence: 0.85 };
+  }
+  if (hasDepsAdded && !hasCreated) {
+    return { label: `Wiring dependencies in ${zones.join(' + ')}`, confidence: 0.70 };
+  }
+  if (zones.length > 1 && hasDepsAdded) {
+    return { label: `Connecting ${zones[0]} to ${zones[1]}`, confidence: 0.65 };
+  }
+  return { label: `Working in ${zones.join(' + ')}`, confidence: 0.50 };
 }
-
-// Replay to timestamp T:
-// 1. Find latest snapshot before T
-// 2. Deserialize snapshot graph state
-// 3. Replay events from snapshot.event_id+1 to T
 ```
+
+---
 
 ## Data Flow
 
-### Primary Flow: File Change → Architecture Update
+### Time-Travel Replay Flow
 
 ```
-[File System]
-    │ change event (add/modify/delete)
+[User drags timeline scrubber]
     ↓
-[File Watcher — chokidar v5]
-    │ debounced (400ms window, batch)
+TimelineSlider → timelineStore.scrubToSnapshot(snapshotId)
     ↓
-[Change Queue]
-    │ (path, change type, priority)
+graphStore.setState({ replayMode: true })
+inferenceStore.setState({ replayMode: true })
     ↓
-[Parse Scheduler — Worker Thread Pool]
-    │ concurrent parse of changed files
+fetch GET /api/snapshot/:id        [NEW REST endpoint]
     ↓
-[Tree-sitter Parser — per-language]
-    │ incremental AST → extracted imports/exports/calls
+SnapshotRow from graph_snapshots table
     ↓
-[Dependency Graph Builder]
-    │ in-memory graph delta (nodes+edges added/removed)
+graphStore.applySnapshot(historicalData)
     ↓
-[Architectural Inference Engine]
-    │ zone classification, boundary detection, event detection
-    │ risk analysis, intent inference
+ArchCanvas re-renders via Zustand subscription (no canvas code changes)
     ↓
-[Event Bus: 'arch:event' emitted]
-    │ GraphDelta + ArchEvents
+IntentPanel reads timelineStore.sessionsAtVersion(snapshotVersion)
+
+[User clicks "Live" button]
     ↓
-[Persistence Layer — SQLite]
-    │ write-through: persist graph state + events
+graphStore.setState({ replayMode: false })
+inferenceStore.setState({ replayMode: false })
     ↓
-[WebSocket Server]
-    │ JSON delta message pushed
-    ↓
-[Browser WebSocket Client]
-    │ apply patch to client state store
-    ↓
-[Client State Store → Canvas Renderer]
-    │ animate changes (Pixi.js tweens, glow, pulse)
-    ↓
-[User Sees Updated Architecture Map]
+WsClient.requestSnapshot() → GET /api/snapshot → live state restored
 ```
 
-### Secondary Flow: Initial Load / Reconnect
+### Snapshot Creation Flow (Server)
 
 ```
-[Browser Opens / Reconnects]
-    │ WebSocket connect + send { type: 'sync_request', clientVersion: N }
+[File change detected]
     ↓
-[WebSocket Server]
-    │ If clientVersion == 0: send full graph state
-    │ If clientVersion < current: send events since clientVersion
-    ↓
-[Browser MessageHandler]
-    │ Populate store from full state OR apply missed deltas
-    ↓
-[Layout Engine]
-    │ Run zone-constrained layout for all nodes (first load only)
-    │ or restore persisted positions (subsequent loads)
-    ↓
-[Canvas Renderer]
-    │ Render full graph, then switch to delta mode
+Pipeline → DependencyGraph → graph.emit('delta')
+    ↓                              ↓
+[InferenceEngine                [SnapshotRecorder      ← NEW listener
+ existing listener]              onDelta() counter]
+    ↓                              ↓
+[existing broadcast]           [every 5 deltas OR structural]
+                                   ↓
+                               aggregator.aggregateSnapshot()
+                               positionsRepository.findAll()
+                                   ↓
+                               db.insert(graphSnapshots)
+                                   ↓
+                               broadcast({ type: 'snapshot_created', ... })
+                                   ↓
+                           WsClient → timelineStore.addSnapshot(meta)
 ```
 
-### State Management Flow
+### Intent Analysis Flow
 
 ```
-[SQLite (source of truth — server)]
-    │ read on startup → populate in-memory GraphState
+[30-second timer OR snapshot_created event]
     ↓
-[In-Memory GraphState (server)]
-    │ versioned, compare-and-swap updates
-    ↓ WebSocket delta push
-[Client GraphStore (Zustand)]
-    │ applyDelta() patches nodes/edges
-    ↓ (subscribe)
-[Canvas Renderer] ← imperative Pixi.js calls (NOT React re-render)
-[React UI Panels] ← React re-render on panel data changes only
+IntentAnalyzer.analyze()
+    ↓
+SELECT from change_events WHERE timestamp > (now - 5 minutes)
+    ↓
+Cluster events by 90-second temporal gaps → sessions[]
+    ↓
+inferSession(session) for each cluster
+    ↓
+db.upsert(intent_sessions)
+    ↓
+broadcast({ type: 'intent_update', sessions })
+    ↓
+WsClient → timelineStore.setIntentSessions(sessions)
+    ↓
+IntentPanel re-renders with latest inferred objective
 ```
 
-**Key insight:** The Canvas renderer must NOT go through React's render cycle. React manages UI panels (activity feed, risk panel, inspector). Pixi.js manages the canvas directly, subscribing to store changes imperatively. This separation is what enables 60fps rendering.
+### WS Connection Bootstrap (Modified)
 
-### Key Data Flows
+```
+[Client connects to /ws]
+    ↓
+websocketPlugin sends existing: initial_state
+    ↓
+websocketPlugin also sends NEW: timeline_meta  ← add to same connect handler
+  { snapshots: SnapshotMeta[], sessions: IntentSession[] }
+    ↓
+WsClient handles timeline_meta:
+  → timelineStore.initialize(snapshots, sessions)
+  → TimelineSlider renders with full history from first paint
+```
 
-1. **Incremental parse flow:** Only changed files are re-parsed. Previous syntax trees are edited in-place using Tree-sitter's edit API. Parse time per changed file: ~2-10ms for typical files.
+**Why `timeline_meta` over HTTP:** The existing pattern sends `initial_state` over WS on connect (websocket.ts line 183). Sending `timeline_meta` in the same handler eliminates a second HTTP roundtrip and keeps bootstrap atomic — the client has graph state and timeline state simultaneously.
 
-2. **Delta push flow:** Server computes diff between previous and current GraphState. Only diff (typically <5 nodes/edges per file change) pushed over WebSocket. Wire payload ~500 bytes per change vs. full graph at ~50KB.
+---
 
-3. **Layout update flow:** When new node arrives at client, IncrementalPlacer runs a 50-tick force simulation with all existing nodes pinned. New node finds stable position within its zone. No existing node coordinates change.
+## New SQLite Tables
 
-4. **Time-travel replay flow:** User scrubs scrubber to timestamp T. Client sends replay request. Server loads nearest snapshot, replays subsequent events in order, streams resulting graph states to client.
+```sql
+-- graph_snapshots: one row per periodic graph checkpoint
+-- Add to packages/server/src/db/schema.ts as Drizzle table definition
+CREATE TABLE graph_snapshots (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  version       INTEGER NOT NULL,
+  timestamp     INTEGER NOT NULL,   -- timestamp_ms
+  nodes_json    TEXT NOT NULL,      -- JSON: GraphNode[]
+  edges_json    TEXT NOT NULL,      -- JSON: GraphEdge[]
+  positions_json TEXT NOT NULL      -- JSON: Record<nodeId, {x,y,zone}>
+);
 
-## Scaling Considerations
+-- intent_sessions: one row per inferred agent work session
+CREATE TABLE intent_sessions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  start_version  INTEGER NOT NULL,
+  end_version    INTEGER NOT NULL,
+  label          TEXT NOT NULL,     -- e.g. "Adding Parser to api"
+  confidence     REAL NOT NULL,     -- 0.0–1.0
+  detected_at    INTEGER NOT NULL,  -- timestamp_ms
+  file_patterns  TEXT NOT NULL      -- JSON: string[] of matched file paths
+);
+```
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0-500 files | Single-threaded pipeline fine; no worker threads needed; SQLite in WAL mode |
-| 500-5000 files (target) | Worker thread pool for parsing (2-4 workers); debounce and batch file changes; incremental tree cache; zone-constrained layout runs in <100ms |
-| 5000+ files | Partition graph into sub-graphs per directory boundary; lazy-load off-screen nodes; stream results progressively; consider background indexing on startup |
+**Why SQLite (not separate JSON files):**
+- Drizzle ORM is already configured with migrations; two more tables require only schema additions
+- Transactional writes prevent partial snapshots corrupting replay
+- Version range queries (`WHERE version BETWEEN ? AND ?`) are idiomatic SQL
+- Consistent with the existing model — all state in one DB file
+- Storage estimate: 100 saves/session → ~20 rows × ~8KB = 160KB/session. Negligible.
 
-### Scaling Priorities
+---
 
-1. **First bottleneck:** Parsing throughput on initial codebase scan. 5000 files × 5ms/file = 25 seconds single-threaded. Fix: worker thread pool (4 workers → ~7 seconds).
-2. **Second bottleneck:** Force layout convergence with hundreds of nodes. Fix: limit simulation to new nodes only (Pattern 4). Existing node positions are frozen.
-3. **Third bottleneck:** WebSocket message size on first connect with large graph. Fix: compress full-state message; use gzip/brotli on Fastify responses.
+## New WebSocket Message Types
+
+Add to `packages/shared/src/types/timeline.ts` and include in `ServerMessage` union in `messages.ts`:
+
+```typescript
+// shared/src/types/timeline.ts
+
+export interface SnapshotMeta {
+  id: number;
+  version: number;
+  timestamp: number;
+}
+
+export interface IntentSession {
+  id: number;
+  startVersion: number;
+  endVersion: number;
+  label: string;        // Human-readable objective description
+  confidence: number;   // 0.0–1.0; shown as indicator in IntentPanel
+  detectedAt: number;
+}
+
+// Server → Client: new snapshot available (real-time update to timeline)
+export interface SnapshotCreatedMessage {
+  type: 'snapshot_created';
+  snapshot: SnapshotMeta;
+}
+
+// Server → Client: updated intent analysis result
+export interface IntentUpdateMessage {
+  type: 'intent_update';
+  sessions: IntentSession[];
+}
+
+// Server → Client: sent on WS connect alongside initial_state
+export interface TimelineMetaMessage {
+  type: 'timeline_meta';
+  snapshots: SnapshotMeta[];
+  sessions: IntentSession[];
+}
+```
+
+Add `SnapshotCreatedMessage | IntentUpdateMessage | TimelineMetaMessage` to the `ServerMessage` union in `messages.ts`.
+
+---
+
+## Integration Points with Existing Components
+
+### Server Integration
+
+| Existing Component | Integration Point | Change Required |
+|-------------------|-------------------|-----------------|
+| `DependencyGraph` | `graph.on('delta')` | No change — `SnapshotRecorder` subscribes as an additional listener, same pattern as `InferenceEngine` constructor |
+| `ComponentAggregator` | `aggregator.aggregateSnapshot()` | No change — `SnapshotRecorder` calls it; already called by websocketPlugin on every delta |
+| `websocketPlugin` | WS connect handler (line 183) | Add `timeline_meta` send after `initial_state`; add `snapshot_created` and `intent_update` to `broadcast()` callers |
+| `index.ts` `switchWatchRoot()` | Stop/start sequence | Add: `snapshotRecorder.destroy()`, clear `graph_snapshots` + `intent_sessions` tables, create new `SnapshotRecorder` + `IntentAnalyzer` |
+| `db/schema.ts` | Drizzle table definitions | Add `graphSnapshots` and `intentSessions` table exports + run Drizzle migration |
+| `eventsRepository` | Existing `changeEvents` table | `IntentAnalyzer` reads existing rows — no schema change, no repository change |
+
+### Client Integration
+
+| Existing Component | Integration Point | Change Required |
+|-------------------|-------------------|-----------------|
+| `graphStore` | Store interface + implementation | Add `replayMode: boolean` field and `setReplayMode(v: boolean)` action |
+| `inferenceStore` | Store interface + implementation | Add `replayMode: boolean` field; panels should not update during replay |
+| `WsClient.handleMessage()` | Switch statement | Add 3 new `case` branches following existing pattern |
+| `App.tsx` layout | Render structure | Add `<TimelineSlider />` between DirectoryBar and canvas+sidebar content; add `<IntentPanel />` to sidebar panel list |
+| `ArchCanvas` | **No change** | Reads from graphStore subscriptions; replay populates graphStore identically to live mode |
+| `NodeInspector` | **No change** | |
+| `RiskPanel` | **No change** | |
+| `ActivityFeed` | **No change** | |
+
+### Minimal Surface Area Principle
+
+`ArchCanvas`, `NodeRenderer`, `EdgeRenderer`, `ZoneRenderer`, `NodeInspector`, `RiskPanel`, and `ActivityFeed` remain completely unmodified. The replay illusion is achieved entirely through graphStore state substitution. This avoids brittle canvas-layer replay logic and keeps the diff surface small for testing.
+
+---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Full Graph Rebuild on Every File Change
+### Anti-Pattern 1: Wall-Clock Snapshot Intervals
 
-**What people do:** Re-scan all files, rebuild the entire dependency graph, and push the full state to the client on each change.
+**What people do:** `setInterval(() => takeSnapshot(), 60_000)` — snapshot every 60 seconds.
 
-**Why it's wrong:** For a 2000-file codebase, full rebuild takes 10-30 seconds and pushes 50-100KB per change. The 1-2 second latency target becomes impossible. Canvas re-renders all nodes causing jank.
+**Why it's wrong:** Creates identical snapshots during idle periods (user away from keyboard). Timeline fills with noise: 8 hours of inactivity = 480 empty snapshot slots. Scrubber becomes unusable.
 
-**Do this instead:** Maintain an incremental in-memory graph. When a file changes, update only the nodes/edges affected by that file. Compute a delta. Push only the delta.
+**Do this instead:** Snapshot on delta threshold (every 5 deltas) or structural change (component added/removed). Only persist when state actually changed.
 
-### Anti-Pattern 2: Rendering Graph State Through React's DOM
+### Anti-Pattern 2: Replay Logic Inside ArchCanvas
 
-**What people do:** Store graph nodes as React state. Use SVG or CSS-positioned divs for each node. Let React manage re-renders when graph changes.
+**What people do:** Build a replay controller inside `ArchCanvas` or `NodeRenderer` that directly feeds historical node/edge arrays to Konva layers.
 
-**Why it's wrong:** React re-render + SVG DOM updates cannot sustain 60fps with hundreds of animated nodes. SVG and Canvas (DOM-rendered) performance degrades sharply above 1000 elements. The constraint says "hundreds of nodes with smooth animations" — that requires GPU.
+**Why it's wrong:** ArchCanvas already subscribes to Zustand. Adding a second control path creates two sources of truth. Konva tween animations conflict between the live subscription and the replay feed, causing visual glitches.
 
-**Do this instead:** Keep Pixi.js canvas entirely outside React's lifecycle. React mounts a single `<canvas>` element. Pixi.js takes over that canvas imperatively. Graph store changes trigger imperative Pixi.js calls, not React re-renders.
+**Do this instead:** Replay by writing historical data into graphStore via the existing `applySnapshot()`. The canvas observes graphStore and re-renders exactly as it does for live data. Zero canvas changes required.
 
-### Anti-Pattern 3: Full Force-Directed Relayout on Every Update
+### Anti-Pattern 3: LLM for Intent Inference
 
-**What people do:** Run a complete force simulation over all nodes when any node is added or removed.
+**What people do:** Send the `changeEvents` log to an LLM API with a prompt asking "what is the agent working on?"
 
-**Why it's wrong:** A full force simulation with 200+ nodes takes 200-500ms and moves every node, destroying the user's mental map. With frequent AI agent changes, this causes constant visual churn.
+**Why it's wrong:** ArchLens is a local tool. An LLM call introduces: network latency (300–2000ms), API key management, cost per inference, and offline failure mode. The project constraint ("observation is the core value, not prescription") means simple heuristics describing what happened are preferable to probabilistic predictions.
 
-**Do this instead:** Pin all existing nodes with fixed coordinates. Run simulation for only the new node(s) within their zone boundary. 50 ticks with only 1-2 free nodes takes <5ms.
+**Do this instead:** Heuristic pattern matching on `changeEvents`. The structural patterns that matter (adding a component, wiring dependencies, refactoring a zone) are detectable from event types and zone labels. Heuristics run in <1ms, work offline, are deterministic.
 
-### Anti-Pattern 4: Synchronous Parsing on the Event Loop
+### Anti-Pattern 4: Storing File Source Content in Snapshots
 
-**What people do:** Call Tree-sitter parser synchronously in the main Node.js event loop.
+**What people do:** Include file AST data or source content in snapshot rows to enable "diff what changed between snapshots."
 
-**Why it's wrong:** Parsing a 1000-line file takes ~5-15ms. During an AI agent burst (20 files changed in 2 seconds), synchronous parsing blocks the WebSocket server from processing client messages, causing apparent freezes.
+**Why it's wrong:** Snapshot rows balloon from ~8KB to megabytes each. The value (source diff) is out of scope (PROJECT.md explicitly excludes "Video/screen recording of architecture evolution"). For file-level diffs, the files are on disk.
 
-**Do this instead:** Run Tree-sitter parsing in Node.js worker threads. The main thread stays free for WebSocket I/O. Use a bounded queue to prevent memory growth during bursts.
+**Do this instead:** Snapshots store component-level node/edge/position data only — the same shape as `InitialStateMessage`. This is the minimal necessary for timeline replay.
 
-### Anti-Pattern 5: Visualizing File-Level Relationships Directly
+### Anti-Pattern 5: Shared Snapshot Table Across Watch Roots
 
-**What people do:** Create one graph node per file, one edge per import. Show the raw dependency graph.
+**What people do:** Keep `graph_snapshots` rows across watch-root switches, adding a `watchRoot` column to filter by project.
 
-**Why it's wrong:** A 500-file codebase produces a hairball graph with 500 nodes and potentially thousands of edges. This is visually incomprehensible and defeats the purpose of architectural visualization.
+**Why it's wrong:** The timeline scrubber is per-session per-project. Snapshots from a previous project on the current scrubber are meaningless and confusing. The `switchWatchRoot()` flow already clears `graph_nodes` and `graph_edges`; not clearing snapshots creates a state inconsistency.
 
-**Do this instead:** Apply architectural inference to group files into higher-level concepts (services, modules, containers). 500 files might map to 20-50 architectural nodes. Edges represent service-level relationships, not file imports.
+**Do this instead:** `switchWatchRoot()` deletes all rows from `graph_snapshots` and `intent_sessions` in the same pass that clears `graph_nodes` and `graph_edges`. Timeline starts fresh for each watched directory.
 
-## Integration Points
+---
 
-### External Services
+## Build Order (Dependency-Aware)
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| File System (OS) | chokidar v5 wrapping Node.js fs.watch / FSEvents / inotify | Platform-specific watchers; chokidar abstracts OS differences |
-| Browser | WebSocket over ws:// (localhost) | No auth needed for local single-user app; Fastify handles |
-| SQLite | better-sqlite3 (synchronous bindings, faster than async) | Single file on disk; WAL mode for concurrent reads during writes |
+The time-travel and intent systems have a clear dependency chain that determines implementation order:
 
-### Internal Boundaries
+```
+Phase A: Foundation (no UI dependencies — can ship independently)
+  1. db/schema.ts — add graphSnapshots + intentSessions Drizzle tables + migration
+  2. shared/src/types/timeline.ts — SnapshotMeta, IntentSession, new message types
+  3. shared/src/types/messages.ts — extend ServerMessage union with 3 new types
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| File Watcher ↔ Parse Scheduler | EventBus 'file:changed' event | Decoupled; scheduler controls parse rate |
-| Parse Scheduler ↔ Tree-sitter Workers | Worker thread message passing (structured clone) | Parse trees are NOT transferable; return extracted data (plain objects) only |
-| Tree-sitter Workers ↔ Graph Builder | EventBus 'parse:complete' event | Workers post results back to main thread |
-| Graph Builder ↔ Inference Engine | EventBus 'graph:updated' event with GraphDiff | Inference runs asynchronously after graph updates |
-| Inference Engine ↔ WebSocket Server | EventBus 'arch:event' with GraphDelta | Server serializes and broadcasts |
-| WebSocket Server ↔ SQLite | Direct (persistence is synchronous write-through) | better-sqlite3 sync API fits server's async model cleanly |
-| Client WebSocket ↔ Client Store | MessageHandler applies patches to Zustand store | Store is the single source of truth on client |
-| Client Store ↔ Canvas Renderer | Direct imperative subscription (not React) | Critical: bypass React for canvas updates |
-| Client Store ↔ React Panels | React component subscription via Zustand hooks | Normal React data flow for non-canvas UI |
+Phase B: Server replay layer (depends on Phase A)
+  4. SnapshotRecorder — subscribe to graph delta, persist to graph_snapshots table
+  5. timelinePlugin — GET /api/timeline (list), GET /api/snapshot/:id (restore)
+  6. IntentAnalyzer — read changeEvents, cluster, heuristics, write intent_sessions, broadcast
+  7. index.ts modifications — wire SnapshotRecorder + IntentAnalyzer into startup and switchWatchRoot
+  8. websocketPlugin modification — send timeline_meta on connect
 
-## Build Order Implications
+Phase C: Client state layer (depends on Phase A types; can start parallel with Phase B)
+  9. timelineStore — Zustand store for snapshot list, replay position, intent sessions
+  10. graphStore modification — add replayMode field
+  11. inferenceStore modification — add replayMode field
+  12. WsClient modifications — handle 3 new message types, check replayMode flag
 
-The component dependency graph defines the natural build sequence:
+Phase D: Client UI (depends on Phase C being complete)
+  13. TimelineSlider — scrubber + Live/Pause controls (reads/writes timelineStore)
+  14. IntentPanel — intent label + confidence indicator (reads timelineStore)
+  15. App.tsx layout — add TimelineSlider below DirectoryBar, IntentPanel to sidebar
 
-1. **SQLite schema + repositories** — foundation; everything persists here
-2. **File Watcher + Change Queue** — simplest pipeline stage; no dependencies
-3. **Tree-sitter Parser + Worker Pool** — can be built/tested independently
-4. **Dependency Graph Builder + GraphDiff** — depends on parser output shape
-5. **Architectural Inference Engine** — depends on graph structure being stable
-6. **WebSocket Server + Delta Serialization** — depends on GraphDelta schema
-7. **Client WebSocket client + State Store** — depends on wire protocol being defined
-8. **Pixi.js Canvas Renderer + Layout Engine** — depends on node/edge schema
-9. **React UI Panels** — depends on store shape; can be built in parallel with canvas
-10. **Time-travel Replay** — layered on top of event log; defer to later phase
+Phase E: Watch-root integration (depends on Phase B server + Phase C client)
+  16. switchWatchRoot() — extend with snapshot/intent table clear + SnapshotRecorder/IntentAnalyzer recreation
+```
 
-The critical path is: Schema → Parser → Graph → Inference → WebSocket → Canvas. The UI panels and time-travel features are parallelizable after step 6.
+**Rationale for this order:**
+- Schema must exist before any server code can write to it (Phase A blocks Phase B)
+- Shared types must exist before both server and client reference them (Phase A blocks Phase B and C)
+- SnapshotRecorder must be running before timelinePlugin has data to serve
+- timelineStore must exist before TimelineSlider has state to read
+- UI components come last because they are pure consumers of the store layer
+- Phase B and Phase C can be built in parallel after Phase A completes — the server and client are decoupled during construction
+
+---
+
+## Scaling Considerations
+
+| Scale | Concern | Approach |
+|-------|---------|---------|
+| Single session (100 saves) | Snapshot storage | ~160KB — no action needed |
+| Long session (1000 saves) | Scrubber density | Group by session if snapshot count exceeds 100; show coarse then fine scrubbing |
+| Very large project (5000 files) | Snapshot row size | `nodes_json` grows proportionally; for >200 components, apply zlib compression on write (optional optimization) |
+| Multiple watch-root switches | Stale snapshot data | Clear on switch (see Anti-Pattern 5) |
+
+---
 
 ## Sources
 
-- Tree-sitter incremental parsing benchmarks (70% parse time reduction, 100ms/10k lines): [Incremental Parsing with Tree-sitter: Enhancing Code Analysis Performance](https://dasroot.net/posts/2026/02/incremental-parsing-tree-sitter-code-analysis/) — HIGH confidence (2026)
-- Tree-sitter Node.js WASM vs native bindings (WASM slower): [tree-sitter GitHub](https://github.com/tree-sitter/tree-sitter) — HIGH confidence (official)
-- Graph rendering: Canvas/WebGL threshold ~5000 nodes; WebGL holds to 10k+: [Graph visualization efficiency of popular web-based libraries](https://pmc.ncbi.nlm.nih.gov/articles/PMC12061801/) — HIGH confidence (peer reviewed)
-- D3 + Pixi.js decoupled rendering pattern: [Scale Up D3 Graph Visualization with PIXI.js](https://graphaware.com/blog/scale-up-your-d3-graph-visualisation-webgl-canvas-with-pixi-js/) — HIGH confidence (established pattern)
-- Force layout web worker pattern (layout off main thread): Same GraphAware article — MEDIUM confidence
-- Sticky nodes / incremental layout for mental map preservation: [Static and sticky force-directed layout in D3](https://kkschick.wordpress.com/2016/04/01/static-and-sticky-force-directed-layout-in-d3/) + [Cambridge Intelligence force layout docs](https://cambridge-intelligence.com/automatic-graph-layouts/) — MEDIUM confidence
-- WebSocket delta sync with JSON Patch: [Synchronizing state with WebSockets and JSON Patch](https://cetra3.github.io/blog/synchronising-with-websocket/) — MEDIUM confidence
-- Fastify performance (70-80k req/s vs Express 20-30k): [Express or Fastify in 2025](https://medium.com/codetodeploy/express-or-fastify-in-2025-whats-the-right-node-js-framework-for-you-6ea247141a86) — MEDIUM confidence
-- chokidar v5 ESM-only, Node 20+: [chokidar npm](https://www.npmjs.com/package/chokidar) — HIGH confidence (official)
-- Event sourcing for time-travel: [Time Travel using Event Sourcing Pattern](https://medium.com/@sudipto76/time-travel-using-event-sourcing-pattern-603a0551d2ff) + [Martin Fowler EventSourcing](https://martinfowler.com/eaaDev/EventSourcing.html) — HIGH confidence
-- WebSocket best practices (backpressure, message ordering): [Ably WebSocket Architecture Best Practices](https://ably.com/topic/websocket-architecture-best-practices) — MEDIUM confidence
+- [Konva Undo/Redo — State History Pattern](https://konvajs.org/docs/react/Undo-Redo.html) — confirmed: store-substitution is the idiomatic Konva replay approach; no canvas layer changes required — HIGH confidence (official docs)
+- [LangGraph SQLite Checkpointing](https://deepwiki.com/langchain-ai/langgraph/4.2-checkpoint-implementations) — reference for snapshot schema design; two-table approach (snapshots + sessions) validated — MEDIUM confidence (third-party analysis)
+- [Event Sourcing with SQLite](https://www.sqliteforum.com/p/building-event-sourcing-systems-with) — periodic snapshot + replay-from-checkpoint pattern — MEDIUM confidence
+- [Time Travel via Event Sourcing — Medium](https://medium.com/@sudipto76/time-travel-using-event-sourcing-pattern-603a0551d2ff) — temporal query approach confirmed — MEDIUM confidence
+- [Martin Fowler — Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) — foundational pattern reference — HIGH confidence
+- Direct codebase inspection of `packages/server/src/`, `packages/client/src/`, `packages/shared/src/` — all integration points identified from live code — HIGH confidence
 
 ---
-*Architecture research for: real-time code analysis and architecture visualization*
-*Researched: 2026-03-15*
+
+## Reference: Prior Architecture Notes (v1.0)
+
+The original architecture research (2026-03-15) documented the full system design including file watcher, tree-sitter parser, dependency graph, inference engine, WebSocket streaming, and Konva canvas patterns. Those components are unchanged in v3.0. Key decisions from that research that remain relevant:
+
+- **Agent-agnostic via file watchers** — time-travel captures the same change stream; no agent integration needed
+- **Canvas/WebGL rendering (not DOM)** — replay works by store substitution; no canvas changes needed (confirmed)
+- **SQLite WAL + Drizzle ORM** — two new tables extend the existing model cleanly
+- **Zustand for client state** — `replayMode` flag is a natural Zustand store addition; lightweight imperative access from WsClient works as designed
+- **WebSocket delta-only streaming** — three new message types extend the union; existing switch/case pattern accommodates them
+
+---
+
+*Architecture research for: ArchLens v3.0 — time-travel replay + intent inference*
+*Researched: 2026-03-16*

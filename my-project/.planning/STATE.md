@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 9 of 13 (Inspector Panel)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-03-16 — Phase 9 Plan 01 complete: NodeInspector rewrite with zone badge, 4 collapsible sections, ESC+X close
+Plan: 2 of 2 in current phase — Phase Complete
+Status: Complete
+Last activity: 2026-03-16 — Phase 9 Plan 02 complete: Dependency navigation polished with hover highlights, smooth Konva.Tween pan, singular/plural count badges, self-reference exclusion
 
 Progress: [████████░░░░░░░░░░░░] 35% (8/23 phases complete)
 
@@ -30,6 +30,7 @@ Progress: [████████░░░░░░░░░░░░] 35% (8/
 | 08 P01 | 1 | 1 min | Complete |
 | 08 P02 | 2 | 2 min | Complete |
 | 09 P01 | 2 | 3 min | Complete |
+| 09 P02 | 2 | 3 min | Complete |
 
 ## Accumulated Context
 
@@ -44,6 +45,9 @@ Key decisions relevant to v2.1:
 - Phase 8: Zod schemas now pass fileCount, keyExports, dependencyCount — all inspector fields available
 - Phase 8: Skip broadcast when all IDs unmapped — client never receives empty inference messages
 - [Phase 09-inspector-panel]: Zone badge colors defined as inline constant matching app palette; ESC key listener in App.tsx useEffect; dependency aggregation groups edges by target/source summing dependencyCount
+- [Phase 09-inspector-panel]: DependencyRow extracted as standalone component to isolate hover state per-row
+- [Phase 09-inspector-panel]: ViewportController.panToNode upgraded to Konva.Tween (0.3s EaseInOut) smooth animation
+- [Phase 09-inspector-panel]: Self-referencing edges excluded at filter level from both outgoing/incoming dependency lists
 
 ### Pending Todos
 
@@ -56,6 +60,6 @@ transmitted and validated by Zod schemas before reaching the client.
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T19:53:47.971Z
-**Stopped at:** Completed 09-inspector-panel-01-PLAN.md
+**Last session:** 2026-03-16T20:00:49.625Z
+**Stopped at:** Completed 09-inspector-panel-02-PLAN.md
 **Resume file:** None

@@ -36,7 +36,7 @@ See `milestones/v2.0-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** Turn the static architecture poster into a live, interactive system — clickable nodes, live risk and activity panels, animated canvas feedback, and the ability to watch any project directory.
 
-- [ ] **Phase 9: Inspector Panel** - Component node click opens a detail panel with files, exports, and dependencies
+- [x] **Phase 9: Inspector Panel** - Component node click opens a detail panel with files, exports, and dependencies (completed 2026-03-16)
 - [ ] **Phase 10: Risk Panel** - Risk list with severity badges, canvas highlight on click, mark-as-reviewed
 - [ ] **Phase 11: Activity Feed** - Live architectural events with colored dots, natural language, and relative timestamps
 - [ ] **Phase 12: Edge Interaction and Component Glow** - Edge hover/click on canvas plus pulse/fade animations for changed components
@@ -131,7 +131,7 @@ Plans:
 | 6. Canvas Renderer and Layout Engine | v1.0 | 4/4 | Complete | 2026-03-16 |
 | 7. React UI Shell and Activity Feed | v1.0 | 3/3 | Complete | 2026-03-16 |
 | 8. Data Pipeline Repair | v2.0 | 2/2 | Complete | 2026-03-16 |
-| 9. Inspector Panel | 1/2 | In Progress|  | - |
+| 9. Inspector Panel | 2/2 | Complete   | 2026-03-16 | - |
 | 10. Risk Panel | v2.1 | 0/2 | Not started | - |
 | 11. Activity Feed | v2.1 | 0/1 | Not started | - |
 | 12. Edge Interaction and Component Glow | v2.1 | 0/2 | Not started | - |

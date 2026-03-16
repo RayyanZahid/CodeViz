@@ -79,28 +79,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RISK-01 | — | Pending |
-| RISK-02 | — | Pending |
-| RISK-03 | — | Pending |
-| FEED-01 | — | Pending |
-| FEED-02 | — | Pending |
-| FEED-03 | — | Pending |
-| FEED-04 | — | Pending |
-| EDGE-01 | — | Pending |
-| EDGE-02 | — | Pending |
-| EDGE-03 | — | Pending |
-| WATCH-01 | — | Pending |
-| WATCH-02 | — | Pending |
-| WATCH-03 | — | Pending |
-| WATCH-04 | — | Pending |
-| GLOW-01 | — | Pending |
-| GLOW-02 | — | Pending |
+| RISK-01 | Phase 10 | Pending |
+| RISK-02 | Phase 10 | Pending |
+| RISK-03 | Phase 10 | Pending |
+| FEED-01 | Phase 11 | Pending |
+| FEED-02 | Phase 11 | Pending |
+| FEED-03 | Phase 11 | Pending |
+| FEED-04 | Phase 11 | Pending |
+| EDGE-01 | Phase 12 | Pending |
+| EDGE-02 | Phase 12 | Pending |
+| EDGE-03 | Phase 12 | Pending |
+| GLOW-01 | Phase 12 | Pending |
+| GLOW-02 | Phase 12 | Pending |
+| WATCH-01 | Phase 13 | Pending |
+| WATCH-02 | Phase 13 | Pending |
+| WATCH-03 | Phase 13 | Pending |
+| WATCH-04 | Phase 13 | Pending |
 
 **Coverage:**
 - v2.2 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 (awaiting roadmap)
+- Mapped to phases: 16
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after v2.2 milestone initialization*
+*Last updated: 2026-03-16 after v2.2 roadmap creation*

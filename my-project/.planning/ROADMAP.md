@@ -5,6 +5,7 @@
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-03-16)
 - ✅ **v2.0 Make It Live** — Phase 8 (shipped 2026-03-16)
 - ✅ **v2.1 Make It Live — Inspector Panel** — Phase 9 (shipped 2026-03-16)
+- 🚧 **v2.2 Make It Live — Interactive** — Phases 10-13 (in progress)
 
 ## Phases
 
@@ -41,14 +42,76 @@ See `milestones/v2.1-ROADMAP.md` for full phase details.
 
 </details>
 
-### Unassigned Phases (Next Milestone)
+### 🚧 v2.2 Make It Live — Interactive (In Progress)
 
-These phases were originally planned for v2.1 and carry over to the next milestone. Use `/gsd:new-milestone` to assign them.
+**Milestone Goal:** Complete all remaining interactive features so the architecture map becomes a live, usable supervision tool — risks surface with severity context, the activity feed streams live events, edges are interactive, changed components glow, and the user can point the tool at any codebase.
 
-- [ ] **Phase 10: Risk Panel** - Risk list with severity badges, canvas highlight on click, mark-as-reviewed (2 plans)
-- [ ] **Phase 11: Activity Feed** - Live architectural events with colored dots, natural language, and relative timestamps (1 plan)
-- [ ] **Phase 12: Edge Interaction and Component Glow** - Edge hover/click on canvas plus pulse/fade animations for changed components (2 plans)
-- [ ] **Phase 13: Watch Any Project** - Directory input in UI, env var support, fresh scan on change (2 plans)
+- [ ] **Phase 10: Risk Panel** - Live risk list with severity badges, click-to-highlight on canvas, mark-as-reviewed
+- [ ] **Phase 11: Activity Feed** - Streaming architectural events with colored dots, natural language, and relative timestamps
+- [ ] **Phase 12: Edge Interaction and Component Glow** - Edge hover/click on canvas plus pulse/fade animations for changed components
+- [ ] **Phase 13: Watch Any Project** - Directory input in UI, env var support, fresh scan on directory change
+
+## Phase Details
+
+### Phase 10: Risk Panel
+**Goal**: Users can see live architectural risks with severity context and act on them from the panel
+**Depends on**: Phase 9 (Inspector Panel patterns established; inference engine already detects risks)
+**Requirements**: RISK-01, RISK-02, RISK-03
+**Success Criteria** (what must be TRUE):
+  1. The risk panel lists every detected risk with a red badge for critical severity and an orange badge for warning severity
+  2. Clicking a risk in the panel highlights the offending component on the canvas and pans to it
+  3. Each risk entry has a "mark as reviewed" control that removes it from the active list
+  4. When new risks are detected via WebSocket, they appear in the panel without a page reload
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: Risk panel UI — severity badges, live WebSocket binding, reviewed dismissal
+- [ ] 10-02: Canvas highlight and pan-to integration for risk click
+
+### Phase 11: Activity Feed
+**Goal**: Users see a live stream of architectural events described in natural language within 3 seconds of a file save
+**Depends on**: Phase 10 (panel layout patterns; event pipeline already corroborates events server-side)
+**Requirements**: FEED-01, FEED-02, FEED-03, FEED-04
+**Success Criteria** (what must be TRUE):
+  1. Saving a file causes a new event to appear in the activity feed within 3 seconds
+  2. Each feed entry reads as a natural-language sentence (e.g., "Parser modified — 2 files changed")
+  3. Each entry has a colored dot: green for component creation, blue for dependency change, orange for risk
+  4. Each entry shows a relative timestamp that updates over time ("3s ago", "1m ago", "5m ago")
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: Activity feed panel — live event binding, colored dots, natural language, relative timestamps
+
+### Phase 12: Edge Interaction and Component Glow
+**Goal**: Users can interact with edges to understand dependencies, and changed components pulse visually to draw attention
+**Depends on**: Phase 11 (canvas interaction patterns; AnimationQueue already exists)
+**Requirements**: EDGE-01, EDGE-02, EDGE-03, GLOW-01, GLOW-02
+**Success Criteria** (what must be TRUE):
+  1. Hovering over an edge shows a tooltip with source component, target component, dependency count, and import symbols
+  2. Clicking an edge highlights both endpoint components on the canvas
+  3. A thickness legend in a canvas corner explains what thin, medium, and thick edges represent
+  4. When files in a component change, the node pulses or glows for 2-3 seconds
+  5. A component that changed recently has a visible bright border that fades over 30 seconds
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: Edge hover tooltip and click-to-highlight endpoints
+- [ ] 12-02: Edge thickness legend, component glow pulse, and 30-second fade border
+
+### Phase 13: Watch Any Project
+**Goal**: Users can point the tool at any directory and immediately begin watching it without restarting the server
+**Depends on**: Phase 12 (UI patterns complete; ARCHLENS_WATCH_ROOT env var already implemented server-side)
+**Requirements**: WATCH-01, WATCH-02, WATCH-03, WATCH-04
+**Success Criteria** (what must be TRUE):
+  1. Typing a directory path in the UI input and pressing Enter starts watching that directory
+  2. Setting the ARCHLENS_WATCH_ROOT environment variable before starting sets the initial watched directory
+  3. After changing the watched directory, the canvas clears, the graph resets, and a fresh scan begins
+  4. The tool correctly builds and displays the architecture graph for an external project (not the ArchLens codebase itself)
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: Server-side watch-root switching endpoint and fresh scan on directory change
+- [ ] 13-02: Client-side directory input UI, env var initial value, and canvas reset on change
 
 ## Progress
 
@@ -63,7 +126,7 @@ These phases were originally planned for v2.1 and carry over to the next milesto
 | 7. React UI Shell and Activity Feed | v1.0 | 3/3 | Complete | 2026-03-16 |
 | 8. Data Pipeline Repair | v2.0 | 2/2 | Complete | 2026-03-16 |
 | 9. Inspector Panel | v2.1 | 2/2 | Complete | 2026-03-16 |
-| 10. Risk Panel | — | 0/2 | Not started | - |
-| 11. Activity Feed | — | 0/1 | Not started | - |
-| 12. Edge Interaction and Component Glow | — | 0/2 | Not started | - |
-| 13. Watch Any Project | — | 0/2 | Not started | - |
+| 10. Risk Panel | v2.2 | 0/2 | Not started | - |
+| 11. Activity Feed | v2.2 | 0/1 | Not started | - |
+| 12. Edge Interaction and Component Glow | v2.2 | 0/2 | Not started | - |
+| 13. Watch Any Project | v2.2 | 0/2 | Not started | - |

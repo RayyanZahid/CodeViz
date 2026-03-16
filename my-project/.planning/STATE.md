@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** Milestone v2.2 — Make It Live — Interactive
+**Current focus:** v2.2 — Phase 10: Risk Panel
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-16 — Milestone v2.2 started
+Phase: 10 of 13 (Risk Panel)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-03-16 — v2.2 roadmap created, phases 10-13 defined
+
+Progress: [█████████░░░░] 69% (9/13 phases complete)
 
 ## Performance Metrics
 
@@ -40,16 +42,22 @@ See `milestones/v1.0-ROADMAP.md` for v1.0 phase-level decisions.
 See `milestones/v2.0-ROADMAP.md` for v2.0 phase-level decisions.
 See `milestones/v2.1-ROADMAP.md` for v2.1 phase-level decisions.
 
+Recent decisions relevant to v2.2:
+- Risk detector already fires circular deps, boundary violations, excessive fan-out — no server work needed for Phase 10
+- Event corroborator already fires component_created, dependency_added, etc. — no server work needed for Phase 11
+- ARCHLENS_WATCH_ROOT already implemented server-side — Phase 13 is primarily a UI + endpoint concern
+- AnimationQueue already exists — Phase 12 glow work is integration, not greenfield
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-None — all shipped milestones clean. Ready for requirements definition.
+None — all v2.2 server-side infrastructure is in place. All four phases are UI-forward work building on existing pipelines.
 
 ## Session Continuity
 
 **Last session:** 2026-03-16
-**Stopped at:** Milestone v2.2 initialization
+**Stopped at:** v2.2 roadmap creation (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability updated)
 **Resume file:** None

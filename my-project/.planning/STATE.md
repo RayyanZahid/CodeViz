@@ -35,6 +35,7 @@ Progress: [███████████░░] 84% (11/13 phases complete)
 | 10 P01 | 2 | 4 min | Complete |
 | 10 P02 | 1 | 3 min | Complete (human-verified) |
 | 11 P01 | 2 | 3 min | Complete |
+| Phase 12-edge-interaction-and-component-glow P01 | 4 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,9 @@ Phase 11 Plan 01 decisions:
 - ActivityItem.event made optional and nodeId added as first-class field for clean batching
 - applyGraphDelta called immediately (not batched with queueDelta) for <3s feed latency (FEED-01)
 - Risk feed entries prepended directly without architectural-event batching (separate concerns)
+- [Phase 12-01]: listening:true on Konva.Arrow replaces listening:false — edges now participate in hit detection; hitStrokeWidth:15 extends clickable area invisibly
+- [Phase 12-01]: HTML tooltip overlay (not Konva text) for crisp text and full CSS styling; tooltip position clamped to canvas bounds
+- [Phase 12-01]: clearEdgeHighlight() resets both edge style and node selection — unified clear path prevents visual state leakage
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T21:58:48.929Z
-**Stopped at:** Phase 12 context gathered
-**Resume file:** .planning/phases/12-edge-interaction-and-component-glow/12-CONTEXT.md
+**Last session:** 2026-03-16T22:16:55.580Z
+**Stopped at:** Completed 12-edge-interaction-and-component-glow-01-PLAN.md
+**Resume file:** None

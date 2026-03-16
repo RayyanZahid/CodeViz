@@ -22,8 +22,8 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 
 ### Edge Interaction
 
-- [ ] **EDGE-01**: User can hover over an edge to see a tooltip with source, target, dependency count, and import symbols
-- [ ] **EDGE-02**: User can click an edge to highlight both endpoint components
+- [x] **EDGE-01**: User can hover over an edge to see a tooltip with source, target, dependency count, and import symbols
+- [x] **EDGE-02**: User can click an edge to highlight both endpoint components
 - [ ] **EDGE-03**: A thickness legend in the corner explains what thin/medium/thick edges mean
 
 ### Watch Any Project
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FEED-02 | Phase 11 | Complete |
 | FEED-03 | Phase 11 | Complete |
 | FEED-04 | Phase 11 | Complete |
-| EDGE-01 | Phase 12 | Pending |
-| EDGE-02 | Phase 12 | Pending |
+| EDGE-01 | Phase 12 | Complete |
+| EDGE-02 | Phase 12 | Complete |
 | EDGE-03 | Phase 12 | Pending |
 | GLOW-01 | Phase 12 | Pending |
 | GLOW-02 | Phase 12 | Pending |

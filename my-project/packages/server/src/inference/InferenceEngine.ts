@@ -60,6 +60,12 @@ export class InferenceEngine extends EventEmitter<InferenceEngineEvents> {
   private readonly graph: DependencyGraph;
 
   /**
+   * Named bound handler for graph delta events — stored so it can be removed
+   * from the graph emitter when destroy() is called on directory switch.
+   */
+  private readonly deltaHandler: (delta: GraphDelta) => void;
+
+  /**
    * Creates an InferenceEngine and subscribes to graph delta events.
    *
    * @param graph     - The DependencyGraph instance to subscribe to.
@@ -78,9 +84,12 @@ export class InferenceEngine extends EventEmitter<InferenceEngineEvents> {
     this.corroborator = new EventCorroborator();
     this.riskDetector = new RiskDetector();
 
+    // Store handler reference so destroy() can unsubscribe cleanly.
+    this.deltaHandler = (delta) => this.processDelta(delta);
+
     // Subscribe to graph delta events — the InferenceEngine must be registered
     // BEFORE pipeline.start() so it sees every delta from the initial scan.
-    graph.on('delta', (delta) => this.processDelta(delta));
+    graph.on('delta', this.deltaHandler);
   }
 
   // ---------------------------------------------------------------------------
@@ -104,10 +113,14 @@ export class InferenceEngine extends EventEmitter<InferenceEngineEvents> {
   }
 
   /**
-   * Stops the ConfigLoader's chokidar watcher for graceful shutdown.
-   * Must be called in the server's onClose hook.
+   * Stops the ConfigLoader's chokidar watcher and removes the graph delta
+   * listener for graceful shutdown or watch-root switching.
+   *
+   * Must be called in the server's onClose hook and before creating a new
+   * InferenceEngine for a different watch root.
    */
   destroy(): void {
+    this.graph.off('delta', this.deltaHandler);
     this.configLoader.destroy();
   }
 

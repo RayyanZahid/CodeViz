@@ -2,18 +2,13 @@ import fastifyWebsocket from '@fastify/websocket';
 import type { WebSocket } from '@fastify/websocket';
 import type { FastifyPluginAsync } from 'fastify';
 import type { DependencyGraph } from '../graph/DependencyGraph.js';
-import type { InferenceEngine } from '../inference/InferenceEngine.js';
 import type { ComponentAggregator } from '../graph/ComponentAggregator.js';
 import type {
   ServerMessage,
   GraphDeltaMessage,
-  InferenceMessage,
-  GraphNode,
-  GraphEdge,
   InferenceResult,
 } from '@archlens/shared/types';
-import type { GraphDelta, NodeMetadata } from '@archlens/shared/types';
-import { normalizeExt } from '../graph/DependencyGraph.js';
+import type { GraphDelta } from '@archlens/shared/types';
 import { db } from '../db/connection.js';
 
 // ---------------------------------------------------------------------------
@@ -28,7 +23,7 @@ import { db } from '../db/connection.js';
  * after the next inference cycle once the aggregator has processed them.
  * Returns null if nothing survives translation (caller skips broadcast).
  */
-function translateInferenceToComponentIds(
+export function translateInferenceToComponentIds(
   result: InferenceResult,
   fileToComp: Map<string, string>,
 ): InferenceResult | null {
@@ -100,8 +95,11 @@ const clients = new Set<WebSocket>();
 /**
  * Broadcasts a ServerMessage to all currently connected WebSocket clients.
  * Checks readyState before sending to avoid sending to closing/closed sockets.
+ *
+ * Exported so index.ts can use it to send watch_root_changed notifications
+ * and wire new InferenceEngine inference broadcasts on watch-root switch.
  */
-function broadcast(message: ServerMessage): void {
+export function broadcast(message: ServerMessage): void {
   const json = JSON.stringify(message);
   for (const socket of clients) {
     if (socket.readyState === socket.OPEN) {
@@ -111,31 +109,13 @@ function broadcast(message: ServerMessage): void {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helper: map internal NodeMetadata to wire-format GraphNode
-// ---------------------------------------------------------------------------
-
-function buildGraphNode(id: string, meta: NodeMetadata, inDegree: number, outDegree: number, zone?: string | null): GraphNode {
-  return {
-    id,
-    name: id.split('/').pop()?.replace(/\.\w+$/, '') ?? id,
-    nodeType: 'service_module',
-    zone: zone ?? null,
-    fileList: [meta.filePath],
-    incomingEdgeCount: inDegree,
-    outgoingEdgeCount: outDegree,
-    lastModified: new Date(meta.lastModified),
-  };
-}
-
-// ---------------------------------------------------------------------------
 // WebSocket Plugin
 // ---------------------------------------------------------------------------
 
 export const websocketPlugin: FastifyPluginAsync<{
   graph: DependencyGraph;
-  inferenceEngine: InferenceEngine;
   aggregator: ComponentAggregator;
-}> = async (fastify, { graph, inferenceEngine, aggregator }) => {
+}> = async (fastify, { graph, aggregator }) => {
   // Register @fastify/websocket as a sub-plugin so this plugin's routes
   // can use { websocket: true } route options.
   await fastify.register(fastifyWebsocket);
@@ -188,29 +168,9 @@ export const websocketPlugin: FastifyPluginAsync<{
     broadcast(message);
   });
 
-  // Subscribe to inference events ONCE at plugin registration time.
-  inferenceEngine.on('inference', (result) => {
-    // Translate file-level node IDs to component-level IDs before broadcasting.
-    // This ensures the client receives IDs that match rendered canvas nodes.
-    const fileToComp = aggregator.getFileToComponentMap();
-    const translated = translateInferenceToComponentIds(result, fileToComp);
-
-    // If all IDs were unmapped (nothing survived translation), skip broadcast.
-    // Per user decision: unmapped files appear after next inference cycle.
-    if (!translated) {
-      return;
-    }
-
-    const message: InferenceMessage = {
-      type: 'inference',
-      version: translated.graphVersion,
-      zoneUpdates: translated.zoneUpdates,
-      architecturalEvents: translated.architecturalEvents,
-      risks: translated.risks,
-    };
-
-    broadcast(message);
-  });
+  // Note: inference event subscription is wired in index.ts via wireInferenceBroadcast()
+  // so it can be re-registered when the watch root switches and a new InferenceEngine
+  // is created. The graph delta subscription above stays here since graph is stable.
 
   // Register the /ws route. The handler receives the WebSocket directly
   // (v10+ API — NOT the old `connection.socket` SocketStream pattern).

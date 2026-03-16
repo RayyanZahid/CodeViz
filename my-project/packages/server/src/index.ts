@@ -1,12 +1,15 @@
 import Fastify from 'fastify';
 import { healthPlugin } from './plugins/health.js';
-import { websocketPlugin } from './plugins/websocket.js';
+import { websocketPlugin, broadcast, translateInferenceToComponentIds } from './plugins/websocket.js';
 import { snapshotPlugin } from './plugins/snapshot.js';
+import { watchRootPlugin } from './plugins/watchRoot.js';
 import { db } from './db/connection.js';
+import { graphNodes, graphEdges } from './db/schema.js';
 import { DependencyGraph } from './graph/DependencyGraph.js';
 import { ComponentAggregator } from './graph/ComponentAggregator.js';
 import { Pipeline } from './pipeline/Pipeline.js';
 import { InferenceEngine } from './inference/InferenceEngine.js';
+import type { InferenceMessage, InferenceResult } from '@archlens/shared/types';
 
 // Reference db to trigger connection initialization and WAL mode setup
 void db;
@@ -26,15 +29,49 @@ fastify.register(healthPlugin);
 const graph = new DependencyGraph();
 graph.loadFromDatabase();
 
-// Watch root — used by both InferenceEngine and Pipeline
-const watchRoot = process.env.ARCHLENS_WATCH_ROOT ?? process.cwd();
+// Watch root — mutable so POST /api/watch can switch it at runtime
+let currentWatchRoot = process.env.ARCHLENS_WATCH_ROOT ?? process.cwd();
 
-// Initialize component aggregator for directory-level grouping
+// Initialize component aggregator for directory-level grouping (stable reference)
 const aggregator = new ComponentAggregator(graph);
 
 // Initialize inference engine — subscribes to graph delta events
-const inferenceEngine = new InferenceEngine(graph, watchRoot);
+let inferenceEngine = new InferenceEngine(graph, currentWatchRoot);
 inferenceEngine.loadPersistedZones();
+
+// ---------------------------------------------------------------------------
+// Inference broadcast helper — wired on startup and re-wired on watch switch
+// ---------------------------------------------------------------------------
+
+/**
+ * Subscribes to an InferenceEngine's 'inference' event and broadcasts the
+ * translated result to all connected WebSocket clients.
+ *
+ * Extracted as a named function so it can be re-registered when the
+ * inferenceEngine is replaced during a watch-root switch.
+ */
+function wireInferenceBroadcast(engine: InferenceEngine): void {
+  engine.on('inference', (result: InferenceResult) => {
+    const fileToComp = aggregator.getFileToComponentMap();
+    const translated = translateInferenceToComponentIds(result, fileToComp);
+
+    if (!translated) {
+      return;
+    }
+
+    const message: InferenceMessage = {
+      type: 'inference',
+      version: translated.graphVersion,
+      zoneUpdates: translated.zoneUpdates,
+      architecturalEvents: translated.architecturalEvents,
+      risks: translated.risks,
+    };
+
+    broadcast(message);
+  });
+}
+
+wireInferenceBroadcast(inferenceEngine);
 
 // Log delta events for visibility
 graph.on('delta', (delta) => {
@@ -55,17 +92,70 @@ inferenceEngine.on('inference', (result) => {
   console.log(`[Inference] v${result.graphVersion}: ${parts.join(', ')}`);
 });
 
-// Register WebSocket streaming plugin (must come after graph + inferenceEngine init)
-fastify.register(websocketPlugin, { graph, inferenceEngine, aggregator });
+// Register WebSocket streaming plugin (must come after graph + aggregator init)
+fastify.register(websocketPlugin, { graph, aggregator });
 
 // Register snapshot REST endpoint for reconnect recovery
 fastify.register(snapshotPlugin, { graph, aggregator });
 
 // Start pipeline — watches for file changes, parses, feeds into graph
-const pipeline = new Pipeline(
-  watchRoot,
+let pipeline = new Pipeline(
+  currentWatchRoot,
   (batch) => graph.onParseResult(batch),
 );
+
+// ---------------------------------------------------------------------------
+// Watch root switch — full reset sequence for runtime directory switching
+// ---------------------------------------------------------------------------
+
+/**
+ * Stops the current pipeline, destroys the current inference engine, resets
+ * all in-memory and SQLite graph state, and starts fresh on the new directory.
+ *
+ * Called by POST /api/watch after validating the new directory path.
+ */
+async function switchWatchRoot(newDir: string): Promise<void> {
+  // 1. Stop current pipeline (stops chokidar watcher)
+  await pipeline.stop();
+
+  // 2. Destroy current inference engine (removes graph delta listener + stops ConfigLoader)
+  inferenceEngine.destroy();
+
+  // 3. Clear in-memory graph state
+  graph.reset();
+
+  // 4. Purge SQLite graph tables — edges first due to FK constraint
+  db.delete(graphEdges).run();
+  db.delete(graphNodes).run();
+
+  // 5. Clear aggregator snapshot/map caches
+  aggregator.resetCache();
+
+  // 6. Broadcast watch_root_changed to all connected WebSocket clients
+  broadcast({ type: 'watch_root_changed', directory: newDir });
+
+  // 7. Update current watch root
+  currentWatchRoot = newDir;
+
+  // 8. Create new InferenceEngine for the new directory
+  inferenceEngine = new InferenceEngine(graph, newDir);
+  inferenceEngine.loadPersistedZones();
+
+  // 9. Wire inference broadcast on the new engine
+  wireInferenceBroadcast(inferenceEngine);
+
+  // 10. Create and start new Pipeline on the new directory
+  pipeline = new Pipeline(newDir, (batch) => graph.onParseResult(batch));
+  await pipeline.start();
+
+  console.log(`[ArchLens] Switched to watching ${newDir}`);
+}
+
+// Register watch root REST endpoints
+fastify.register(watchRootPlugin, {
+  getWatchRoot: () => currentWatchRoot,
+  setWatchRoot: switchWatchRoot,
+});
 
 // Graceful cleanup on server close — must be registered before listen()
 fastify.addHook('onClose', async () => {
@@ -76,7 +166,7 @@ fastify.addHook('onClose', async () => {
 const start = async () => {
   try {
     await pipeline.start();
-    console.log(`[ArchLens] Watching ${watchRoot} for changes`);
+    console.log(`[ArchLens] Watching ${currentWatchRoot} for changes`);
 
     await fastify.listen({ port: 3100, host: '0.0.0.0' });
   } catch (err) {

@@ -49,6 +49,17 @@ export class ComponentAggregator {
   }
 
   /**
+   * Clears all cached snapshot and file-to-component mapping state.
+   *
+   * Called when switching the watched directory so stale component IDs from
+   * the previous project do not interfere with the fresh scan.
+   */
+  resetCache(): void {
+    this.lastSnapshot = null;
+    this.fileToComponentMap = new Map();
+  }
+
+  /**
    * Returns the current file path -> component ID mapping.
    * The map is rebuilt on every aggregateSnapshot() call, keeping it current.
    * Each file maps to exactly one component ID (1:1 strict mapping).

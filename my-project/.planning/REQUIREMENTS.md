@@ -9,10 +9,10 @@ Requirements for v2.1 "Make It Live." Each maps to roadmap phases.
 
 ### Inspector Panel
 
-- [ ] **INSP-01**: User can click a component node to open the Inspector panel
-- [ ] **INSP-02**: Inspector shows component name and zone classification
-- [ ] **INSP-03**: Inspector shows file count and list of files in the component
-- [ ] **INSP-04**: Inspector shows key exports (important symbols the component provides)
+- [x] **INSP-01**: User can click a component node to open the Inspector panel
+- [x] **INSP-02**: Inspector shows component name and zone classification
+- [x] **INSP-03**: Inspector shows file count and list of files in the component
+- [x] **INSP-04**: Inspector shows key exports (important symbols the component provides)
 - [ ] **INSP-05**: Inspector shows outgoing dependencies with edge weight (e.g., "Database × 4 imports")
 - [ ] **INSP-06**: Inspector shows incoming dependencies (which components depend on it)
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INSP-01 | Phase 9 | Pending |
-| INSP-02 | Phase 9 | Pending |
-| INSP-03 | Phase 9 | Pending |
-| INSP-04 | Phase 9 | Pending |
+| INSP-01 | Phase 9 | Complete |
+| INSP-02 | Phase 9 | Complete |
+| INSP-03 | Phase 9 | Complete |
+| INSP-04 | Phase 9 | Complete |
 | INSP-05 | Phase 9 | Pending |
 | INSP-06 | Phase 9 | Pending |
 | RISK-01 | Phase 10 | Pending |

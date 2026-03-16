@@ -181,6 +181,8 @@ export class ViewportController {
 
   /**
    * Pan the viewport to center on a given world-space coordinate.
+   * Uses a smooth Konva.Tween animation (0.3s EaseInOut) per CONTEXT.md:
+   * "Pan-to-component on dependency click should be a smooth animation, not a jump"
    * Used by handleHighlightNode in App.tsx for cross-panel navigation.
    */
   panToNode(worldX: number, worldY: number): void {
@@ -189,10 +191,21 @@ export class ViewportController {
     // Center the given world point in the viewport
     const newX = stage.width() / 2 - worldX * scale;
     const newY = stage.height() / 2 - worldY * scale;
-    stage.position({ x: newX, y: newY });
-    stage.batchDraw();
-    this.persistViewport();
-    this.onViewportChange?.();
+
+    // Smooth animation instead of a hard position jump
+    const tween = new Konva.Tween({
+      node: stage,
+      x: newX,
+      y: newY,
+      duration: 0.3,
+      easing: Konva.Easings.EaseInOut,
+      onFinish: () => {
+        this.persistViewport();
+        this.onViewportChange?.();
+        tween.destroy();
+      },
+    });
+    tween.play();
   }
 
   // -------------------------------------------------------------------------

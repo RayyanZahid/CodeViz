@@ -125,7 +125,8 @@ function ShowMoreToggle({ extraCount, expanded, onToggle }: ShowMoreToggleProps)
 // CountBadge — small pill for dependency count
 // ---------------------------------------------------------------------------
 
-function CountBadge({ count, unit = 'imports' }: { count: number; unit?: string }) {
+function CountBadge({ count }: { count: number }) {
+  const label = count === 1 ? '1 import' : `${count} imports`;
   return (
     <span
       style={{
@@ -139,8 +140,59 @@ function CountBadge({ count, unit = 'imports' }: { count: number; unit?: string 
         whiteSpace: 'nowrap',
       }}
     >
-      {count} {unit}
+      ({label})
     </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DependencyRow — clickable row with hover highlight for dependency lists
+// ---------------------------------------------------------------------------
+
+interface DepEntry {
+  nodeId: string;
+  name: string;
+  count: number;
+}
+
+interface DependencyRowProps {
+  dep: DepEntry;
+  onHighlightNode?: (nodeId: string) => void;
+}
+
+function DependencyRow({ dep, onHighlightNode }: DependencyRowProps) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onClick={() => onHighlightNode?.(dep.nodeId)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '3px 10px',
+        cursor: onHighlightNode ? 'pointer' : 'default',
+        background: hovered && onHighlightNode ? 'rgba(255,255,255,0.05)' : 'transparent',
+        borderRadius: 3,
+        transition: 'background 0.1s ease',
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          color: onHighlightNode ? '#ffffffcc' : '#ffffffaa',
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+        title={dep.nodeId}
+      >
+        {dep.name}
+      </span>
+      <CountBadge count={dep.count} />
+    </div>
   );
 }
 
@@ -201,24 +253,18 @@ function InspectorContent({ selectedNodeId, onHighlightNode, onClose }: Inspecto
   const extraExportCount = keyExports.length - EXPORT_INITIAL;
 
   // -------------------------------------------------------------------------
-  // Dependencies Out — aggregate by targetId
+  // Dependencies Out — aggregate by targetId (skip self-referencing edges)
   // -------------------------------------------------------------------------
   const outgoingRaw = Array.from(edges.values()).filter(
-    (e) => e.sourceId === selectedNodeId
+    (e) => e.sourceId === selectedNodeId && e.targetId !== selectedNodeId
   );
-
-  interface DepEntry {
-    nodeId: string;
-    name: string;
-    count: number;
-  }
 
   const outgoingMap = new Map<string, DepEntry>();
   for (const edge of outgoingRaw) {
-    const existing = outgoingMap.get(edge.targetId);
+    const existingOut = outgoingMap.get(edge.targetId);
     const addCount = edge.dependencyCount ?? 1;
-    if (existing) {
-      existing.count += addCount;
+    if (existingOut) {
+      existingOut.count += addCount;
     } else {
       const targetNode = nodes.get(edge.targetId);
       outgoingMap.set(edge.targetId, {
@@ -231,10 +277,10 @@ function InspectorContent({ selectedNodeId, onHighlightNode, onClose }: Inspecto
   const outgoingDeps = Array.from(outgoingMap.values()).sort((a, b) => b.count - a.count);
 
   // -------------------------------------------------------------------------
-  // Dependencies In — aggregate by sourceId
+  // Dependencies In — aggregate by sourceId (skip self-referencing edges)
   // -------------------------------------------------------------------------
   const incomingRaw = Array.from(edges.values()).filter(
-    (e) => e.targetId === selectedNodeId
+    (e) => e.targetId === selectedNodeId && e.sourceId !== selectedNodeId
   );
 
   const incomingMap = new Map<string, DepEntry>();
@@ -431,33 +477,11 @@ function InspectorContent({ selectedNodeId, onHighlightNode, onClose }: Inspecto
           </div>
         ) : (
           outgoingDeps.map((dep) => (
-            <div
+            <DependencyRow
               key={dep.nodeId}
-              onClick={() => onHighlightNode?.(dep.nodeId)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '3px 10px',
-                cursor: onHighlightNode ? 'pointer' : 'default',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  color: onHighlightNode ? '#ffffffcc' : '#ffffffaa',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  textDecoration: onHighlightNode ? 'underline' : 'none',
-                  textDecorationColor: 'rgba(255,255,255,0.2)',
-                }}
-                title={dep.nodeId}
-              >
-                {dep.name}
-              </span>
-              <CountBadge count={dep.count} />
-            </div>
+              dep={dep}
+              onHighlightNode={onHighlightNode}
+            />
           ))
         )}
       </CollapsibleSection>
@@ -472,33 +496,11 @@ function InspectorContent({ selectedNodeId, onHighlightNode, onClose }: Inspecto
           </div>
         ) : (
           incomingDeps.map((dep) => (
-            <div
+            <DependencyRow
               key={dep.nodeId}
-              onClick={() => onHighlightNode?.(dep.nodeId)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '3px 10px',
-                cursor: onHighlightNode ? 'pointer' : 'default',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  color: onHighlightNode ? '#ffffffcc' : '#ffffffaa',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  textDecoration: onHighlightNode ? 'underline' : 'none',
-                  textDecorationColor: 'rgba(255,255,255,0.2)',
-                }}
-                title={dep.nodeId}
-              >
-                {dep.name}
-              </span>
-              <CountBadge count={dep.count} />
-            </div>
+              dep={dep}
+              onHighlightNode={onHighlightNode}
+            />
           ))
         )}
       </CollapsibleSection>

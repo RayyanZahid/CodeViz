@@ -191,6 +191,8 @@ export class WsClient {
         this.lastQueuedVersion = msg.version;
         // Cast to shared type — Zod schema uses relaxed string types for forward compat
         this.queueDelta(msg as unknown as GraphDeltaMessage);
+        // Route to inferenceStore immediately (not batched) for <3s feed latency (FEED-01)
+        inferenceStore.getState().applyGraphDelta(msg as unknown as GraphDeltaMessage);
         break;
       }
 

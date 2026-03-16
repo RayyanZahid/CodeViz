@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInferenceStore } from '../store/inferenceStore.js';
 import type { ActivityItem } from '../store/inferenceStore.js';
 
@@ -110,6 +110,15 @@ function EmptyState() {
 export function ActivityFeed() {
   const [collapsed, setCollapsed] = useState(false);
   const activityFeed = useInferenceStore((s) => s.activityFeed);
+
+  // Live timestamp ticking — forces re-render every 10s so relativeTime()
+  // recomputes for all visible items (FEED-04: timestamps update live)
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div

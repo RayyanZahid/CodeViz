@@ -62,11 +62,11 @@ See `milestones/v2.1-ROADMAP.md` for full phase details.
   2. Clicking a risk in the panel highlights the offending component on the canvas and pans to it
   3. Each risk entry has a "mark as reviewed" control that removes it from the active list
   4. When new risks are detected via WebSocket, they appear in the panel without a page reload
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: Risk panel UI — severity badges, live WebSocket binding, reviewed dismissal
-- [ ] 10-02: Canvas highlight and pan-to integration for risk click
+- [ ] 10-01-PLAN.md — Risk panel UI: severity badges, localStorage-persisted reviewed state, checkmark button, positive empty states
+- [ ] 10-02-PLAN.md — Canvas highlight and pan-to integration for risk click + end-to-end verification
 
 ### Phase 11: Activity Feed
 **Goal**: Users see a live stream of architectural events described in natural language within 3 seconds of a file save

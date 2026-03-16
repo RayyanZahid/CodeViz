@@ -82,6 +82,33 @@ Plans:
 Plans:
 - [ ] 11-01-PLAN.md — Wire graph delta + risk events into activity feed, enhanced natural-language sentences, live timestamp ticking
 
+### Phase 11.3: Fix journey test - Phase 11 Activity Feed - no matching test files found (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11.3 to break down)
+
+### Phase 11.2: Fix journey test Phase 10 Risk Panel no matching test files found (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11.2 to break down)
+
+### Phase 11.1: Fix: Journey Build and Start completes successfully (blocker) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11.1 to break down)
+
 ### Phase 12: Edge Interaction and Component Glow
 **Goal**: Users can interact with edges to understand dependencies, and changed components pulse visually to draw attention
 **Depends on**: Phase 11 (canvas interaction patterns; AnimationQueue already exists)
@@ -92,11 +119,11 @@ Plans:
   3. A thickness legend in a canvas corner explains what thin, medium, and thick edges represent
   4. When files in a component change, the node pulses or glows for 2-3 seconds
   5. A component that changed recently has a visible bright border that fades over 30 seconds
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: Edge hover tooltip and click-to-highlight endpoints
-- [ ] 12-02: Edge thickness legend, component glow pulse, and 30-second fade border
+- [ ] 12-01-PLAN.md — Edge hover tooltip and click-to-highlight endpoints (EDGE-01, EDGE-02)
+- [ ] 12-02-PLAN.md — Edge thickness legend, component glow pulse, and 30-second fade border (EDGE-03, GLOW-01, GLOW-02)
 
 ### Phase 13: Watch Any Project
 **Goal**: Users can point the tool at any directory and immediately begin watching it without restarting the server

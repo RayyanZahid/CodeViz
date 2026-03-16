@@ -13,6 +13,8 @@ const GraphNodeSchema = z.object({
   incomingEdgeCount: z.number(),
   outgoingEdgeCount: z.number(),
   lastModified: z.string().or(z.number()).or(z.date()),
+  fileCount: z.number().optional(),
+  keyExports: z.array(z.string()).optional(),
 });
 
 const GraphEdgeSchema = z.object({
@@ -20,6 +22,7 @@ const GraphEdgeSchema = z.object({
   sourceId: z.string(),
   targetId: z.string(),
   edgeType: z.string(),
+  dependencyCount: z.number().optional(),
 });
 
 // ---------------------------------------------------------------------------

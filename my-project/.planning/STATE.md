@@ -47,6 +47,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-16
-**Stopped at:** Roadmap created for v3.0 (phases 14-18); ready to plan Phase 14
-**Resume file:** None
+**Last session:** 2026-03-16T23:55:22.189Z
+**Stopped at:** Phase 14 context gathered
+**Resume file:** .planning/phases/14-schema-foundation-and-shared-types/14-CONTEXT.md

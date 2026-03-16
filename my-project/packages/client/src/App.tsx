@@ -91,6 +91,19 @@ export function App() {
   }, []);
 
   // -------------------------------------------------------------------------
+  // ESC key handler — dismisses the inspector panel
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && selectedNodeId) {
+        setSelectedNodeId(null);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId]);
+
+  // -------------------------------------------------------------------------
   // Navigation handlers — delegate to ViewportController
   // -------------------------------------------------------------------------
   const handleZoomIn = useCallback(() => {
@@ -243,6 +256,7 @@ export function App() {
         <NodeInspector
           selectedNodeId={selectedNodeId}
           onHighlightNode={handleHighlightNode}
+          onClose={() => setSelectedNodeId(null)}
         />
         <RiskPanel
           onHighlightNode={handleHighlightNode}

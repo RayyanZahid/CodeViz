@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ArchCanvas } from './canvas/ArchCanvas.js';
 import type { EdgeTooltipData } from './canvas/ArchCanvas.js';
+import { EdgeLegend } from './canvas/EdgeLegend.js';
 import { MinimapStage } from './minimap/MinimapStage.js';
 import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
@@ -305,6 +306,9 @@ export function App() {
             {selectedNodeId}
           </div>
         )}
+
+        {/* Edge thickness legend — bottom-left corner of canvas area, above minimap */}
+        <EdgeLegend minimapVisible={minimapVisible} />
 
         {/* Pipeline health status dot — bottom-left corner of canvas area */}
         <PipelineStatusDot

@@ -24,7 +24,7 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 
 - [x] **EDGE-01**: User can hover over an edge to see a tooltip with source, target, dependency count, and import symbols
 - [x] **EDGE-02**: User can click an edge to highlight both endpoint components
-- [ ] **EDGE-03**: A thickness legend in the corner explains what thin/medium/thick edges mean
+- [x] **EDGE-03**: A thickness legend in the corner explains what thin/medium/thick edges mean
 
 ### Watch Any Project
 
@@ -35,8 +35,8 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 
 ### Visual Feedback
 
-- [ ] **GLOW-01**: Component node pulses/glows briefly (2-3 seconds) when files in it change
-- [ ] **GLOW-02**: Recently changed components have a subtle bright border that fades over 30 seconds
+- [x] **GLOW-01**: Component node pulses/glows briefly (2-3 seconds) when files in it change
+- [x] **GLOW-02**: Recently changed components have a subtle bright border that fades over 30 seconds
 
 ## Future Requirements
 
@@ -88,9 +88,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FEED-04 | Phase 11 | Complete |
 | EDGE-01 | Phase 12 | Complete |
 | EDGE-02 | Phase 12 | Complete |
-| EDGE-03 | Phase 12 | Pending |
-| GLOW-01 | Phase 12 | Pending |
-| GLOW-02 | Phase 12 | Pending |
+| EDGE-03 | Phase 12 | Complete |
+| GLOW-01 | Phase 12 | Complete |
+| GLOW-02 | Phase 12 | Complete |
 | WATCH-01 | Phase 13 | Pending |
 | WATCH-02 | Phase 13 | Pending |
 | WATCH-03 | Phase 13 | Pending |

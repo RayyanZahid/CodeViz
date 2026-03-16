@@ -36,6 +36,7 @@ Progress: [███████████░░] 84% (11/13 phases complete)
 | 10 P02 | 1 | 3 min | Complete (human-verified) |
 | 11 P01 | 2 | 3 min | Complete |
 | Phase 12-edge-interaction-and-component-glow P01 | 4 | 1 tasks | 3 files |
+| Phase 12-edge-interaction-and-component-glow P02 | 4 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Phase 11 Plan 01 decisions:
 - [Phase 12-01]: listening:true on Konva.Arrow replaces listening:false — edges now participate in hit detection; hitStrokeWidth:15 extends clickable area invisibly
 - [Phase 12-01]: HTML tooltip overlay (not Konva text) for crisp text and full CSS styling; tooltip position clamped to canvas bounds
 - [Phase 12-01]: clearEdgeHighlight() resets both edge style and node selection — unified clear path prevents visual state leakage
+- [Phase 12-02]: PULSE_MS=2_500 with PULSE_CYCLES=3 gives 3 sine oscillations during pulse phase
+- [Phase 12-02]: nodeRect cached in GlowEntry to avoid findOne overhead in RAF loop; Phase 1 re-applies border each tick to handle clearSelection stomping
+- [Phase 12-02]: EdgeLegend uses minimapVisible prop for bottom:180 vs bottom:16 offset to stay above minimap
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T22:16:55.580Z
-**Stopped at:** Completed 12-edge-interaction-and-component-glow-01-PLAN.md
+**Last session:** 2026-03-16T22:24:27.607Z
+**Stopped at:** Completed 12-edge-interaction-and-component-glow-02-PLAN.md
 **Resume file:** None

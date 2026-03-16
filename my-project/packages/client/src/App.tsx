@@ -7,7 +7,7 @@ import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
 import { ActivityFeed } from './panels/ActivityFeed.js';
 import { inferenceStore } from './store/inferenceStore.js';
-import { useGraphStore } from './store/graphStore.js';
+import { useGraphStore, graphStore } from './store/graphStore.js';
 import type { ConnectionStatus } from './store/graphStore.js';
 import type { ViewportController } from './canvas/ViewportController.js';
 
@@ -50,6 +50,10 @@ export function App() {
 
   // Pipeline health — read connection status from graphStore (updated by WsClient)
   const connectionStatus = useGraphStore((s) => s.connectionStatus);
+
+  // Scanning state — true while a watch-root switch is in progress
+  const scanning = useGraphStore((s) => s.scanning);
+  const nodeCount = useGraphStore((s) => s.nodes.size);
 
   // Ref to ViewportController — populated by ArchCanvas on init
   const viewportControllerRef = useRef<ViewportController | null>(null);
@@ -200,12 +204,19 @@ export function App() {
     <div
       style={{
         display: 'flex',
+        flexDirection: 'column',
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
         background: '#0a0a0f',
       }}
     >
+      {/* Top bar — directory input */}
+      <DirectoryBar />
+
+      {/* Main content — canvas + sidebar */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
       {/* Canvas area — flex-grow fills remaining width after sidebar */}
       <div
         ref={containerRef}
@@ -319,6 +330,29 @@ export function App() {
 
         {/* Minimap — bottom-right corner of canvas area */}
         <MinimapStage viewportRect={viewportRect} visible={minimapVisible} />
+
+        {/* Canvas scanning overlay — centered message when empty and scanning */}
+        {scanning && nodeCount === 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: 'rgba(255, 255, 255, 0.5)',
+              fontSize: 14,
+              fontFamily: 'monospace',
+              textAlign: 'center',
+              zIndex: 200,
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ marginBottom: 8 }}>Scanning project...</div>
+            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.3)' }}>
+              Components will appear as they are discovered
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right sidebar — fixed 280px width, three collapsible panels */}
@@ -345,7 +379,179 @@ export function App() {
         />
         <ActivityFeed />
       </div>
+
+      </div> {/* End main content (canvas + sidebar) */}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DirectoryBar — top bar with directory input, Watch button, error display,
+// scanning indicator. Reads watchRoot from graphStore; fetches GET /api/watch
+// on mount to pre-fill with the server's current watch root (ARCHLENS_WATCH_ROOT).
+// ---------------------------------------------------------------------------
+
+function DirectoryBar() {
+  const watchRoot = useGraphStore((s) => s.watchRoot);
+  const scanning = useGraphStore((s) => s.scanning);
+
+  const [inputValue, setInputValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // On mount: fetch GET /api/watch to pre-fill input with current watched directory
+  useEffect(() => {
+    fetch('/api/watch')
+      .then((res) => res.json() as Promise<{ directory: string }>)
+      .then((data) => {
+        graphStore.getState().setWatchRoot(data.directory);
+        setInputValue(data.directory);
+      })
+      .catch((err) => {
+        console.warn('[DirectoryBar] Failed to fetch current watch root:', err);
+      });
+  }, []);
+
+  // Sync inputValue when watchRoot changes externally (e.g., from WsClient watch_root_changed)
+  useEffect(() => {
+    setInputValue(watchRoot);
+  }, [watchRoot]);
+
+  const handleSubmit = useCallback(async () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || trimmed === graphStore.getState().watchRoot) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/watch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directory: trimmed }),
+      });
+
+      if (res.ok) {
+        setLoading(false);
+        // WsClient will handle the watch_root_changed message and update the store
+        // Blur input — return focus to canvas
+        inputRef.current?.blur();
+      } else {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? 'Invalid directory');
+        setLoading(false);
+      }
+    } catch {
+      setError('Failed to connect to server');
+      setLoading(false);
+    }
+  }, [inputValue]);
+
+  return (
+    <>
+      <div
+        style={{
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          background: '#0d0d14',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          gap: 8,
+          flexShrink: 0,
+        }}
+      >
+        {/* Label */}
+        <span
+          style={{
+            color: 'rgba(255, 255, 255, 0.4)',
+            fontSize: 12,
+            fontFamily: 'monospace',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Watching:
+        </span>
+
+        {/* Directory input — styled like a browser URL bar */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleSubmit();
+          }}
+          disabled={loading}
+          placeholder="/path/to/project"
+          style={{
+            flex: 1,
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 4,
+            padding: '4px 8px',
+            color: '#ffffffcc',
+            fontSize: 13,
+            fontFamily: 'monospace',
+            outline: 'none',
+          }}
+        />
+
+        {/* Watch button */}
+        <button
+          onClick={() => void handleSubmit()}
+          disabled={loading || !inputValue.trim()}
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: 4,
+            padding: '4px 12px',
+            color: '#ffffffcc',
+            fontSize: 12,
+            fontFamily: 'monospace',
+            cursor: loading ? 'wait' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {loading ? 'Switching...' : 'Watch'}
+        </button>
+
+        {/* Scanning indicator — appears during watch-root transition */}
+        {scanning && (
+          <span
+            style={{
+              color: '#eab308',
+              fontSize: 11,
+              fontFamily: 'monospace',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Scanning...
+          </span>
+        )}
+      </div>
+
+      {/* Inline error — red text below the top bar */}
+      {error && (
+        <div
+          style={{
+            padding: '4px 12px',
+            background: '#0d0d14',
+            color: '#ef4444',
+            fontSize: 11,
+            fontFamily: 'monospace',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            flexShrink: 0,
+          }}
+        >
+          {error}
+        </div>
+      )}
+    </>
   );
 }
 

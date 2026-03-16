@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v2.0 Make It Live — Phase 8: Data Pipeline Repair
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 8 of 13 (Data Pipeline Repair)
-Plan: 2 of 4 complete
-Status: In progress
-Last activity: 2026-03-16 — Phase 8 Plan 02 complete (inference ID translation + pipeline status dot)
+Phase: None — between milestones
+Plan: N/A
+Status: Milestone v2.0 complete
+Last activity: 2026-03-16 — v2.0 Make It Live milestone archived
 
-Progress: [█░░░░░░░░░] 4% (v2.0)
+Progress: Complete (v1.0 + v2.0)
 
 ## Performance Metrics
 
@@ -23,39 +23,20 @@ Progress: [█░░░░░░░░░] 4% (v2.0)
 - Average duration: ~30 min
 - Total execution time: ~10.5 hours (1 day)
 
-**By Phase (v1.0):**
-
-| Phase | Plans | Status |
-|-------|-------|--------|
-| 1-7 | 21/21 | Complete |
-
-**v2.0:** 2 plans completed.
+**v2.0:** 2 plans completed in 3 minutes total.
 
 | Phase | Plans | Duration | Status |
 |-------|-------|----------|--------|
-| 08 P01 | 1/4 | 1 min | Complete |
-| 08 P02 | 2/4 | 2 min | Complete |
-
-*Updated after each plan completion*
+| 08 P01 | 1/2 | 1 min | Complete |
+| 08 P02 | 2/2 | 2 min | Complete |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-See `milestones/v1.0-ROADMAP.md` for full v1.0 phase-level decisions.
-
-Recent decisions affecting v2.0:
-- Phase 8 is a prerequisite blocker: all sidebar panels (Inspector, Risk, Activity) will show empty/broken data until PIPE-01 through PIPE-04 are fixed.
-- Phases 9, 10, 11 depend on Phase 8 but are otherwise independent — can be executed sequentially without coordination overhead.
-- Phase 12 (edge + glow) is canvas-layer work, independent of sidebar panel logic.
-- Phase 13 (watch any project) is fully independent of all other v2.0 phases.
-- [Phase 08-data-pipeline-repair]: Zod schemas remain strict (no .passthrough()) — strip unknown fields for safety
-- [Phase 08-data-pipeline-repair]: fileToComponentMap is rebuilt on every aggregateSnapshot() call — always current, no staleness
-- [Phase 08-data-pipeline-repair]: getFileToComponentMap() returns the internal Map directly — callers should not mutate it
-- [Phase 08-data-pipeline-repair]: Translation happens server-side in the broadcast path — clients never receive file-level IDs, keeping graphStore consistent with canvas
-- [Phase 08-data-pipeline-repair]: Broadcast skipped entirely when all inference IDs are unmapped — avoids empty inference messages reaching the client
-- [Phase 08-data-pipeline-repair]: Status dot label hidden when connected (green) to stay unobtrusive; labels shown for yellow/red states only
+See `milestones/v1.0-ROADMAP.md` for v1.0 phase-level decisions.
+See `milestones/v2.0-ROADMAP.md` for v2.0 phase-level decisions.
 
 ### Pending Todos
 
@@ -63,10 +44,10 @@ None.
 
 ### Blockers/Concerns
 
-None — v1.0 shipped clean. v2.0 starts with known data pipeline gap (PIPE-01 to PIPE-04).
+None — v2.0 shipped with known gaps (22/26 requirements deferred). Remaining interactive features (Inspector, Risk Panel, Activity Feed, Edge Interaction, Watch Any Project) carry over to next milestone.
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T19:17:03.905Z
-**Stopped at:** Completed 08-02-PLAN.md
+**Last session:** 2026-03-16
+**Stopped at:** v2.0 milestone archived
 **Resume file:** None

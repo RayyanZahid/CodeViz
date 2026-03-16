@@ -28,10 +28,11 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - ✓ Semantic zone layout: frontend (left), API (center-left), services (center), data stores (right), external (outer), infrastructure (bottom) — v1.0
 - ✓ Sticky node coordinates — no full graph reshuffles — v1.0
 - ✓ Activity overlay (glow, pulse, progress indicators on active components) — v1.0
+- ✓ Fix data pipeline — Zod schemas pass all component fields, file-to-component ID mapping in WebSocket broadcasts — v2.0
+- ✓ Pipeline health status dot (green/yellow/red) for connection state — v2.0
 
 ### Active
 
-- [ ] Fix data pipeline — Zod schemas pass all component fields, file-to-component ID mapping in WebSocket broadcasts
 - [ ] Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies)
 - [ ] Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
 - [ ] Live Activity Feed — real-time architectural events with colored dots and relative timestamps
@@ -58,12 +59,13 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - AI-generated architectural suggestions — observation is the core value, not prescription
 - Plugin/extension API — internal event system must stabilize first
 
-## Current Milestone: v2.0 Make It Live
+## Current State
 
-**Goal:** Turn the static architecture poster into a live, interactive system that a human can actually use to supervise an AI coding agent in real time.
+Shipped v2.0 with data pipeline repair (Phase 8 only). Remaining v2.0 features (Phases 9-13) deferred to next milestone.
 
-**Target features:**
-- Fix data pipeline (Zod schema gaps + file-to-component ID mapping)
+**v2.0 delivered:** Zod schema fixes, file-to-component ID translation in WebSocket broadcasts, pipeline health status dot.
+
+**Next milestone goals:**
 - Interactive Inspector Panel (component details on click)
 - Live Risk Panel (mapped risks with severity + click-to-highlight)
 - Live Activity Feed (real-time architectural events)
@@ -73,10 +75,11 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ## Context
 
-Shipped v1.0 MVP with 9,540 LOC TypeScript in a single day.
+Shipped v1.0 MVP with 9,540 LOC TypeScript and v2.0 data pipeline repair in a single day.
 Tech stack: Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter (TS/JS/Python), @dagrejs/graphlib, Konva + d3-force, React 19 + Zustand, WebSocket streaming.
 Architecture: pnpm monorepo with 3 packages (server, client, shared).
-All 48 v1 requirements delivered. v2.0 focuses on making the system interactive and live — fixing the data pipeline, populating all sidebar panels, and adding real-time visual feedback.
+All 48 v1 requirements delivered. v2.0 delivered 4/26 requirements (data pipeline repair). Remaining 22 requirements carry over to next milestone.
+Known technical debt: Phases 9-13 not started — all interactive features still pending.
 
 ## Constraints
 
@@ -102,6 +105,10 @@ All 48 v1 requirements delivered. v2.0 focuses on making the system interactive 
 | SQLite WAL + Drizzle ORM | Sync API correct for write-heavy event logging | ✓ Good — write-through persistence reliable |
 | Zustand for client state | Lightweight, imperative subscriptions for Konva integration | ✓ Good — avoids React re-render overhead |
 | WebSocket delta-only streaming | Minimal bandwidth, version-tagged for ordering | ✓ Good — reconnect recovery works cleanly |
+| Strict Zod schemas (no passthrough) | Strip unknown fields for safety rather than forwarding them | ✓ Good — prevents unexpected data reaching client |
+| Server-side inference ID translation | Clients never see file-level IDs, keeping graphStore consistent with canvas | ✓ Good — single translation point at broadcast boundary |
+| Rebuild fileToComponentMap on every aggregation | Always current, no staleness risk | ✓ Good — simplicity over caching |
+| Skip broadcast when all IDs unmapped | Avoids empty inference messages reaching the client | ✓ Good — reduces no-op client processing |
 
 ---
-*Last updated: 2026-03-16 after v2.0 milestone start*
+*Last updated: 2026-03-16 after v2.0 milestone*

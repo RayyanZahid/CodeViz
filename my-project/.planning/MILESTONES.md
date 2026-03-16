@@ -25,3 +25,35 @@
 
 ---
 
+
+## v2.0 Make It Live (Shipped: 2026-03-16)
+
+**Delivered:** Fixed the data pipeline between backend inference and frontend rendering so all downstream interactive features receive correct, component-level data.
+
+**Phases completed:** 1 phase (of 6 planned), 2 plans, 4 tasks
+**Code changes:** 4 files, +202/-4 lines
+**Git range:** 5e59d3f → c8ca9f2
+**Timeline:** 2026-03-16 (same day as v1.0)
+
+**Key accomplishments:**
+- Fixed Zod schema gaps — client now validates and passes fileCount, keyExports, and dependencyCount fields
+- Exposed file-to-component lookup map from ComponentAggregator for ID translation
+- Server-side inference ID translation from file-level paths to component-level IDs in WebSocket broadcast path
+- Added pipeline health status dot (green/yellow/red) to client canvas UI
+
+### Known Gaps
+
+Milestone completed with 22 of 26 requirements unfinished (Phases 9-13 not started):
+
+- INSP-01 through INSP-06: Inspector Panel (Phase 9)
+- RISK-01 through RISK-03: Risk Panel (Phase 10)
+- FEED-01 through FEED-04: Activity Feed (Phase 11)
+- EDGE-01 through EDGE-03, GLOW-01, GLOW-02: Edge Interaction and Visual Feedback (Phase 12)
+- WATCH-01 through WATCH-04: Watch Any Project (Phase 13)
+
+**Archives:**
+- `milestones/v2.0-ROADMAP.md` — full phase details
+- `milestones/v2.0-REQUIREMENTS.md` — 4/26 requirements complete
+
+---
+

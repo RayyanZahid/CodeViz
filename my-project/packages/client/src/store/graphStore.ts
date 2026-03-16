@@ -22,12 +22,19 @@ export interface GraphStore {
   connectionStatus: ConnectionStatus;
   /** Set on reconnect when changes occurred while away. */
   changeSummary: ChangeSummary | null;
+  /** Currently watched directory — pre-filled from GET /api/watch on mount. */
+  watchRoot: string;
+  /** True while a watch-root switch is in progress (between watch_root_changed and first graph_delta). */
+  scanning: boolean;
 
   // Actions — called by WsClient, not React components
   applyDelta: (msg: GraphDeltaMessage) => void;
   applySnapshot: (msg: InitialStateMessage) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setChangeSummary: (summary: ChangeSummary | null) => void;
+  resetState: () => void;
+  setWatchRoot: (dir: string) => void;
+  setScanning: (scanning: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,6 +47,8 @@ export const useGraphStore = create<GraphStore>()((set, get) => ({
   version: 0,
   connectionStatus: 'connecting',
   changeSummary: null,
+  watchRoot: '',
+  scanning: false,
 
   applyDelta: (msg: GraphDeltaMessage) => {
     const current = get();
@@ -103,6 +112,24 @@ export const useGraphStore = create<GraphStore>()((set, get) => ({
 
   setChangeSummary: (summary: ChangeSummary | null) => {
     set({ changeSummary: summary });
+  },
+
+  resetState: () => {
+    set({
+      nodes: new Map<string, GraphNode>(),
+      edges: new Map<string, GraphEdge>(),
+      version: 0,
+      connectionStatus: 'connected', // Stay connected — WS is still alive
+      changeSummary: null,
+    });
+  },
+
+  setWatchRoot: (dir: string) => {
+    set({ watchRoot: dir });
+  },
+
+  setScanning: (scanning: boolean) => {
+    set({ scanning });
   },
 }));
 

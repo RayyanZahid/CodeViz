@@ -54,6 +54,8 @@ export interface InferenceStore {
   markRiskReviewed: (riskId: string) => void;
   /** Remove activeNodeIds entries older than 30 seconds. Call from setInterval. */
   pruneExpiredActive: () => void;
+  /** Reset all inference state on watch-root switch — called by WsClient on watch_root_changed. */
+  resetState: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -428,6 +430,14 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
     }
 
     set({ activeNodeIds: newActiveNodeIds });
+  },
+
+  resetState: () => {
+    set({
+      activityFeed: [],
+      risks: new Map<string, RiskItem>(),
+      activeNodeIds: new Map<string, number>(),
+    });
   },
 }));
 

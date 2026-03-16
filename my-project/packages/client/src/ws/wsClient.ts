@@ -165,6 +165,10 @@ export class WsClient {
         // but the runtime values are always valid NodeType/EdgeType string literals.
         graphStore.getState().applySnapshot(msg as unknown as InitialStateMessage);
         this.lastQueuedVersion = msg.version;
+        // If we were scanning after a watch root change, scanning is complete on initial_state
+        if (graphStore.getState().scanning) {
+          graphStore.getState().setScanning(false);
+        }
 
         // Compute change summary if we were previously connected
         if (this.previousVersion > 0 && msg.version > this.previousVersion) {
@@ -180,6 +184,11 @@ export class WsClient {
       }
 
       case 'graph_delta': {
+        // Turn off scanning indicator on first delta after watch root change
+        if (graphStore.getState().scanning) {
+          graphStore.getState().setScanning(false);
+        }
+
         // Version continuity check against lastQueuedVersion (not store version)
         // Per RESEARCH.md Pitfall 3: buffered deltas not yet applied to store
         if (this.lastQueuedVersion > 0 && msg.version !== this.lastQueuedVersion + 1) {
@@ -198,6 +207,28 @@ export class WsClient {
 
       case 'inference': {
         inferenceStore.getState().applyInference(msg as unknown as InferenceMessage);
+        break;
+      }
+
+      case 'watch_root_changed': {
+        console.log('[WS] Watch root changed to:', msg.directory);
+        // 1. Clear graph state — canvas will re-render empty
+        graphStore.getState().resetState();
+        // 2. Clear inference state — panels will show empty
+        inferenceStore.getState().resetState();
+        // 3. Update watchRoot in store for UI display
+        graphStore.getState().setWatchRoot(msg.directory);
+        // 4. Mark as scanning — UI will show loading indicators
+        graphStore.getState().setScanning(true);
+        // 5. Reset version tracking — fresh scan starts from version 0
+        this.lastQueuedVersion = 0;
+        this.previousVersion = 0;
+        // 6. Clear any pending deltas from the old project
+        if (this.batchTimer !== null) {
+          clearTimeout(this.batchTimer);
+          this.batchTimer = null;
+        }
+        this.pendingDeltas = [];
         break;
       }
 

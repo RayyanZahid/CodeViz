@@ -10,10 +10,86 @@ import type {
   InferenceMessage,
   GraphNode,
   GraphEdge,
+  InferenceResult,
 } from '@archlens/shared/types';
 import type { GraphDelta, NodeMetadata } from '@archlens/shared/types';
 import { normalizeExt } from '../graph/DependencyGraph.js';
 import { db } from '../db/connection.js';
+
+// ---------------------------------------------------------------------------
+// Inference ID translation — file-level to component-level
+// ---------------------------------------------------------------------------
+
+/**
+ * Translates inference result node IDs from file-level (e.g., src/parser/worker.ts)
+ * to component-level (e.g., src/parser) using the provided file-to-component map.
+ *
+ * Per user decision: unmapped file IDs are silently skipped — they will appear
+ * after the next inference cycle once the aggregator has processed them.
+ * Returns null if nothing survives translation (caller skips broadcast).
+ */
+function translateInferenceToComponentIds(
+  result: InferenceResult,
+  fileToComp: Map<string, string>,
+): InferenceResult | null {
+  // Translate zone updates — skip entries where file has no component mapping
+  const zoneUpdates = [];
+  for (const zu of result.zoneUpdates) {
+    const compId = fileToComp.get(zu.nodeId);
+    if (!compId) continue; // unmapped file, skip per user decision
+    zoneUpdates.push({ ...zu, nodeId: compId });
+  }
+  // Deduplicate zone updates by nodeId (multiple files in same component may have same zone)
+  const seenZoneNodes = new Set<string>();
+  const dedupedZoneUpdates = zoneUpdates.filter(zu => {
+    if (seenZoneNodes.has(zu.nodeId)) return false;
+    seenZoneNodes.add(zu.nodeId);
+    return true;
+  });
+
+  // Translate architectural events — skip if nodeId unmapped
+  const architecturalEvents = [];
+  for (const event of result.architecturalEvents) {
+    const compId = fileToComp.get(event.nodeId);
+    if (!compId) continue; // unmapped file, skip
+    const translated = { ...event, nodeId: compId };
+    if (event.targetNodeId) {
+      const targetCompId = fileToComp.get(event.targetNodeId);
+      if (targetCompId) {
+        translated.targetNodeId = targetCompId;
+      } else {
+        translated.targetNodeId = undefined; // target unmapped, clear it
+      }
+    }
+    architecturalEvents.push(translated);
+  }
+
+  // Translate risks — skip if nodeId unmapped
+  const risks = [];
+  for (const risk of result.risks) {
+    const compId = fileToComp.get(risk.nodeId);
+    if (!compId) continue; // unmapped file, skip
+    const translated = { ...risk, nodeId: compId };
+    if (risk.affectedNodeIds) {
+      translated.affectedNodeIds = risk.affectedNodeIds
+        .map(id => fileToComp.get(id))
+        .filter((id): id is string => id !== undefined);
+    }
+    risks.push(translated);
+  }
+
+  // If nothing survived translation, don't broadcast
+  if (dedupedZoneUpdates.length === 0 && architecturalEvents.length === 0 && risks.length === 0) {
+    return null;
+  }
+
+  return {
+    zoneUpdates: dedupedZoneUpdates,
+    architecturalEvents,
+    risks,
+    graphVersion: result.graphVersion,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Connected client set — managed at module level, not per-connection
@@ -114,12 +190,23 @@ export const websocketPlugin: FastifyPluginAsync<{
 
   // Subscribe to inference events ONCE at plugin registration time.
   inferenceEngine.on('inference', (result) => {
+    // Translate file-level node IDs to component-level IDs before broadcasting.
+    // This ensures the client receives IDs that match rendered canvas nodes.
+    const fileToComp = aggregator.getFileToComponentMap();
+    const translated = translateInferenceToComponentIds(result, fileToComp);
+
+    // If all IDs were unmapped (nothing survived translation), skip broadcast.
+    // Per user decision: unmapped files appear after next inference cycle.
+    if (!translated) {
+      return;
+    }
+
     const message: InferenceMessage = {
       type: 'inference',
-      version: result.graphVersion,
-      zoneUpdates: result.zoneUpdates,
-      architecturalEvents: result.architecturalEvents,
-      risks: result.risks,
+      version: translated.graphVersion,
+      zoneUpdates: translated.zoneUpdates,
+      architecturalEvents: translated.architecturalEvents,
+      risks: translated.risks,
     };
 
     broadcast(message);

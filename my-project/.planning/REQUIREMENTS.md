@@ -88,34 +88,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INSP-01 | — | Pending |
-| INSP-02 | — | Pending |
-| INSP-03 | — | Pending |
-| INSP-04 | — | Pending |
-| INSP-05 | — | Pending |
-| INSP-06 | — | Pending |
-| RISK-01 | — | Pending |
-| RISK-02 | — | Pending |
-| RISK-03 | — | Pending |
-| FEED-01 | — | Pending |
-| FEED-02 | — | Pending |
-| FEED-03 | — | Pending |
-| FEED-04 | — | Pending |
-| EDGE-01 | — | Pending |
-| EDGE-02 | — | Pending |
-| EDGE-03 | — | Pending |
-| GLOW-01 | — | Pending |
-| GLOW-02 | — | Pending |
-| WATCH-01 | — | Pending |
-| WATCH-02 | — | Pending |
-| WATCH-03 | — | Pending |
-| WATCH-04 | — | Pending |
+| INSP-01 | Phase 9 | Pending |
+| INSP-02 | Phase 9 | Pending |
+| INSP-03 | Phase 9 | Pending |
+| INSP-04 | Phase 9 | Pending |
+| INSP-05 | Phase 9 | Pending |
+| INSP-06 | Phase 9 | Pending |
+| RISK-01 | Phase 10 | Pending |
+| RISK-02 | Phase 10 | Pending |
+| RISK-03 | Phase 10 | Pending |
+| FEED-01 | Phase 11 | Pending |
+| FEED-02 | Phase 11 | Pending |
+| FEED-03 | Phase 11 | Pending |
+| FEED-04 | Phase 11 | Pending |
+| EDGE-01 | Phase 12 | Pending |
+| EDGE-02 | Phase 12 | Pending |
+| EDGE-03 | Phase 12 | Pending |
+| GLOW-01 | Phase 12 | Pending |
+| GLOW-02 | Phase 12 | Pending |
+| WATCH-01 | Phase 13 | Pending |
+| WATCH-02 | Phase 13 | Pending |
+| WATCH-03 | Phase 13 | Pending |
+| WATCH-04 | Phase 13 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22 ⚠️
+- Mapped to phases: 22
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after v2.1 milestone start*
+*Last updated: 2026-03-16 after v2.1 roadmap creation*

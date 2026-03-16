@@ -52,6 +52,38 @@ export interface InferenceStore {
 }
 
 // ---------------------------------------------------------------------------
+// localStorage helpers for reviewed risk persistence
+// ---------------------------------------------------------------------------
+
+const REVIEWED_RISKS_KEY = 'archlens-reviewed-risks';
+
+/** Read reviewed fingerprints from localStorage. Returns empty Set on failure. */
+function loadReviewedRisks(): Set<string> {
+  try {
+    const raw = localStorage.getItem(REVIEWED_RISKS_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set<string>(parsed as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Persist all fingerprints marked reviewed=true to localStorage. */
+function saveReviewedRisks(risks: Map<string, RiskItem>): void {
+  const reviewed: string[] = [];
+  for (const [fp, item] of risks) {
+    if (item.reviewed) reviewed.push(fp);
+  }
+  localStorage.setItem(REVIEWED_RISKS_KEY, JSON.stringify(reviewed));
+}
+
+// Module-level set — initialized once from localStorage on store creation.
+// Avoids reading localStorage on every applyInference call.
+let persistedReviewedIds: Set<string> = loadReviewedRisks();
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -171,17 +203,50 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
 
       const existing = newRisks.get(fp);
       if (existing) {
-        // Preserve reviewed state if previously reviewed
-        newRisks.set(fp, {
-          ...existing,
-          signal,
-        });
+        // Resurface logic: if risk was reviewed, check if signal has changed.
+        // Changed = different nodeId or different sorted affectedNodeIds.
+        if (existing.reviewed) {
+          const existingAffected = existing.signal.affectedNodeIds
+            ? [...existing.signal.affectedNodeIds].sort().join(',')
+            : '';
+          const incomingAffected = signal.affectedNodeIds
+            ? [...signal.affectedNodeIds].sort().join(',')
+            : '';
+          const nodeChanged = existing.signal.nodeId !== signal.nodeId;
+          const affectedChanged = existingAffected !== incomingAffected;
+
+          if (nodeChanged || affectedChanged) {
+            // Risk has changed — resurface as active
+            newRisks.set(fp, {
+              ...existing,
+              signal,
+              reviewed: false,
+            });
+            // Remove from persisted set and save
+            persistedReviewedIds.delete(fp);
+            // Will call saveReviewedRisks after all risks are processed
+          } else {
+            // Same signal data — keep reviewed state
+            newRisks.set(fp, {
+              ...existing,
+              signal,
+            });
+          }
+        } else {
+          // Not reviewed — update signal, preserve other state
+          newRisks.set(fp, {
+            ...existing,
+            signal,
+          });
+        }
       } else {
+        // New risk — check if previously reviewed (hydrate from localStorage)
+        const wasReviewed = persistedReviewedIds.has(fp);
         newRisks.set(fp, {
           id: fp,
           signal,
           firstSeen: now,
-          reviewed: false,
+          reviewed: wasReviewed,
         });
       }
     }
@@ -192,6 +257,9 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
         newRisks.delete(fp);
       }
     }
+
+    // Persist any resurface changes (reviewed→false) that occurred above
+    saveReviewedRisks(newRisks);
 
     // ------------------------------------------------------------------
     // 4. Update activeNodeIds — architectural event nodes + zone update nodes
@@ -249,6 +317,8 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
       newRisks.set(riskId, { ...existing, reviewed: true });
     }
     set({ risks: newRisks });
+    // Persist reviewed state to localStorage
+    saveReviewedRisks(newRisks);
   },
 
   pruneExpiredActive: () => {

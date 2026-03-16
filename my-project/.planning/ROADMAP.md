@@ -77,10 +77,10 @@ Plans:
   2. Each feed entry reads as a natural-language sentence (e.g., "Parser modified — 2 files changed")
   3. Each entry has a colored dot: green for component creation, blue for dependency change, orange for risk
   4. Each entry shows a relative timestamp that updates over time ("3s ago", "1m ago", "5m ago")
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 11-01: Activity feed panel — live event binding, colored dots, natural language, relative timestamps
+- [ ] 11-01-PLAN.md — Wire graph delta + risk events into activity feed, enhanced natural-language sentences, live timestamp ticking
 
 ### Phase 12: Edge Interaction and Component Glow
 **Goal**: Users can interact with edges to understand dependencies, and changed components pulse visually to draw attention
@@ -127,6 +127,6 @@ Plans:
 | 8. Data Pipeline Repair | v2.0 | 2/2 | Complete | 2026-03-16 |
 | 9. Inspector Panel | v2.1 | 2/2 | Complete | 2026-03-16 |
 | 10. Risk Panel | 2/2 | Complete    | 2026-03-16 | - |
-| 11. Activity Feed | v2.2 | 0/1 | Not started | - |
+| 11. Activity Feed | v2.2 | 0/1 | Planning complete | - |
 | 12. Edge Interaction and Component Glow | v2.2 | 0/2 | Not started | - |
 | 13. Watch Any Project | v2.2 | 0/2 | Not started | - |

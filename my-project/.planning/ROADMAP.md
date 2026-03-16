@@ -44,7 +44,10 @@ See `milestones/v1.0-ROADMAP.md` for full phase details.
   2. Edges arrive in the client with dependency metadata fields populated
   3. WebSocket inference broadcasts reference component-level IDs, not raw file paths
   4. Risk and activity events at the client carry IDs that match nodes rendered on the canvas
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 08-01-PLAN.md -- Fix Zod schema gaps and expose file-to-component lookup map
+- [ ] 08-02-PLAN.md -- Translate inference IDs to component-level and add status dot
 
 ### Phase 9: Inspector Panel
 **Goal**: Users can click any component node and see its full structural details in a sidebar panel
@@ -113,7 +116,7 @@ See `milestones/v1.0-ROADMAP.md` for full phase details.
 | 5. WebSocket Streaming and Client State | v1.0 | 2/2 | Complete | 2026-03-16 |
 | 6. Canvas Renderer and Layout Engine | v1.0 | 4/4 | Complete | 2026-03-16 |
 | 7. React UI Shell and Activity Feed | v1.0 | 3/3 | Complete | 2026-03-16 |
-| 8. Data Pipeline Repair | v2.0 | 0/TBD | Not started | - |
+| 8. Data Pipeline Repair | v2.0 | 0/2 | In progress | - |
 | 9. Inspector Panel | v2.0 | 0/TBD | Not started | - |
 | 10. Live Risk Panel | v2.0 | 0/TBD | Not started | - |
 | 11. Live Activity Feed | v2.0 | 0/TBD | Not started | - |

@@ -57,3 +57,29 @@ Milestone completed with 22 of 26 requirements unfinished (Phases 9-13 not start
 
 ---
 
+
+## v2.1 Make It Live — Inspector Panel (Shipped: 2026-03-16)
+
+**Delivered:** Interactive Inspector Panel — click any component node on the canvas to see full architectural details including files, key exports, and dependency graph with wiki-style navigation.
+
+**Phases completed:** 1 phase, 2 plans, 4 tasks
+**Code changes:** 3 files, +435/-296 lines
+**Total LOC:** 9,877 TypeScript
+**Git range:** c2c5b80 → 1fca4c0
+**Timeline:** 2026-03-16 (same day)
+
+**Key accomplishments:**
+- Redesigned NodeInspector with zone badge, 4 collapsible sections, and 3-way dismissal (X, ESC, empty canvas click)
+- Dependency aggregation with count badges and clickable navigation to pan+select target components
+- DependencyRow component with per-row hover highlights for wiki-style dependency browsing
+- Smooth Konva.Tween pan animation (0.3s EaseInOut) replacing hard position jumps
+- Self-referencing edge exclusion from both outgoing and incoming dependency lists
+- Singular/plural count badges with parentheses formatting
+
+**Scope Note:** Originally planned as Phases 9-13. Rescoped to Phase 9 only. Phases 10-13 carry over to next milestone.
+
+**Archives:**
+- `milestones/v2.1-ROADMAP.md` — full phase details
+- `milestones/v2.1-REQUIREMENTS.md` — 6/6 INSP requirements (complete)
+
+---

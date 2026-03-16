@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Runs as a local web app alongside the developer's editor.
+A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Users can click any component node to inspect its files, exports, and full dependency graph. Runs as a local web app alongside the developer's editor.
 
 ## Core Value
 
@@ -30,10 +30,13 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - ✓ Activity overlay (glow, pulse, progress indicators on active components) — v1.0
 - ✓ Fix data pipeline — Zod schemas pass all component fields, file-to-component ID mapping in WebSocket broadcasts — v2.0
 - ✓ Pipeline health status dot (green/yellow/red) for connection state — v2.0
+- ✓ Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies in/out) — v2.1
+- ✓ Inspector zone badge with color classification — v2.1
+- ✓ Dependency aggregation with count badges and clickable navigation — v2.1
+- ✓ Smooth pan animation when navigating to components — v2.1
 
 ### Active
 
-- [ ] Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies)
 - [ ] Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
 - [ ] Live Activity Feed — real-time architectural events with colored dots and relative timestamps
 - [ ] Edge interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
@@ -59,25 +62,14 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - AI-generated architectural suggestions — observation is the core value, not prescription
 - Plugin/extension API — internal event system must stabilize first
 
-## Current Milestone: v2.1 Make It Live
-
-**Goal:** Turn the static architecture poster into a live, interactive system that a human can actually use to supervise an AI coding agent in real time.
-
-**Target features:**
-- Interactive Inspector Panel — click a component node to see full details (files, exports, dependencies in/out)
-- Live Risk Panel — mapped risks with severity badges, click-to-highlight offending components, mark-as-reviewed
-- Live Activity Feed — real-time architectural events with colored dots and relative timestamps
-- Edge Interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
-- Watch Any Project — directory input in UI, env var support, fresh scan on directory change
-- Component Glow on Change — pulse/fade animations when files in a component are modified
-
 ## Context
 
-Shipped v1.0 MVP with 9,540 LOC TypeScript and v2.0 data pipeline repair in a single day.
+Shipped v1.0 MVP (9,540 LOC), v2.0 data pipeline repair, and v2.1 Inspector Panel all on the same day.
 Tech stack: Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter (TS/JS/Python), @dagrejs/graphlib, Konva + d3-force, React 19 + Zustand, WebSocket streaming.
 Architecture: pnpm monorepo with 3 packages (server, client, shared).
-All 48 v1 requirements delivered. v2.0 delivered 4/26 requirements (data pipeline repair). Remaining 22 requirements carry over to next milestone.
-Known technical debt: Phases 9-13 not started — all interactive features still pending.
+Total LOC: 9,877 TypeScript across all packages.
+All v1.0 requirements delivered (48). v2.0 delivered pipeline repair (4 requirements). v2.1 delivered Inspector Panel (6 INSP requirements).
+Remaining: 5 active requirements for next milestone (Risk Panel, Activity Feed, Edge Interaction, Watch Any Project, Component Glow).
 
 ## Constraints
 
@@ -96,8 +88,8 @@ Known technical debt: Phases 9-13 not started — all interactive features still
 | Local web app (not Electron/extension) | Simplest delivery, any browser works, no IDE lock-in | ✓ Good — zero install friction |
 | Tree-sitter for parsing | Multi-language support, incremental parsing, widely adopted | ✓ Good — TS/JS/Python working; pinned to 0.21.1 for stability |
 | Canvas/WebGL rendering (not DOM) | Performance at scale with hundreds of nodes | ✓ Good — Konva delivers 60fps at 300 nodes |
-| Infer intent from changes (not agent hooks) | No agent integration needed, works universally | — Deferred to v2 |
-| Persistent graph with time-travel | Users can review architecture evolution across sessions | ⚠️ Revisit — persistence works, time-travel deferred to v2 |
+| Infer intent from changes (not agent hooks) | No agent integration needed, works universally | — Deferred to v3+ |
+| Persistent graph with time-travel | Users can review architecture evolution across sessions | ⚠️ Revisit — persistence works, time-travel deferred to v3+ |
 | TS/JS + Python first | Most common languages for AI-assisted development | ✓ Good — covers primary use cases |
 | Semantic zone layout | Provides stable, predictable positioning based on component role | ✓ Good — d3-force with zone constraints works well |
 | SQLite WAL + Drizzle ORM | Sync API correct for write-heavy event logging | ✓ Good — write-through persistence reliable |
@@ -107,6 +99,9 @@ Known technical debt: Phases 9-13 not started — all interactive features still
 | Server-side inference ID translation | Clients never see file-level IDs, keeping graphStore consistent with canvas | ✓ Good — single translation point at broadcast boundary |
 | Rebuild fileToComponentMap on every aggregation | Always current, no staleness risk | ✓ Good — simplicity over caching |
 | Skip broadcast when all IDs unmapped | Avoids empty inference messages reaching the client | ✓ Good — reduces no-op client processing |
+| Zone badge colors as inline constant | Matches app palette, no CSS variable overhead | ✓ Good — simple, co-located with component |
+| DependencyRow as extracted component | Isolates per-row hover state without parent tracking | ✓ Good — clean separation of concerns |
+| Konva.Tween for pan animation | Smooth 0.3s EaseInOut replaces jarring hard jumps | ✓ Good — much better UX for dependency navigation |
 
 ---
-*Last updated: 2026-03-16 after v2.1 milestone start*
+*Last updated: 2026-03-16 after v2.1 milestone*

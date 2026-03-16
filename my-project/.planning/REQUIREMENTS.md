@@ -11,8 +11,8 @@ Requirements for v2.0 "Make It Live." Each maps to roadmap phases.
 
 - [x] **PIPE-01**: Zod schemas in `GraphNodeSchema` accept `fileCount`, `keyExports`, and `dependencyCount` fields from WebSocket messages
 - [x] **PIPE-02**: Zod schemas in `GraphEdgeSchema` accept dependency metadata fields from WebSocket messages
-- [ ] **PIPE-03**: WebSocket plugin translates file-level node IDs to component-level IDs when broadcasting inference messages
-- [ ] **PIPE-04**: Inference events (risks, activity, zone updates) arrive at the client with correct component IDs
+- [x] **PIPE-03**: WebSocket plugin translates file-level node IDs to component-level IDs when broadcasting inference messages
+- [x] **PIPE-04**: Inference events (risks, activity, zone updates) arrive at the client with correct component IDs
 
 ### Inspector Panel
 
@@ -97,8 +97,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | PIPE-01 | Phase 8 | Complete |
 | PIPE-02 | Phase 8 | Complete |
-| PIPE-03 | Phase 8 | Pending |
-| PIPE-04 | Phase 8 | Pending |
+| PIPE-03 | Phase 8 | Complete |
+| PIPE-04 | Phase 8 | Complete |
 | INSP-01 | Phase 9 | Pending |
 | INSP-02 | Phase 9 | Pending |
 | INSP-03 | Phase 9 | Pending |

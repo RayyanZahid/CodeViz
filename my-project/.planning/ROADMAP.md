@@ -26,7 +26,7 @@ See `milestones/v1.0-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** Turn the static architecture poster into a live, interactive system that a developer can use to supervise an AI coding agent in real time.
 
-- [ ] **Phase 8: Data Pipeline Repair** — Fix Zod schema gaps and file-to-component ID translation so all downstream features receive correct data
+- [x] **Phase 8: Data Pipeline Repair** — Fix Zod schema gaps and file-to-component ID translation so all downstream features receive correct data (completed 2026-03-16)
 - [ ] **Phase 9: Inspector Panel** — Click a component node to see its files, exports, and dependency relationships in a sidebar panel
 - [ ] **Phase 10: Live Risk Panel** — Display detected architectural risks with severity, click-to-highlight on canvas, and mark-as-reviewed
 - [ ] **Phase 11: Live Activity Feed** — Show real-time architectural events in natural language with type dots and relative timestamps
@@ -44,7 +44,7 @@ See `milestones/v1.0-ROADMAP.md` for full phase details.
   2. Edges arrive in the client with dependency metadata fields populated
   3. WebSocket inference broadcasts reference component-level IDs, not raw file paths
   4. Risk and activity events at the client carry IDs that match nodes rendered on the canvas
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 08-01-PLAN.md -- Fix Zod schema gaps and expose file-to-component lookup map
 - [ ] 08-02-PLAN.md -- Translate inference IDs to component-level and add status dot
@@ -116,7 +116,7 @@ Plans:
 | 5. WebSocket Streaming and Client State | v1.0 | 2/2 | Complete | 2026-03-16 |
 | 6. Canvas Renderer and Layout Engine | v1.0 | 4/4 | Complete | 2026-03-16 |
 | 7. React UI Shell and Activity Feed | v1.0 | 3/3 | Complete | 2026-03-16 |
-| 8. Data Pipeline Repair | 1/2 | In Progress|  | - |
+| 8. Data Pipeline Repair | 2/2 | Complete   | 2026-03-16 | - |
 | 9. Inspector Panel | v2.0 | 0/TBD | Not started | - |
 | 10. Live Risk Panel | v2.0 | 0/TBD | Not started | - |
 | 11. Live Activity Feed | v2.0 | 0/TBD | Not started | - |

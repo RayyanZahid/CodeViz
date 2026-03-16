@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 8 of 13 (Data Pipeline Repair)
-Plan: 1 of 4 complete
+Plan: 2 of 4 complete
 Status: In progress
-Last activity: 2026-03-16 — Phase 8 Plan 01 complete (Zod schemas + ComponentAggregator map)
+Last activity: 2026-03-16 — Phase 8 Plan 02 complete (inference ID translation + pipeline status dot)
 
 Progress: [█░░░░░░░░░] 4% (v2.0)
 
@@ -29,11 +29,12 @@ Progress: [█░░░░░░░░░] 4% (v2.0)
 |-------|-------|--------|
 | 1-7 | 21/21 | Complete |
 
-**v2.0:** 1 plan completed.
+**v2.0:** 2 plans completed.
 
 | Phase | Plans | Duration | Status |
 |-------|-------|----------|--------|
 | 08 P01 | 1/4 | 1 min | Complete |
+| 08 P02 | 2/4 | 2 min | Complete |
 
 *Updated after each plan completion*
 
@@ -52,6 +53,9 @@ Recent decisions affecting v2.0:
 - [Phase 08-data-pipeline-repair]: Zod schemas remain strict (no .passthrough()) — strip unknown fields for safety
 - [Phase 08-data-pipeline-repair]: fileToComponentMap is rebuilt on every aggregateSnapshot() call — always current, no staleness
 - [Phase 08-data-pipeline-repair]: getFileToComponentMap() returns the internal Map directly — callers should not mutate it
+- [Phase 08-data-pipeline-repair]: Translation happens server-side in the broadcast path — clients never receive file-level IDs, keeping graphStore consistent with canvas
+- [Phase 08-data-pipeline-repair]: Broadcast skipped entirely when all inference IDs are unmapped — avoids empty inference messages reaching the client
+- [Phase 08-data-pipeline-repair]: Status dot label hidden when connected (green) to stay unobtrusive; labels shown for yellow/red states only
 
 ### Pending Todos
 
@@ -63,6 +67,6 @@ None — v1.0 shipped clean. v2.0 starts with known data pipeline gap (PIPE-01 t
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T19:12:28.434Z
-**Stopped at:** Completed 08-01-PLAN.md
+**Last session:** 2026-03-16T19:17:03.905Z
+**Stopped at:** Completed 08-02-PLAN.md
 **Resume file:** None

@@ -4,7 +4,7 @@ import type { RiskItem } from '../store/inferenceStore.js';
 import type { RiskSeverity, RiskType } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
-// Severity color helper
+// Severity color helper (kept for potential external use)
 // ---------------------------------------------------------------------------
 
 function severityColor(severity: RiskSeverity): string {
@@ -13,6 +13,26 @@ function severityColor(severity: RiskSeverity): string {
     case 'warning': return '#f97316';
     default: return '#eab308';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Severity badge style helper
+// ---------------------------------------------------------------------------
+
+function severityBadgeStyle(severity: RiskSeverity): React.CSSProperties {
+  return {
+    backgroundColor: severityColor(severity),
+    color: '#ffffff',
+    padding: '1px 6px',
+    borderRadius: 3,
+    fontSize: 9,
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    fontWeight: 600,
+    flexShrink: 0,
+    lineHeight: '14px',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -61,17 +81,10 @@ function RiskItemRow({ risk, reviewed, onMarkReviewed, onHighlightNode }: RiskIt
         cursor: !reviewed && onHighlightNode ? 'pointer' : 'default',
       }}
     >
-      {/* Severity indicator circle */}
-      <div
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: '50%',
-          backgroundColor: severityColor(risk.signal.severity),
-          flexShrink: 0,
-          marginTop: 2,
-        }}
-      />
+      {/* Severity badge — replaces severity color dot */}
+      <span style={severityBadgeStyle(risk.signal.severity)}>
+        {risk.signal.severity}
+      </span>
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -100,7 +113,7 @@ function RiskItemRow({ risk, reviewed, onMarkReviewed, onHighlightNode }: RiskIt
         </div>
       </div>
 
-      {/* Mark reviewed button — only for unreviewed risks */}
+      {/* Checkmark button — only for unreviewed risks */}
       {!reviewed && onMarkReviewed && (
         <button
           onClick={(e) => {
@@ -110,18 +123,24 @@ function RiskItemRow({ risk, reviewed, onMarkReviewed, onHighlightNode }: RiskIt
           onMouseEnter={() => setHoverButton(true)}
           onMouseLeave={() => setHoverButton(false)}
           style={{
-            background: 'none',
+            background: hoverButton ? 'rgba(255,255,255,0.1)' : 'none',
             border: 'none',
-            padding: '0 2px',
-            fontSize: 10,
-            fontFamily: 'monospace',
-            color: hoverButton ? '#ffffffaa' : '#ffffff44',
+            padding: 0,
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 12,
+            color: hoverButton ? '#22c55e' : '#ffffff44',
             cursor: 'pointer',
             flexShrink: 0,
             alignSelf: 'center',
           }}
+          title="Mark as reviewed"
         >
-          Mark reviewed
+          {'\u2713'}
         </button>
       )}
     </div>
@@ -200,9 +219,37 @@ function EmptyState() {
         fontFamily: 'monospace',
         color: '#ffffff44',
         textAlign: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
       }}
     >
-      No architectural risks detected
+      <span style={{ color: '#22c55e', fontSize: 14 }}>{'\u2713'}</span>
+      <span>No risks detected — architecture looks clean</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AllClearState — shown when all risks have been reviewed
+// ---------------------------------------------------------------------------
+
+function AllClearState() {
+  return (
+    <div
+      style={{
+        padding: '8px 8px 4px',
+        fontSize: 11,
+        fontFamily: 'monospace',
+        color: '#22c55e',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}
+    >
+      <span>{'\u2713'}</span>
+      <span>All clear</span>
     </div>
   );
 }
@@ -218,8 +265,9 @@ interface RiskPanelProps {
 // ---------------------------------------------------------------------------
 // RiskPanel — main panel component
 //
-// Displays active risks with color-coded severity circles. Unreviewed risks
-// are shown prominently; reviewed risks collapse into a counter row.
+// Displays active risks with severity badges. Unreviewed risks are shown
+// prominently; reviewed risks collapse into a counter row. Shows green
+// positive states for empty and all-reviewed scenarios.
 // ---------------------------------------------------------------------------
 
 export function RiskPanel({ onHighlightNode }: RiskPanelProps) {
@@ -327,6 +375,11 @@ export function RiskPanel({ onHighlightNode }: RiskPanelProps) {
                   onHighlightNode={onHighlightNode}
                 />
               ))}
+
+              {/* All-clear message — shown when all risks have been reviewed */}
+              {unreviewedRisks.length === 0 && reviewedRisks.length > 0 && (
+                <AllClearState />
+              )}
 
               {reviewedRisks.length > 0 && (
                 <ReviewedCounter reviewedRisks={reviewedRisks} />

@@ -16,7 +16,8 @@ import { extractJavaScript } from './extractors/javascript.js';
 import { extractPython } from './extractors/python.js';
 import { performance } from 'node:perf_hooks';
 // ---------------------------------------------------------------------------
-// Grammar imports — use require() for CommonJS native addon compatibility
+// Grammar imports — compiled to require() calls in CJS output.
+// Native tree-sitter grammars only expose CJS exports.
 // ---------------------------------------------------------------------------
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { typescript, tsx } = require('tree-sitter-typescript');

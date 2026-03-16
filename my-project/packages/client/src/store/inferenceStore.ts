@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { ArchitecturalEvent, RiskSignal } from '@archlens/shared/types';
-import { ArchitecturalEventType } from '@archlens/shared/types';
 import type { InferenceMessage } from '@archlens/shared/types';
 import { graphStore } from './graphStore.js';
 import { toSentence } from '../utils/eventSentence.js';
@@ -67,15 +66,15 @@ function riskFingerprint(signal: RiskSignal): string {
 /** Maps an event type to an icon color */
 function iconColorForEvent(type: string): string {
   switch (type) {
-    case ArchitecturalEventType.COMPONENT_CREATED:
+    case 'component_created':
       return '#22c55e'; // green
 
-    case ArchitecturalEventType.DEPENDENCY_ADDED:
-    case ArchitecturalEventType.DEPENDENCY_REMOVED:
+    case 'dependency_added':
+    case 'dependency_removed':
       return '#3b82f6'; // blue
 
-    case ArchitecturalEventType.COMPONENT_SPLIT:
-    case ArchitecturalEventType.COMPONENT_MERGED:
+    case 'component_split':
+    case 'component_merged':
       return '#3b82f6'; // blue
 
     default:
@@ -209,6 +208,27 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
 
     for (const zoneUpdate of msg.zoneUpdates) {
       newActiveNodeIds.set(zoneUpdate.nodeId, now);
+    }
+
+    // ------------------------------------------------------------------
+    // 4b. Apply zone updates to graphStore nodes so the canvas layout
+    //     engine can place nodes into the correct zone columns.
+    //     Without this, all nodes stay zone=null and pile into 'external'.
+    // ------------------------------------------------------------------
+    if (msg.zoneUpdates.length > 0) {
+      const graphState = graphStore.getState();
+      const updatedNodes = new Map(graphState.nodes);
+      let changed = false;
+      for (const zu of msg.zoneUpdates) {
+        const existing = updatedNodes.get(zu.nodeId);
+        if (existing && existing.zone !== zu.zone) {
+          updatedNodes.set(zu.nodeId, { ...existing, zone: zu.zone });
+          changed = true;
+        }
+      }
+      if (changed) {
+        graphStore.setState({ nodes: updatedNodes });
+      }
     }
 
     // ------------------------------------------------------------------

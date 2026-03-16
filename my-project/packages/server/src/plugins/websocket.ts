@@ -3,6 +3,7 @@ import type { WebSocket } from '@fastify/websocket';
 import type { FastifyPluginAsync } from 'fastify';
 import type { DependencyGraph } from '../graph/DependencyGraph.js';
 import type { InferenceEngine } from '../inference/InferenceEngine.js';
+import type { ComponentAggregator } from '../graph/ComponentAggregator.js';
 import type {
   ServerMessage,
   GraphDeltaMessage,
@@ -11,6 +12,8 @@ import type {
   GraphEdge,
 } from '@archlens/shared/types';
 import type { GraphDelta, NodeMetadata } from '@archlens/shared/types';
+import { normalizeExt } from '../graph/DependencyGraph.js';
+import { db } from '../db/connection.js';
 
 // ---------------------------------------------------------------------------
 // Connected client set — managed at module level, not per-connection
@@ -35,12 +38,12 @@ function broadcast(message: ServerMessage): void {
 // Internal helper: map internal NodeMetadata to wire-format GraphNode
 // ---------------------------------------------------------------------------
 
-function buildGraphNode(id: string, meta: NodeMetadata, inDegree: number, outDegree: number): GraphNode {
+function buildGraphNode(id: string, meta: NodeMetadata, inDegree: number, outDegree: number, zone?: string | null): GraphNode {
   return {
     id,
     name: id.split('/').pop()?.replace(/\.\w+$/, '') ?? id,
-    nodeType: 'service_module', // Default — Phase 4 zone classification enriches this
-    zone: null, // Zone filled by InferenceMessage zone updates
+    nodeType: 'service_module',
+    zone: zone ?? null,
     fileList: [meta.filePath],
     incomingEdgeCount: inDegree,
     outgoingEdgeCount: outDegree,
@@ -55,7 +58,8 @@ function buildGraphNode(id: string, meta: NodeMetadata, inDegree: number, outDeg
 export const websocketPlugin: FastifyPluginAsync<{
   graph: DependencyGraph;
   inferenceEngine: InferenceEngine;
-}> = async (fastify, { graph, inferenceEngine }) => {
+  aggregator: ComponentAggregator;
+}> = async (fastify, { graph, inferenceEngine, aggregator }) => {
   // Register @fastify/websocket as a sub-plugin so this plugin's routes
   // can use { websocket: true } route options.
   await fastify.register(fastifyWebsocket);
@@ -64,43 +68,45 @@ export const websocketPlugin: FastifyPluginAsync<{
   // NOT inside the per-connection handler (avoids O(N^2) listener leak,
   // per RESEARCH.md Pitfall 4).
   graph.on('delta', (delta: GraphDelta) => {
-    // Map internal delta (node IDs as strings) to wire-format GraphDeltaMessage
-    // (node IDs as GraphNode objects with full metadata).
-    const addedNodes: GraphNode[] = delta.addedNodes
-      .filter((id) => !id.startsWith('__ext__/'))
-      .map((id) => {
-        const meta = graph.getNodeMetadata(id);
-        if (!meta) return null;
-        return buildGraphNode(id, meta, graph.getInDegree(id), graph.getOutDegree(id));
-      })
-      .filter((n): n is GraphNode => n !== null);
+    // Recompute full component snapshot and diff against previous
+    const prevSnapshot = aggregator.getLastSnapshot();
+    const newSnapshot = aggregator.aggregateSnapshot(graph, db);
 
-    const updatedNodes: GraphNode[] = delta.modifiedNodes
-      .filter((id) => !id.startsWith('__ext__/'))
-      .map((id) => {
-        const meta = graph.getNodeMetadata(id);
-        if (!meta) return null;
-        return buildGraphNode(id, meta, graph.getInDegree(id), graph.getOutDegree(id));
-      })
-      .filter((n): n is GraphNode => n !== null);
+    // Build node ID sets for diffing
+    const prevNodeIds = new Set(prevSnapshot?.nodes.map((n) => n.id) ?? []);
+    const newNodeIds = new Set(newSnapshot.nodes.map((n) => n.id));
+    const prevEdgeIds = new Set(prevSnapshot?.edges.map((e) => e.id) ?? []);
+    const newEdgeIds = new Set(newSnapshot.edges.map((e) => e.id));
 
-    const addedEdges: GraphEdge[] = delta.addedEdges
-      .filter((e) => !e.v.startsWith('__ext__/') && !e.w.startsWith('__ext__/'))
-      .map((e) => ({
-        id: `${e.v}->${e.w}`,
-        sourceId: e.v,
-        targetId: e.w,
-        edgeType: 'imports_depends_on' as const,
-      }));
+    // Compute added/removed/updated nodes
+    const addedNodes = newSnapshot.nodes.filter((n) => !prevNodeIds.has(n.id));
+    const removedNodeIds = [...prevNodeIds].filter((id) => !newNodeIds.has(id));
+
+    // Updated nodes: exist in both but changed
+    const prevNodeMap = new Map(prevSnapshot?.nodes.map((n) => [n.id, n]) ?? []);
+    const updatedNodes = newSnapshot.nodes.filter((n) => {
+      const prev = prevNodeMap.get(n.id);
+      if (!prev) return false;
+      return (
+        prev.zone !== n.zone ||
+        prev.fileCount !== n.fileCount ||
+        prev.incomingEdgeCount !== n.incomingEdgeCount ||
+        prev.outgoingEdgeCount !== n.outgoingEdgeCount
+      );
+    });
+
+    // Compute added/removed edges
+    const addedEdges = newSnapshot.edges.filter((e) => !prevEdgeIds.has(e.id));
+    const removedEdgeIds = [...prevEdgeIds].filter((id) => !newEdgeIds.has(id));
 
     const message: GraphDeltaMessage = {
       type: 'graph_delta',
       version: delta.version,
       addedNodes,
-      removedNodeIds: delta.removedNodeIds.filter((id) => !id.startsWith('__ext__/')),
+      removedNodeIds,
       updatedNodes,
       addedEdges,
-      removedEdgeIds: delta.removedEdgeIds.filter((id) => !id.includes('__ext__/')),
+      removedEdgeIds,
     };
 
     broadcast(message);
@@ -125,9 +131,9 @@ export const websocketPlugin: FastifyPluginAsync<{
     // Add to the connected client set.
     clients.add(socket);
 
-    // Send the full graph snapshot immediately on connect so the client
-    // has complete state without needing to request it separately.
-    const { nodes, edges } = graph.getSnapshot();
+    // Send the full component-level snapshot immediately on connect so the
+    // client has complete state without needing to request it separately.
+    const { nodes, edges } = aggregator.aggregateSnapshot(graph, db);
     const initialState: ServerMessage = {
       type: 'initial_state',
       version: graph.getVersion(),

@@ -55,7 +55,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 0, y0: 0, x1: 380, y1: 1180 },
     center: { x: 190, y: 590 },
     fillColor: '#2563eb',
-    bgColor: '#2563eb10',
+    bgColor: 'rgba(37, 99, 235, 0.08)',
     glowColor: '#60a5fa',
   },
   {
@@ -64,7 +64,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 400, y0: 0, x1: 780, y1: 1180 },
     center: { x: 590, y: 590 },
     fillColor: '#16a34a',
-    bgColor: '#16a34a10',
+    bgColor: 'rgba(22, 163, 74, 0.08)',
     glowColor: '#4ade80',
   },
   {
@@ -73,7 +73,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 800, y0: 0, x1: 1580, y1: 1180 },
     center: { x: 1190, y: 590 },
     fillColor: '#9333ea',
-    bgColor: '#9333ea10',
+    bgColor: 'rgba(147, 51, 234, 0.08)',
     glowColor: '#c084fc',
   },
   {
@@ -82,7 +82,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 1600, y0: 0, x1: 2000, y1: 1180 },
     center: { x: 1800, y: 590 },
     fillColor: '#d97706',
-    bgColor: '#d9770610',
+    bgColor: 'rgba(217, 119, 6, 0.08)',
     glowColor: '#fbbf24',
   },
   {
@@ -91,7 +91,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 2020, y0: 0, x1: 2380, y1: 1180 },
     center: { x: 2200, y: 590 },
     fillColor: '#6b7280',
-    bgColor: '#6b728010',
+    bgColor: 'rgba(107, 114, 128, 0.08)',
     glowColor: '#9ca3af',
   },
   {
@@ -100,7 +100,7 @@ export const ZONE_LAYOUTS: ZoneLayout[] = [
     bounds: { x0: 0, y0: 1200, x1: 2400, y1: 1560 },
     center: { x: 1200, y: 1380 },
     fillColor: '#475569',
-    bgColor: '#47556910',
+    bgColor: 'rgba(71, 85, 105, 0.08)',
     glowColor: '#94a3b8',
   },
 ];

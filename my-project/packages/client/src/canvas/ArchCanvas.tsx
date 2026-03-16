@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Stage, Layer } from 'react-konva';
-import type Konva from 'konva';
+import Konva from 'konva';
 import { graphStore } from '../store/graphStore.js';
 import { NodeRenderer } from './NodeRenderer.js';
 import { EdgeRenderer } from './EdgeRenderer.js';
@@ -121,6 +121,8 @@ export function ArchCanvas({
     }
 
     viewport = new ViewportController(stage, handleViewportChange);
+    // Clear stale viewport state so fitToView runs clean on first load
+    viewport.resetView();
 
     // Expose viewport controller to parent (for zoom +/- buttons)
     if (viewportControllerRef) {
@@ -150,6 +152,7 @@ export function ArchCanvas({
       }
 
       edgeRenderer.syncAll(state.edges);
+      edgeRenderer.updatePositions();
 
       cullingIndex.setEdges(state.edges);
       cullingIndex.rebuild();
@@ -181,12 +184,24 @@ export function ArchCanvas({
         placer.removeNode(id);
       }
 
-      if (addedNodeIds.length > 0) {
+      // Detect nodes whose zone changed — they need re-placement
+      const zoneChangedIds: string[] = [];
+      for (const id of updatedNodeIds) {
+        const prevNode = prev.nodes.get(id);
+        const currNode = state.nodes.get(id);
+        if (prevNode && currNode && prevNode.zone !== currNode.zone) {
+          placer.removeNode(id); // Unpin so placer treats it as new
+          zoneChangedIds.push(id);
+        }
+      }
+
+      const needsLayout = addedNodeIds.length > 0 || zoneChangedIds.length > 0;
+
+      if (needsLayout) {
         placer.placeNewNodes(state.nodes, state.edges);
         for (const [id, pos] of placer.getPositions()) {
           nodeRenderer.setPosition(id, pos);
         }
-        // Update nodePositionsRef so App.tsx can read world positions for panToNode
         if (nodePositionsRef) {
           const posMap = new Map<string, { x: number; y: number }>();
           for (const [id, pos] of placer.getPositions()) {
@@ -195,9 +210,17 @@ export function ArchCanvas({
           nodePositionsRef.current = posMap;
         }
         cullingIndex.rebuild();
+        // Auto-fit on first meaningful layout
+        if (addedNodeIds.length > 0) {
+          viewport.fitToView();
+        }
       }
 
       edgeRenderer.applyDelta(state.edges, prev.edges);
+      // Full sync edges after layout changes to catch any with missing positions
+      if (needsLayout) {
+        edgeRenderer.syncAll(state.edges);
+      }
       edgeRenderer.updatePositions();
       cullingIndex.setEdges(state.edges);
 

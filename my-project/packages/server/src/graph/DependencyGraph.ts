@@ -18,6 +18,9 @@ import type {
 } from '@archlens/shared/types';
 import type { GraphNode, GraphEdge } from '@archlens/shared/types';
 import { CycleSeverity } from '@archlens/shared/types';
+import { db } from '../db/connection.js';
+import { graphNodes } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 import { persistDelta, loadGraphState } from './GraphPersistence.js';
 
 // ---------------------------------------------------------------------------
@@ -206,6 +209,17 @@ export class DependencyGraph extends EventEmitter<DependencyGraphEvents> {
    * This method is read-only and does not mutate any graph state.
    */
   getSnapshot(): { nodes: GraphNode[]; edges: GraphEdge[] } {
+    // Read persisted zones from SQLite so snapshot includes zone data
+    const zoneMap = new Map<string, string | null>();
+    try {
+      const rows = db.select({ id: graphNodes.id, zone: graphNodes.zone }).from(graphNodes).all();
+      for (const row of rows) {
+        zoneMap.set(row.id, row.zone);
+      }
+    } catch {
+      // DB may not have zones yet — continue with null zones
+    }
+
     const nodes: GraphNode[] = [];
     for (const id of this.g.nodes()) {
       // Skip external stub nodes — they have no metadata and are not meaningful for the client
@@ -215,8 +229,8 @@ export class DependencyGraph extends EventEmitter<DependencyGraphEvents> {
       nodes.push({
         id,
         name: id.split('/').pop()?.replace(/\.\w+$/, '') ?? id,
-        nodeType: 'service_module', // Default — Phase 4 zone classification enriches this
-        zone: null, // Zone will be filled by InferenceEngine zone updates
+        nodeType: 'service_module',
+        zone: zoneMap.get(id) ?? null,
         fileList: [meta.filePath],
         incomingEdgeCount: this.g.inEdges(id)?.length ?? 0,
         outgoingEdgeCount: this.g.outEdges(id)?.length ?? 0,
@@ -224,14 +238,20 @@ export class DependencyGraph extends EventEmitter<DependencyGraphEvents> {
       });
     }
 
+    const nodeIdSet = new Set(nodes.map(n => n.id));
     const edges: GraphEdge[] = [];
     for (const e of this.g.edges()) {
       // Skip edges involving external stubs
       if (e.v.startsWith('__ext__/') || e.w.startsWith('__ext__/')) continue;
+      // Normalize .js/.jsx → .ts/.tsx to match node IDs (TS imports use .js specifiers)
+      const src = normalizeExt(e.v);
+      const tgt = normalizeExt(e.w);
+      // Only include edges where both endpoints exist as nodes
+      if (!nodeIdSet.has(src) || !nodeIdSet.has(tgt)) continue;
       edges.push({
-        id: `${e.v}->${e.w}`,
-        sourceId: e.v,
-        targetId: e.w,
+        id: `${src}->${tgt}`,
+        sourceId: src,
+        targetId: tgt,
         edgeType: 'imports_depends_on',
       });
     }
@@ -606,6 +626,16 @@ export class DependencyGraph extends EventEmitter<DependencyGraphEvents> {
  * when Tarjan's SCC returns the nodes in different rotation orders across
  * successive calls.
  */
+/**
+ * Normalizes .js/.jsx extensions to .ts/.tsx to match node IDs.
+ * TypeScript imports use .js specifiers per ESM convention, but node IDs use .ts.
+ */
+export function normalizeExt(id: string): string {
+  if (id.endsWith('.js')) return id.slice(0, -3) + '.ts';
+  if (id.endsWith('.jsx')) return id.slice(0, -4) + '.tsx';
+  return id;
+}
+
 export function canonicalizeCycle(nodes: string[]): string {
   if (nodes.length === 0) return '';
   const minNode = nodes.reduce((a, b) => (a < b ? a : b));

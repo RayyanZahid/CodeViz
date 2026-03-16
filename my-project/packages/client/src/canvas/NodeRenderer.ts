@@ -19,10 +19,15 @@ import type { GraphNode } from '@archlens/shared/types';
 
 export type Position = { x: number; y: number };
 
-const NODE_BASE_SIZE = 100;
-const NODE_HEIGHT_RATIO = 0.6;
-const MIN_NODE_SIZE = 70;
-const MAX_NODE_SIZE = 160;
+const NODE_BASE_SIZE = 120;
+const NODE_HEIGHT_RATIO = 0.5;
+const MIN_NODE_SIZE = 100;
+const MAX_NODE_SIZE = 180;
+
+// Component node sizing (larger for aggregated components)
+const COMP_BASE_SIZE = 160;
+const COMP_MIN_SIZE = 160;
+const COMP_MAX_SIZE = 280;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,7 +37,18 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function isComponentNode(node: GraphNode): boolean {
+  return node.fileCount !== undefined && node.fileCount > 1;
+}
+
 function computeNodeSize(node: GraphNode): number {
+  if (isComponentNode(node)) {
+    return clamp(
+      COMP_BASE_SIZE + (node.fileCount ?? 1) * 8 + (node.incomingEdgeCount + node.outgoingEdgeCount) * 6,
+      COMP_MIN_SIZE,
+      COMP_MAX_SIZE,
+    );
+  }
   return clamp(
     NODE_BASE_SIZE + (node.incomingEdgeCount + node.outgoingEdgeCount) * 4,
     MIN_NODE_SIZE,
@@ -40,7 +56,7 @@ function computeNodeSize(node: GraphNode): number {
   );
 }
 
-function truncateLabel(name: string, maxLen = 18): string {
+function truncateLabel(name: string, maxLen = 22): string {
   if (name.length <= maxLen) return name;
   return name.slice(0, maxLen - 1) + '\u2026'; // ellipsis
 }
@@ -172,7 +188,8 @@ export class NodeRenderer {
 
   private createShape(node: GraphNode): void {
     const size = computeNodeSize(node);
-    const height = size * NODE_HEIGHT_RATIO;
+    const isComp = isComponentNode(node);
+    const height = isComp ? size * 0.45 : size * NODE_HEIGHT_RATIO;
     const zoneColor = getZoneLayout(node.zone ?? 'unknown').fillColor;
 
     const group = new Konva.Group({
@@ -191,27 +208,65 @@ export class NodeRenderer {
       offsetX: size / 2,
       offsetY: height / 2,
       fill: zoneColor,
-      stroke: '#ffffff20',
-      strokeWidth: 1,
-      cornerRadius: 6,
+      opacity: 0.85,
+      stroke: 'rgba(255, 255, 255, 0.25)',
+      strokeWidth: isComp ? 2 : 1,
+      cornerRadius: isComp ? 12 : 8,
       perfectDrawEnabled: false,
       shadowForStrokeEnabled: false,
-    });
-
-    const textWidth = size - 8;
-    const label = new Konva.Text({
-      text: truncateLabel(node.name),
-      fontSize: 11,
-      fill: '#ffffffdd',
-      align: 'center',
-      width: textWidth,
-      offsetX: textWidth / 2,
-      offsetY: 8,
-      listening: false,
+      shadowColor: zoneColor,
+      shadowBlur: isComp ? 18 : 12,
+      shadowOpacity: isComp ? 0.4 : 0.3,
     });
 
     group.add(rect);
-    group.add(label);
+
+    if (isComp) {
+      // Component node: two-line label (name bold 14px + "N files" subtitle 11px)
+      const textWidth = size - 16;
+      const nameLabel = new Konva.Text({
+        text: truncateLabel(node.name, 28),
+        fontSize: 14,
+        fontStyle: 'bold',
+        fill: '#ffffffe6',
+        align: 'center',
+        width: textWidth,
+        offsetX: textWidth / 2,
+        offsetY: 14,
+        listening: false,
+      });
+
+      const fileCount = node.fileCount ?? node.fileList.length;
+      const subtitle = new Konva.Text({
+        text: `${fileCount} file${fileCount !== 1 ? 's' : ''}`,
+        fontSize: 11,
+        fill: 'rgba(255, 255, 255, 0.6)',
+        align: 'center',
+        width: textWidth,
+        offsetX: textWidth / 2,
+        offsetY: -2,
+        listening: false,
+      });
+
+      group.add(nameLabel);
+      group.add(subtitle);
+    } else {
+      // Single-file node: original single-line label
+      const textWidth = size - 8;
+      const label = new Konva.Text({
+        text: truncateLabel(node.name),
+        fontSize: 12,
+        fontStyle: 'bold',
+        fill: '#ffffffe6',
+        align: 'center',
+        width: textWidth,
+        offsetX: textWidth / 2,
+        offsetY: 8,
+        listening: false,
+      });
+      group.add(label);
+    }
+
     this.layer.add(group);
     this.shapes.set(node.id, group);
   }
@@ -224,7 +279,8 @@ export class NodeRenderer {
     group.setAttr('zone', node.zone ?? 'unknown');
 
     const size = computeNodeSize(node);
-    const height = size * NODE_HEIGHT_RATIO;
+    const isComp = isComponentNode(node);
+    const height = isComp ? size * 0.45 : size * NODE_HEIGHT_RATIO;
     const zoneColor = getZoneLayout(node.zone ?? 'unknown').fillColor;
 
     const rect = group.findOne<Konva.Rect>('Rect');
@@ -234,14 +290,66 @@ export class NodeRenderer {
       rect.height(height);
       rect.offsetX(size / 2);
       rect.offsetY(height / 2);
+      rect.cornerRadius(isComp ? 12 : 8);
+      rect.strokeWidth(isComp ? 2 : 1);
+      rect.shadowBlur(isComp ? 18 : 12);
+      rect.shadowOpacity(isComp ? 0.4 : 0.3);
     }
 
-    const textWidth = size - 8;
-    const text = group.findOne<Konva.Text>('Text');
-    if (text) {
-      text.text(truncateLabel(node.name));
-      text.width(textWidth);
-      text.offsetX(textWidth / 2);
+    // Update text labels — find all Text children
+    const texts = group.find<Konva.Text>('Text');
+
+    if (isComp) {
+      const textWidth = size - 16;
+      const fileCount = node.fileCount ?? node.fileList.length;
+
+      if (texts.length >= 2) {
+        // Update existing two-line labels
+        texts[0].text(truncateLabel(node.name, 28));
+        texts[0].fontSize(14);
+        texts[0].width(textWidth);
+        texts[0].offsetX(textWidth / 2);
+        texts[0].offsetY(14);
+
+        texts[1].text(`${fileCount} file${fileCount !== 1 ? 's' : ''}`);
+        texts[1].fontSize(11);
+        texts[1].fill('rgba(255, 255, 255, 0.6)');
+        texts[1].width(textWidth);
+        texts[1].offsetX(textWidth / 2);
+        texts[1].offsetY(-2);
+      } else if (texts.length === 1) {
+        // Upgrade single label to two-line
+        texts[0].text(truncateLabel(node.name, 28));
+        texts[0].fontSize(14);
+        texts[0].width(textWidth);
+        texts[0].offsetX(textWidth / 2);
+        texts[0].offsetY(14);
+
+        const subtitle = new Konva.Text({
+          text: `${fileCount} file${fileCount !== 1 ? 's' : ''}`,
+          fontSize: 11,
+          fill: 'rgba(255, 255, 255, 0.6)',
+          align: 'center',
+          width: textWidth,
+          offsetX: textWidth / 2,
+          offsetY: -2,
+          listening: false,
+        });
+        group.add(subtitle);
+      }
+    } else {
+      const textWidth = size - 8;
+      if (texts.length > 0) {
+        texts[0].text(truncateLabel(node.name));
+        texts[0].fontSize(12);
+        texts[0].width(textWidth);
+        texts[0].offsetX(textWidth / 2);
+        texts[0].offsetY(8);
+      }
+      // Remove extra text nodes if downgrading from component
+      for (let i = 1; i < texts.length; i++) {
+        texts[i].destroy();
+      }
     }
   }
 

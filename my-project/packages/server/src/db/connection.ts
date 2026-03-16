@@ -6,5 +6,6 @@ const sqlite = new Database('./archlens.db');
 
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('synchronous = NORMAL');
+sqlite.pragma('foreign_keys = OFF');
 
 export const db = drizzle(sqlite, { schema });

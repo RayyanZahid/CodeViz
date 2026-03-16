@@ -45,6 +45,8 @@ export const ZONE_PATH_PATTERNS: { zone: ZoneName; patterns: RegExp[] }[] = [
       /\/(services?|use-?cases?|business|domain|application)\//i,
       /\.service\.[tj]s$/i,
       /\/(managers?|processors?|orchestrators?)\//i,
+      /\/(graph|inference|engine|parser|pipeline|watcher|analyzer)\//i,
+      /\/(core|logic|modules?)\//i,
     ],
   },
   {

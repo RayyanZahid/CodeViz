@@ -24,10 +24,10 @@ export class ParserPool {
   private readonly pool: Piscina;
 
   constructor(options: ParserPoolOptions = {}) {
-    // Resolve worker file path relative to this module's location.
-    // ParserPool is at dist/parser/ParserPool.js at runtime, so
-    // dist/parser/worker.js is in the same directory.
-    const workerUrl = new URL('../../dist/parser/worker.js', import.meta.url);
+    // Resolve CJS worker file path relative to this module's location.
+    // The CJS wrapper avoids ESM/native-addon compatibility issues with
+    // tree-sitter in worker threads.
+    const workerUrl = new URL('../../dist/parser/worker-cjs.cjs', import.meta.url);
     const workerPath = fileURLToPath(workerUrl);
 
     if (!existsSync(workerPath)) {
@@ -37,7 +37,7 @@ export class ParserPool {
     }
 
     this.pool = new Piscina({
-      filename: workerUrl.href,
+      filename: workerPath,
       minThreads: options.minThreads ?? 1,
       maxThreads:
         options.maxThreads ?? Math.max(2, Math.floor(os.availableParallelism() / 2)),

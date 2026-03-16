@@ -63,17 +63,22 @@ export class ZoneRenderer {
         width,
         height,
         fill: zone.bgColor,
+        stroke: zone.fillColor,
+        strokeWidth: 1,
+        opacity: 1,
         cornerRadius: 8,
         listening: false,
       });
 
       const label = new Konva.Text({
-        x: zone.bounds.x0 + 12,
-        y: zone.bounds.y0 + 10,
-        text: zone.label,
-        fontSize: 14,
-        fill: '#ffffff25',
+        x: zone.bounds.x0 + 14,
+        y: zone.bounds.y0 + 12,
+        text: zone.label.toUpperCase(),
+        fontSize: 16,
+        fill: zone.fillColor,
+        opacity: 0.5,
         fontStyle: 'bold',
+        letterSpacing: 2,
         listening: false,
       });
 

@@ -1,5 +1,4 @@
 import type { ArchitecturalEvent } from '@archlens/shared/types';
-import { ArchitecturalEventType } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
 // toSentence — maps an ArchitecturalEvent to a terse technical sentence
@@ -22,19 +21,19 @@ export function toSentence(
   const targetName = event.targetNodeId ? nodeNameFn(event.targetNodeId) : '';
 
   switch (event.type) {
-    case ArchitecturalEventType.COMPONENT_CREATED:
+    case 'component_created':
       return `${name} created`;
 
-    case ArchitecturalEventType.COMPONENT_SPLIT:
+    case 'component_split':
       return `${name} split`;
 
-    case ArchitecturalEventType.COMPONENT_MERGED:
+    case 'component_merged':
       return `${name} merged`;
 
-    case ArchitecturalEventType.DEPENDENCY_ADDED:
+    case 'dependency_added':
       return `${name} → depends on ${targetName}`;
 
-    case ArchitecturalEventType.DEPENDENCY_REMOVED:
+    case 'dependency_removed':
       return `${name} → removed dep on ${targetName}`;
 
     default:

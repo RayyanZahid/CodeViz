@@ -4,6 +4,7 @@ import { websocketPlugin } from './plugins/websocket.js';
 import { snapshotPlugin } from './plugins/snapshot.js';
 import { db } from './db/connection.js';
 import { DependencyGraph } from './graph/DependencyGraph.js';
+import { ComponentAggregator } from './graph/ComponentAggregator.js';
 import { Pipeline } from './pipeline/Pipeline.js';
 import { InferenceEngine } from './inference/InferenceEngine.js';
 
@@ -27,6 +28,9 @@ graph.loadFromDatabase();
 
 // Watch root — used by both InferenceEngine and Pipeline
 const watchRoot = process.env.ARCHLENS_WATCH_ROOT ?? process.cwd();
+
+// Initialize component aggregator for directory-level grouping
+const aggregator = new ComponentAggregator(graph);
 
 // Initialize inference engine — subscribes to graph delta events
 const inferenceEngine = new InferenceEngine(graph, watchRoot);
@@ -52,10 +56,10 @@ inferenceEngine.on('inference', (result) => {
 });
 
 // Register WebSocket streaming plugin (must come after graph + inferenceEngine init)
-fastify.register(websocketPlugin, { graph, inferenceEngine });
+fastify.register(websocketPlugin, { graph, inferenceEngine, aggregator });
 
 // Register snapshot REST endpoint for reconnect recovery
-fastify.register(snapshotPlugin, { graph });
+fastify.register(snapshotPlugin, { graph, aggregator });
 
 // Start pipeline — watches for file changes, parses, feeds into graph
 const pipeline = new Pipeline(

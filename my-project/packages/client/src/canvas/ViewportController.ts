@@ -112,7 +112,6 @@ export class ViewportController {
       const scale = Math.min(
         stage.width() / CANVAS_WIDTH,
         stage.height() / CANVAS_HEIGHT,
-        1.0,
       );
       stage.scale({ x: scale, y: scale });
       stage.position({
@@ -123,7 +122,7 @@ export class ViewportController {
       // Compute scale to fit the bounding box with padding
       const scaleX = (stage.width() - 2 * padding) / box.width;
       const scaleY = (stage.height() - 2 * padding) / box.height;
-      const scale = Math.min(scaleX, scaleY, 1.0);
+      const scale = Math.min(scaleX, scaleY, 2.0);
 
       // Center the bounding box in the stage
       stage.scale({ x: scale, y: scale });

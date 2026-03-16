@@ -25,6 +25,8 @@ export interface GraphNode {
   incomingEdgeCount: number;
   outgoingEdgeCount: number;
   lastModified: Date;
+  fileCount?: number;      // number of files in the component
+  keyExports?: string[];   // notable exports
 }
 
 export interface GraphEdge {
@@ -32,4 +34,5 @@ export interface GraphEdge {
   sourceId: string;
   targetId: string;
   edgeType: EdgeType;
+  dependencyCount?: number; // how many file-level edges this represents
 }

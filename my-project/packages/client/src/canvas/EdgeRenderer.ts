@@ -13,6 +13,24 @@ import type { GraphEdge } from '@archlens/shared/types';
 import type { NodeRenderer } from './NodeRenderer.js';
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function computeEdgeStrokeWidth(edge: GraphEdge): number {
+  const count = edge.dependencyCount ?? 1;
+  if (count >= 6) return 5;
+  if (count >= 3) return 3;
+  return 1.5;
+}
+
+function computeEdgeOpacity(edge: GraphEdge): number {
+  const count = edge.dependencyCount ?? 1;
+  if (count >= 6) return 0.7;
+  if (count >= 3) return 0.6;
+  return 0.5;
+}
+
+// ---------------------------------------------------------------------------
 // EdgeRenderer
 // ---------------------------------------------------------------------------
 
@@ -119,17 +137,18 @@ export class EdgeRenderer {
     // Skip if either node hasn't been placed yet
     if (!srcPos || !tgtPos) return;
 
+    const strokeWidth = computeEdgeStrokeWidth(edge);
+    const opacity = computeEdgeOpacity(edge);
+
     const arrow = new Konva.Arrow({
       id: edge.id,
       points: [srcPos.x, srcPos.y, tgtPos.x, tgtPos.y],
-      tension: 0.3,
-      stroke: '#ffffff18',
-      strokeWidth: 1,
-      fill: '#ffffff18',
+      stroke: `rgba(150, 200, 255, ${opacity})`,
+      strokeWidth,
+      fill: `rgba(150, 200, 255, ${opacity})`,
       pointerLength: 8,
       pointerWidth: 6,
       listening: false,
-      perfectDrawEnabled: false,
     });
 
     // Store source/target IDs as attributes for updatePositions()
@@ -137,8 +156,6 @@ export class EdgeRenderer {
     arrow.setAttr('targetId', edge.targetId);
 
     this.layer.add(arrow);
-    // Move to bottom so arrows render behind nodes
-    arrow.moveToBottom();
     this.lines.set(edge.id, arrow);
   }
 

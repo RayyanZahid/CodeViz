@@ -73,10 +73,10 @@ export class IncrementalPlacer {
 
   constructor() {
     this.simulation = forceSimulation<SimNode>([])
-      .force('charge', forceManyBody<SimNode>().strength(-30))
-      .force('collide', forceCollide<SimNode>().radius(40))
-      .alphaDecay(0.05) // Fast convergence for incremental updates
-      .stop(); // NEVER run animated — always manual tick (RESEARCH.md anti-pattern)
+      .force('charge', forceManyBody<SimNode>().strength(-150))
+      .force('collide', forceCollide<SimNode>().radius(90).strength(1))
+      .alphaDecay(0.03)
+      .stop();
   }
 
   // ---------------------------------------------------------------------------
@@ -161,31 +161,25 @@ export class IncrementalPlacer {
         'link',
         forceLink<SimNode, SimLink>(simLinks)
           .id((d: SimNode) => d.id)
-          .distance(80)
-          .strength(0.3),
+          .distance(160)
+          .strength(0.2),
       )
       .force(
         'x',
-        forceX<SimNode>((d: SimNode) => getZoneCenter(d.zone).x).strength(0.3),
+        forceX<SimNode>((d: SimNode) => getZoneCenter(d.zone).x).strength(0.15),
       )
       .force(
         'y',
-        forceY<SimNode>((d: SimNode) => getZoneCenter(d.zone).y).strength(0.3),
+        forceY<SimNode>((d: SimNode) => getZoneCenter(d.zone).y).strength(0.15),
       )
-      // Global canvas boundary — keeps all nodes within the virtual canvas
       .force(
         'boundary',
         forceBoundary<SimNode>(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).strength(0.5),
       );
 
-    // Run simulation silently: reset alpha, stop timer, tick manually
-    // This avoids any visible animation of node positions settling.
-    // NEVER call simulation.restart() in animated mode (RESEARCH.md anti-pattern).
-    this.simulation.alpha(0.3);
-    // Stop any pending timer before ticking manually
+    this.simulation.alpha(0.5);
     this.simulation.stop();
-    // Run 50 ticks — sufficient for new nodes to settle near zone centers
-    this.simulation.tick(50);
+    this.simulation.tick(120);
 
     // Post-tick: store newly placed nodes and clamp to zone bounds
     const currentSimNodes = this.simulation.nodes();

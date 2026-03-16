@@ -64,7 +64,8 @@ function RiskItemRow({ risk, reviewed, onMarkReviewed, onHighlightNode }: RiskIt
 
   const handleRowClick = () => {
     if (!reviewed) {
-      onHighlightNode?.(risk.signal.nodeId);
+      const targetId = risk.signal.nodeId || risk.signal.affectedNodeIds?.[0];
+      if (targetId) onHighlightNode?.(targetId);
     }
   };
 

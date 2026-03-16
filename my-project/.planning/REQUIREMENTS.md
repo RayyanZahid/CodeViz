@@ -70,34 +70,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| INFRA-04 | — | Pending |
-| REPLAY-01 | — | Pending |
-| REPLAY-02 | — | Pending |
-| REPLAY-03 | — | Pending |
-| REPLAY-04 | — | Pending |
-| REPLAY-05 | — | Pending |
-| REPLAY-06 | — | Pending |
-| REPLAY-07 | — | Pending |
-| REPLAY-08 | — | Pending |
-| REPLAY-09 | — | Pending |
-| REPLAY-10 | — | Pending |
-| INTENT-01 | — | Pending |
-| INTENT-02 | — | Pending |
-| INTENT-03 | — | Pending |
-| INTENT-04 | — | Pending |
-| INTENT-05 | — | Pending |
-| INTENT-06 | — | Pending |
-| INTENT-07 | — | Pending |
-| INTENT-08 | — | Pending |
+| INFRA-01 | Phase 14 | Pending |
+| INFRA-02 | Phase 14 | Pending |
+| INFRA-03 | Phase 15 | Pending |
+| REPLAY-03 | Phase 16 | Pending |
+| REPLAY-04 | Phase 16 | Pending |
+| REPLAY-01 | Phase 17 | Pending |
+| REPLAY-02 | Phase 17 | Pending |
+| REPLAY-05 | Phase 17 | Pending |
+| REPLAY-06 | Phase 17 | Pending |
+| REPLAY-07 | Phase 17 | Pending |
+| REPLAY-08 | Phase 17 | Pending |
+| REPLAY-09 | Phase 17 | Pending |
+| REPLAY-10 | Phase 17 | Pending |
+| INTENT-01 | Phase 17 | Pending |
+| INTENT-02 | Phase 17 | Pending |
+| INTENT-03 | Phase 17 | Pending |
+| INTENT-04 | Phase 17 | Pending |
+| INTENT-05 | Phase 17 | Pending |
+| INTENT-06 | Phase 17 | Pending |
+| INTENT-07 | Phase 17 | Pending |
+| INTENT-08 | Phase 17 | Pending |
+| INFRA-04 | Phase 18 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after initial definition*
+*Last updated: 2026-03-16 after roadmap creation (phases 14-18)*

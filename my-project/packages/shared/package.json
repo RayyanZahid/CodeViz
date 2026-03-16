@@ -1,0 +1,12 @@
+{
+  "name": "@archlens/shared",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./types": "./src/types/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0"
+  }
+}

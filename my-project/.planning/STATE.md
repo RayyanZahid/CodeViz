@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 10 of 13 (Risk Panel)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-16 — v2.2 roadmap created, phases 10-13 defined
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-03-16 — Phase 10 Plan 01 complete (RISK-01, RISK-03)
 
 Progress: [█████████░░░░] 69% (9/13 phases complete)
 
@@ -32,6 +32,7 @@ Progress: [█████████░░░░] 69% (9/13 phases complete)
 | 08 P02 | 2 | 2 min | Complete |
 | 09 P01 | 2 | 3 min | Complete |
 | 09 P02 | 2 | 3 min | Complete |
+| 10 P01 | 2 | 4 min | Complete |
 
 ## Accumulated Context
 
@@ -48,6 +49,12 @@ Recent decisions relevant to v2.2:
 - ARCHLENS_WATCH_ROOT already implemented server-side — Phase 13 is primarily a UI + endpoint concern
 - AnimationQueue already exists — Phase 12 glow work is integration, not greenfield
 
+Phase 10 Plan 01 decisions:
+- Module-level persistedReviewedIds Set (initialized once from localStorage) avoids hot-path I/O on every applyInference call
+- Resurface comparison uses sorted affectedNodeIds join + nodeId — matches existing riskFingerprint() logic for consistency
+- saveReviewedRisks called once at end of applyInference after all risk processing — single write per inference message
+- severityBadgeStyle() returns full CSSProperties object — consistent with inline styles pattern throughout app
+
 ### Pending Todos
 
 None.
@@ -58,6 +65,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T20:25:46.896Z
-**Stopped at:** Phase 10 context gathered
-**Resume file:** .planning/phases/10-risk-panel/10-CONTEXT.md
+**Last session:** 2026-03-16T20:40:00Z
+**Stopped at:** Completed 10-risk-panel-10-01-PLAN.md
+**Resume file:** .planning/phases/10-risk-panel/10-01-SUMMARY.md

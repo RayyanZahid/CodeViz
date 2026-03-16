@@ -37,11 +37,16 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ### Active
 
-- [ ] Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
-- [ ] Live Activity Feed — real-time architectural events with colored dots and relative timestamps
-- [ ] Edge interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
-- [ ] Watch any project — directory input in UI, env var support, fresh scan on change
-- [ ] Component glow on change — pulse/fade animations when files in a component are modified
+## Current Milestone: v2.2 Make It Live — Interactive
+
+**Goal:** Complete all remaining interactive features so the architecture map becomes a live, usable supervision tool.
+
+**Target features:**
+- Live Risk Panel — mapped risks with severity badges, click-to-highlight, mark-as-reviewed
+- Live Activity Feed — real-time architectural events with colored dots and relative timestamps
+- Edge interaction — hover tooltips with dependency details, click-to-highlight endpoints, thickness legend
+- Watch any project — directory input in UI, env var support, fresh scan on change
+- Component glow on change — pulse/fade animations when files in a component are modified
 
 ### Future
 
@@ -104,4 +109,4 @@ Remaining: 5 active requirements for next milestone (Risk Panel, Activity Feed, 
 | Konva.Tween for pan animation | Smooth 0.3s EaseInOut replaces jarring hard jumps | ✓ Good — much better UX for dependency navigation |
 
 ---
-*Last updated: 2026-03-16 after v2.1 milestone*
+*Last updated: 2026-03-16 after v2.2 milestone started*

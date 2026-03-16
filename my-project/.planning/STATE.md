@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v2.2 — Phase 11: Event Feed
+**Current focus:** v2.2 — Phase 13: Watch Any Project
 
 ## Current Position
 
-Phase: 11 of 13 (Activity Feed) — IN PROGRESS
-Plan: 1 of 1 in current phase — COMPLETE
-Status: Phase 11 Plan 01 complete. Activity feed fully wired.
-Last activity: 2026-03-16 — Phase 11 Plan 01 complete (FEED-01/02/03/04 satisfied)
+Phase: 13 of 13 (Watch Any Project) — IN PROGRESS
+Plan: 1 of 2 in current phase — COMPLETE
+Status: Phase 13 Plan 01 complete. Server-side watch-root switching wired (GET/POST /api/watch).
+Last activity: 2026-03-16 — Phase 13 Plan 01 complete (WATCH-02/03/04 satisfied)
 
 Progress: [███████████░░] 84% (11/13 phases complete)
 
@@ -37,6 +37,7 @@ Progress: [███████████░░] 84% (11/13 phases complete)
 | 11 P01 | 2 | 3 min | Complete |
 | Phase 12-edge-interaction-and-component-glow P01 | 4 | 1 tasks | 3 files |
 | Phase 12-edge-interaction-and-component-glow P02 | 4 | 2 tasks | 3 files |
+| Phase 13-watch-any-project P01 | 4 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Phase 11 Plan 01 decisions:
 - [Phase 12-02]: PULSE_MS=2_500 with PULSE_CYCLES=3 gives 3 sine oscillations during pulse phase
 - [Phase 12-02]: nodeRect cached in GlowEntry to avoid findOne overhead in RAF loop; Phase 1 re-applies border each tick to handle clearSelection stomping
 - [Phase 12-02]: EdgeLegend uses minimapVisible prop for bottom:180 vs bottom:16 offset to stay above minimap
+- [Phase 13-watch-any-project]: watchRoot plugin receives getWatchRoot/setWatchRoot callbacks from index.ts — keeps plugin decoupled and testable
+- [Phase 13-watch-any-project]: inference event subscription moved to index.ts wireInferenceBroadcast() helper for re-wiring on directory switch
+- [Phase 13-watch-any-project]: graph/aggregator remain const stable references; only pipeline/inferenceEngine are let and replaced on switch
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T22:35:50.783Z
-**Stopped at:** Phase 13 context gathered
-**Resume file:** .planning/phases/13-watch-any-project/13-CONTEXT.md
+**Last session:** 2026-03-16T22:51:59.205Z
+**Stopped at:** Completed 13-watch-any-project-01-PLAN.md
+**Resume file:** None

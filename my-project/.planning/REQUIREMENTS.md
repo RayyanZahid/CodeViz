@@ -29,9 +29,9 @@ Requirements for v2.2 "Make It Live — Interactive." Each maps to roadmap phase
 ### Watch Any Project
 
 - [ ] **WATCH-01**: User can type a directory path in a text input at the top of the UI and press Enter to start watching it
-- [ ] **WATCH-02**: `ARCHLENS_WATCH_ROOT` environment variable sets the initial watched directory
-- [ ] **WATCH-03**: On directory change, the canvas clears, graph resets, and a fresh scan begins
-- [ ] **WATCH-04**: The system works correctly when watching external projects (not just self-watching)
+- [x] **WATCH-02**: `ARCHLENS_WATCH_ROOT` environment variable sets the initial watched directory
+- [x] **WATCH-03**: On directory change, the canvas clears, graph resets, and a fresh scan begins
+- [x] **WATCH-04**: The system works correctly when watching external projects (not just self-watching)
 
 ### Visual Feedback
 
@@ -92,9 +92,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GLOW-01 | Phase 12 | Complete |
 | GLOW-02 | Phase 12 | Complete |
 | WATCH-01 | Phase 13 | Pending |
-| WATCH-02 | Phase 13 | Pending |
-| WATCH-03 | Phase 13 | Pending |
-| WATCH-04 | Phase 13 | Pending |
+| WATCH-02 | Phase 13 | Complete |
+| WATCH-03 | Phase 13 | Complete |
+| WATCH-04 | Phase 13 | Complete |
 
 **Coverage:**
 - v2.2 requirements: 16 total

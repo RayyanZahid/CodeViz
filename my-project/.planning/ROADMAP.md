@@ -125,6 +125,42 @@ Plans:
 - [ ] 12-01-PLAN.md — Edge hover tooltip and click-to-highlight endpoints (EDGE-01, EDGE-02)
 - [ ] 12-02-PLAN.md — Edge thickness legend, component glow pulse, and 30-second fade border (EDGE-03, GLOW-01, GLOW-02)
 
+### Phase 12.4: Fix journey test phase-12 edge-interaction no matching test files (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12.4 to break down)
+
+### Phase 12.3: Fix journey test Phase 11 Activity Feed - no matching test files found (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12.3 to break down)
+
+### Phase 12.2: Fix journey Phase 10 Risk Panel - no matching test files found (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12.2 to break down)
+
+### Phase 12.1: Fix journey Build and Start blocker - no matching test files found (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12.1 to break down)
+
 ### Phase 13: Watch Any Project
 **Goal**: Users can point the tool at any directory and immediately begin watching it without restarting the server
 **Depends on**: Phase 12 (UI patterns complete; ARCHLENS_WATCH_ROOT env var already implemented server-side)
@@ -134,11 +170,11 @@ Plans:
   2. Setting the ARCHLENS_WATCH_ROOT environment variable before starting sets the initial watched directory
   3. After changing the watched directory, the canvas clears, the graph resets, and a fresh scan begins
   4. The tool correctly builds and displays the architecture graph for an external project (not the ArchLens codebase itself)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: Server-side watch-root switching endpoint and fresh scan on directory change
-- [ ] 13-02: Client-side directory input UI, env var initial value, and canvas reset on change
+- [ ] 13-01-PLAN.md — Server-side watch-root switching: REST API (GET/POST /api/watch), DependencyGraph reset, SQLite purge, WS broadcast, shared watch_root_changed message type
+- [ ] 13-02-PLAN.md — Client-side directory input UI: DirectoryBar component, store reset actions, WsClient watch_root_changed handler, scanning transition states, env var pre-fill
 
 ## Progress
 

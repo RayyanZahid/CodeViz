@@ -87,6 +87,11 @@ const ErrorMessageSchema = z.object({
   message: z.string(),
 });
 
+const WatchRootChangedMessageSchema = z.object({
+  type: z.literal('watch_root_changed'),
+  directory: z.string(),
+});
+
 // ---------------------------------------------------------------------------
 // Top-level discriminated union
 // ---------------------------------------------------------------------------
@@ -96,6 +101,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   InitialStateMessageSchema,
   InferenceMessageSchema,
   ErrorMessageSchema,
+  WatchRootChangedMessageSchema,
 ]);
 
 export type ServerMessageParsed = z.infer<typeof ServerMessageSchema>;

@@ -578,6 +578,38 @@ export class DependencyGraph extends EventEmitter<DependencyGraphEvents> {
   // ---------------------------------------------------------------------------
 
   /**
+   * Resets all in-memory graph state to an empty baseline.
+   *
+   * Called by the watchRoot plugin when switching the watched directory.
+   * Does NOT emit a delta event — the caller handles client notification.
+   * Does NOT touch SQLite — the caller handles DB purge separately.
+   */
+  reset(): void {
+    // Clear all nodes (graphlib automatically removes incident edges)
+    for (const n of this.g.nodes()) {
+      this.g.removeNode(n);
+    }
+
+    // Clear incremental diffing state
+    this.prevFileResults = new Map();
+
+    // Clear cycle tracking
+    this.activeCycles = new Set();
+
+    // Clear consolidation timer to avoid stale batches firing after reset
+    if (this.consolidateTimer !== null) {
+      clearTimeout(this.consolidateTimer);
+      this.consolidateTimer = null;
+    }
+
+    // Drain pending batches accumulated before reset
+    this.pendingBatches = [];
+
+    // Reset version counter
+    this.version = 0;
+  }
+
+  /**
    * Loads previously persisted graph state from SQLite into the in-memory graph.
    *
    * Must be called BEFORE pipeline.start() so the graph reflects the prior

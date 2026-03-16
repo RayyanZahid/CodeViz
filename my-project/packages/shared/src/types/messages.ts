@@ -33,4 +33,9 @@ export interface ErrorMessage {
   message: string;
 }
 
-export type ServerMessage = GraphDeltaMessage | InitialStateMessage | InferenceMessage | ErrorMessage;
+export interface WatchRootChangedMessage {
+  type: 'watch_root_changed';
+  directory: string;
+}
+
+export type ServerMessage = GraphDeltaMessage | InitialStateMessage | InferenceMessage | ErrorMessage | WatchRootChangedMessage;

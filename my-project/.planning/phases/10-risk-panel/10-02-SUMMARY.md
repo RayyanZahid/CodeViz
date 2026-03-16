@@ -12,7 +12,8 @@ requires:
     provides: selectNodeOnCanvas + panToNode wiring in handleHighlightNode (App.tsx)
 provides:
   - Hardened risk click handler with affectedNodeIds fallback for multi-node risks
-  - RISK-02 verified: click-to-highlight + pan-to-node integration confirmed working
+  - RISK-02 verified: click-to-highlight + pan-to-node integration confirmed working by human
+  - Full risk panel feature (Plans 01 + 02) verified end-to-end by human
 affects: [11-event-feed, 12-glow-integration]
 
 # Tech tracking
@@ -43,14 +44,14 @@ completed: 2026-03-16
 
 # Phase 10 Plan 02: Risk Panel Click-to-Highlight Integration Summary
 
-**Hardened risk click-to-highlight with affectedNodeIds fallback; confirmed end-to-end wiring from risk row click to canvas selectNodeOnCanvas + panToNode**
+**Hardened risk click-to-highlight with affectedNodeIds fallback; full risk panel interaction (severity badges, mark-as-reviewed, localStorage persistence, click-to-highlight, positive states) verified end-to-end by human**
 
 ## Performance
 
 - **Duration:** 3 min
 - **Started:** 2026-03-16T20:43:10Z
 - **Completed:** 2026-03-16T20:46:00Z
-- **Tasks:** 1 automated + 1 human-verify checkpoint
+- **Tasks:** 1 automated + 1 human-verify checkpoint (approved)
 - **Files modified:** 1
 
 ## Accomplishments
@@ -58,12 +59,14 @@ completed: 2026-03-16
 - Verified `if (targetId)` guard prevents `onHighlightNode` calls with empty strings
 - Confirmed App.tsx `handleHighlightNode` already has correct optional chaining (`canvasRef.current?.selectNodeOnCanvas` + `if (pos && viewportControllerRef.current)` guard)
 - TypeScript check passes with zero errors
+- Human verification confirmed all RISK-01, RISK-02, RISK-03 requirements working in the running application: severity badges, checkmark button, localStorage persistence, risk resurface, green empty state, green all-clear state, click-to-highlight + pan-to, red badge count
 
 ## Task Commits
 
 Each task was committed atomically:
 
 1. **Task 1: Verify and harden risk click-to-highlight integration** - `0d0383b` (fix)
+2. **Task 2: Verify full risk panel interaction end-to-end** - human-verify checkpoint approved
 
 **Plan metadata:** (pending final docs commit)
 
@@ -88,9 +91,15 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 - Risk panel click-to-highlight integration is verified and hardened
-- Full end-to-end risk panel feature (Plans 01 + 02) ready for human verification checkpoint
-- Phase 11 (Event Feed) can proceed after human verification of full risk panel interaction
+- Full end-to-end risk panel feature (Plans 01 + 02) verified by human — all requirements RISK-01, RISK-02, RISK-03 confirmed
+- Phase 11 (Event Feed) can proceed immediately
 
 ---
 *Phase: 10-risk-panel*
 *Completed: 2026-03-16*
+
+## Self-Check: PASSED
+
+- `packages/client/src/panels/RiskPanel.tsx` — FOUND
+- `.planning/phases/10-risk-panel/10-02-SUMMARY.md` — FOUND
+- Commit `0d0383b` — FOUND

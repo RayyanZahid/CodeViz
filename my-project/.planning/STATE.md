@@ -38,6 +38,7 @@ Progress: [███████████░░] 84% (11/13 phases complete)
 | Phase 12-edge-interaction-and-component-glow P01 | 4 | 1 tasks | 3 files |
 | Phase 12-edge-interaction-and-component-glow P02 | 4 | 2 tasks | 3 files |
 | Phase 13-watch-any-project P01 | 4 | 2 tasks | 8 files |
+| Phase 13-watch-any-project P02 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Phase 11 Plan 01 decisions:
 - [Phase 13-watch-any-project]: watchRoot plugin receives getWatchRoot/setWatchRoot callbacks from index.ts — keeps plugin decoupled and testable
 - [Phase 13-watch-any-project]: inference event subscription moved to index.ts wireInferenceBroadcast() helper for re-wiring on directory switch
 - [Phase 13-watch-any-project]: graph/aggregator remain const stable references; only pipeline/inferenceEngine are let and replaced on switch
+- [Phase 13-watch-any-project]: DirectoryBar co-located in App.tsx following NavButton/PipelineStatusDot pattern — small UI components in same file
+- [Phase 13-watch-any-project]: scanning turns off on first graph_delta for live scanning feel; also off on initial_state as safety fallback
+- [Phase 13-watch-any-project]: useEffect([watchRoot]) keeps inputValue in sync when WsClient receives watch_root_changed and updates store externally
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None — all v2.2 server-side infrastructure is in place. All four phases are UI
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T22:51:59.205Z
-**Stopped at:** Completed 13-watch-any-project-01-PLAN.md
+**Last session:** 2026-03-16T22:59:14.883Z
+**Stopped at:** Completed 13-watch-any-project-02-PLAN.md
 **Resume file:** None

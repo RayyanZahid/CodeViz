@@ -49,7 +49,7 @@ See `milestones/v2.1-ROADMAP.md` for full phase details.
 - [x] **Phase 10: Risk Panel** - Live risk list with severity badges, click-to-highlight on canvas, mark-as-reviewed (completed 2026-03-16)
 - [x] **Phase 11: Activity Feed** - Streaming architectural events with colored dots, natural language, and relative timestamps (completed 2026-03-16)
 - [x] **Phase 12: Edge Interaction and Component Glow** - Edge hover/click on canvas plus pulse/fade animations for changed components (completed 2026-03-16)
-- [ ] **Phase 13: Watch Any Project** - Directory input in UI, env var support, fresh scan on directory change
+- [x] **Phase 13: Watch Any Project** - Directory input in UI, env var support, fresh scan on directory change (completed 2026-03-16)
 
 ## Phase Details
 
@@ -192,4 +192,4 @@ Plans:
 | 10. Risk Panel | 2/2 | Complete    | 2026-03-16 | - |
 | 11. Activity Feed | 1/1 | Complete    | 2026-03-16 | - |
 | 12. Edge Interaction and Component Glow | 2/2 | Complete    | 2026-03-16 | - |
-| 13. Watch Any Project | 1/2 | In Progress|  | - |
+| 13. Watch Any Project | 2/2 | Complete   | 2026-03-16 | - |

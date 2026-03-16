@@ -126,6 +126,37 @@ export class EdgeRenderer {
     if (line) line.visible(visible);
   }
 
+  /** Returns the internal lines map for iteration (e.g. edge highlight/dim). */
+  getAllLines(): Map<string, Konva.Arrow> {
+    return this.lines;
+  }
+
+  /**
+   * Resets an arrow to its default stroke color and width using stored attrs.
+   * Called by clearEdgeHighlight in ArchCanvas after click-to-highlight.
+   */
+  resetLineStyle(edgeId: string): void {
+    const arrow = this.lines.get(edgeId);
+    if (!arrow) return;
+
+    const dependencyCount = (arrow.getAttr('dependencyCount') as number | undefined) ?? 1;
+    const fakeEdge: GraphEdge = {
+      id: edgeId,
+      sourceId: arrow.getAttr('sourceId') as string,
+      targetId: arrow.getAttr('targetId') as string,
+      edgeType: 'imports_depends_on' as GraphEdge['edgeType'],
+      dependencyCount,
+    };
+
+    const strokeWidth = computeEdgeStrokeWidth(fakeEdge);
+    const opacity = computeEdgeOpacity(fakeEdge);
+    const strokeColor = `rgba(150, 200, 255, ${opacity})`;
+
+    arrow.stroke(strokeColor);
+    arrow.fill(strokeColor);
+    arrow.strokeWidth(strokeWidth);
+  }
+
   // -------------------------------------------------------------------------
   // Private: shape lifecycle
   // -------------------------------------------------------------------------
@@ -148,12 +179,18 @@ export class EdgeRenderer {
       fill: `rgba(150, 200, 255, ${opacity})`,
       pointerLength: 8,
       pointerWidth: 6,
-      listening: false,
+      listening: true,
+      hitStrokeWidth: 15,
     });
 
     // Store source/target IDs as attributes for updatePositions()
     arrow.setAttr('sourceId', edge.sourceId);
     arrow.setAttr('targetId', edge.targetId);
+    // Store dependencyCount for tooltip display and resetLineStyle()
+    arrow.setAttr('dependencyCount', edge.dependencyCount ?? 1);
+
+    // Edges render below node groups — ensured by moveToBottom() on the layer
+    arrow.moveToBottom();
 
     this.layer.add(arrow);
     this.lines.set(edge.id, arrow);
@@ -168,6 +205,8 @@ export class EdgeRenderer {
     if (!srcPos || !tgtPos) return;
 
     arrow.points([srcPos.x, srcPos.y, tgtPos.x, tgtPos.y]);
+    // Keep dependencyCount in sync
+    arrow.setAttr('dependencyCount', edge.dependencyCount ?? 1);
   }
 
   private destroyLine(edgeId: string): void {

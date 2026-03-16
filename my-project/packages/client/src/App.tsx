@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ArchCanvas } from './canvas/ArchCanvas.js';
+import type { EdgeTooltipData } from './canvas/ArchCanvas.js';
 import { MinimapStage } from './minimap/MinimapStage.js';
 import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
@@ -42,6 +43,9 @@ export function App() {
   });
   const [minimapVisible, setMinimapVisible] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Edge tooltip state — set by ArchCanvas via onEdgeHover callback
+  const [edgeTooltip, setEdgeTooltip] = useState<EdgeTooltipData | null>(null);
 
   // Pipeline health — read connection status from graphStore (updated by WsClient)
   const connectionStatus = useGraphStore((s) => s.connectionStatus);
@@ -145,6 +149,50 @@ export function App() {
   }, []);
 
   // -------------------------------------------------------------------------
+  // Edge tooltip position — clamp so it doesn't overflow canvas boundaries
+  // -------------------------------------------------------------------------
+  function computeTooltipStyle(
+    tooltip: EdgeTooltipData,
+    containerWidth: number,
+    containerHeight: number,
+  ): React.CSSProperties {
+    const TOOLTIP_WIDTH = 280;
+    const TOOLTIP_HEIGHT = 80; // approximate
+    const OFFSET_X = 12;
+    const OFFSET_Y = -8;
+
+    let left = tooltip.x + OFFSET_X;
+    let top = tooltip.y + OFFSET_Y;
+
+    // Clamp to canvas bounds
+    if (left + TOOLTIP_WIDTH > containerWidth) {
+      left = tooltip.x - TOOLTIP_WIDTH - OFFSET_X;
+    }
+    if (top + TOOLTIP_HEIGHT > containerHeight) {
+      top = containerHeight - TOOLTIP_HEIGHT - 8;
+    }
+    if (top < 0) top = 4;
+    if (left < 0) left = 4;
+
+    return {
+      position: 'absolute',
+      left,
+      top,
+      background: 'rgba(10, 10, 15, 0.95)',
+      border: '1px solid rgba(255, 255, 255, 0.15)',
+      borderRadius: 6,
+      padding: '8px 12px',
+      color: 'rgba(255, 255, 255, 0.9)',
+      fontSize: 12,
+      fontFamily: 'monospace',
+      zIndex: 300,
+      pointerEvents: 'none',
+      maxWidth: TOOLTIP_WIDTH,
+      lineHeight: '1.6',
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
@@ -175,7 +223,37 @@ export function App() {
           viewportControllerRef={viewportControllerRef}
           nodePositionsRef={nodePositionsRef}
           canvasRef={canvasRef}
+          onEdgeHover={setEdgeTooltip}
         />
+
+        {/* Edge tooltip overlay — rendered as HTML for crisp text and full styling */}
+        {edgeTooltip && (
+          <div style={computeTooltipStyle(edgeTooltip, dimensions.width, dimensions.height)}>
+            {/* Line 1: source -> target */}
+            <div style={{ marginBottom: 2 }}>
+              <span style={{ color: '#ffffff' }}>{edgeTooltip.sourceName}</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)', margin: '0 4px' }}>{'→'}</span>
+              <span style={{ color: '#ffffff' }}>{edgeTooltip.targetName}</span>
+            </div>
+            {/* Line 2: dependency count */}
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+              {edgeTooltip.dependencyCount}{' '}
+              {edgeTooltip.dependencyCount === 1 ? 'dependency' : 'dependencies'}
+            </div>
+            {/* Line 3: import symbols (target keyExports) */}
+            {edgeTooltip.targetExports.length > 0 && (
+              <div style={{ marginTop: 4, fontSize: 11 }}>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>Imports: </span>
+                <span style={{ color: 'rgba(150,200,255,0.9)' }}>
+                  {edgeTooltip.targetExports.slice(0, 5).join(', ')}
+                  {edgeTooltip.targetExports.length > 5
+                    ? ` + ${edgeTooltip.targetExports.length - 5} more`
+                    : ''}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Navigation controls overlay — position:absolute within canvas wrapper (not fixed) */}
         <div

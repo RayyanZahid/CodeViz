@@ -33,6 +33,22 @@ import { IncrementalPlacer } from '../layout/IncrementalPlacer.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../layout/ZoneConfig.js';
 
 // ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface EdgeTooltipData {
+  edgeId: string;
+  sourceId: string;
+  targetId: string;
+  sourceName: string;
+  targetName: string;
+  dependencyCount: number;
+  targetExports: string[];
+  x: number;
+  y: number;
+}
+
+// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
@@ -46,6 +62,8 @@ interface ArchCanvasProps {
   nodePositionsRef?: React.MutableRefObject<Map<string, { x: number; y: number }>>;
   /** Ref populated with imperative handle for programmatic node selection */
   canvasRef?: React.MutableRefObject<{ selectNodeOnCanvas: (nodeId: string) => void } | null>;
+  /** Called with tooltip data when hovering an edge, or null to dismiss */
+  onEdgeHover?: (data: EdgeTooltipData | null) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +78,7 @@ export function ArchCanvas({
   viewportControllerRef,
   nodePositionsRef,
   canvasRef,
+  onEdgeHover,
 }: ArchCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null);
   const graphLayerRef = useRef<Konva.Layer>(null);
@@ -81,6 +100,10 @@ export function ArchCanvas({
   // Keep a stable ref to onViewportChange so the effect closure doesn't go stale
   const onViewportChangeRef = useRef(onViewportChange);
   onViewportChangeRef.current = onViewportChange;
+
+  // Keep a stable ref to onEdgeHover so the effect closure doesn't go stale
+  const onEdgeHoverRef = useRef(onEdgeHover);
+  onEdgeHoverRef.current = onEdgeHover;
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -237,16 +260,124 @@ export function ArchCanvas({
     });
 
     // -------------------------------------------------------------------------
+    // Edge highlight state — tracks which edge (if any) is currently highlighted
+    // -------------------------------------------------------------------------
+    let highlightedEdgeId: string | null = null;
+
+    function clearEdgeHighlight(): void {
+      if (highlightedEdgeId) {
+        edgeRenderer.resetLineStyle(highlightedEdgeId);
+        highlightedEdgeId = null;
+      }
+      clearSelection(nodeRenderer);
+      gl.batchDraw();
+    }
+
+    function highlightEdge(arrow: Konva.Arrow): void {
+      // Clear any existing selection / edge highlight first
+      clearEdgeHighlight();
+
+      highlightedEdgeId = arrow.id();
+
+      // Style the clicked edge: accent blue, thicker
+      const currentWidth = arrow.strokeWidth();
+      arrow.stroke('#60a5fa');
+      arrow.fill('#60a5fa');
+      arrow.strokeWidth(currentWidth + 2);
+
+      // Retrieve endpoint node IDs
+      const sourceId = arrow.getAttr('sourceId') as string | undefined;
+      const targetId = arrow.getAttr('targetId') as string | undefined;
+
+      if (sourceId) highlightNode(sourceId, nodeRenderer);
+      if (targetId) highlightNode(targetId, nodeRenderer);
+
+      // Dim all other nodes
+      const bounds = nodeRenderer.getAllNodeBounds();
+      for (const { id } of bounds) {
+        if (id !== sourceId && id !== targetId) {
+          const shape = nodeRenderer.getShape(id);
+          if (shape) shape.opacity(0.15);
+        }
+      }
+
+      gl.batchDraw();
+    }
+
+    // -------------------------------------------------------------------------
+    // Mousemove — edge hover tooltip
+    // -------------------------------------------------------------------------
+    let lastHoveredArrowId: string | null = null;
+
+    stage.on('mousemove', (e) => {
+      const target = e.target;
+
+      if (target instanceof Konva.Arrow) {
+        const arrowId = target.id();
+
+        // Avoid re-firing tooltip for the same edge
+        if (arrowId === lastHoveredArrowId) return;
+        lastHoveredArrowId = arrowId;
+
+        const sourceId = target.getAttr('sourceId') as string | undefined;
+        const targetId = target.getAttr('targetId') as string | undefined;
+        const dependencyCount = (target.getAttr('dependencyCount') as number | undefined) ?? 1;
+
+        const state = graphStore.getState();
+        const sourceNode = sourceId ? state.nodes.get(sourceId) : undefined;
+        const targetNode = targetId ? state.nodes.get(targetId) : undefined;
+
+        const sourceName = sourceNode?.name ?? sourceId ?? '';
+        const targetName = targetNode?.name ?? targetId ?? '';
+        const targetExports = targetNode?.keyExports ?? [];
+
+        const pointerPos = stage.getPointerPosition();
+        if (!pointerPos) return;
+
+        onEdgeHoverRef.current?.({
+          edgeId: arrowId,
+          sourceId: sourceId ?? '',
+          targetId: targetId ?? '',
+          sourceName,
+          targetName,
+          dependencyCount,
+          targetExports,
+          x: pointerPos.x,
+          y: pointerPos.y,
+        });
+      } else {
+        // Moved off an arrow — dismiss tooltip
+        if (lastHoveredArrowId !== null) {
+          lastHoveredArrowId = null;
+          onEdgeHoverRef.current?.(null);
+        }
+      }
+    });
+
+    // -------------------------------------------------------------------------
     // Click-to-select — selects node and highlights its direct dependencies
+    // Also handles edge click-to-highlight
     // -------------------------------------------------------------------------
     stage.on('click tap', (e) => {
       const target = e.target;
 
-      // Background click — deselect all
+      // Background click — deselect all and clear edge highlight
       if (target === stage) {
-        clearSelection(nodeRenderer);
+        clearEdgeHighlight();
         handleSelectNodeRef.current(null);
         gl.batchDraw();
+        return;
+      }
+
+      // Check if clicked target is a Konva.Arrow (edge click)
+      if (target instanceof Konva.Arrow) {
+        const arrowId = target.id();
+        if (arrowId === highlightedEdgeId) {
+          // Clicking the already-highlighted edge dismisses the highlight
+          clearEdgeHighlight();
+        } else {
+          highlightEdge(target);
+        }
         return;
       }
 
@@ -263,7 +394,8 @@ export function ArchCanvas({
         current = current.parent;
       }
 
-      clearSelection(nodeRenderer);
+      // Clear edge highlight when clicking a node or blank area
+      clearEdgeHighlight();
 
       if (!nodeId) {
         handleSelectNodeRef.current(null);
@@ -287,6 +419,16 @@ export function ArchCanvas({
     });
 
     // -------------------------------------------------------------------------
+    // Escape key — dismiss edge highlight (document-level listener)
+    // -------------------------------------------------------------------------
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape' && highlightedEdgeId) {
+        clearEdgeHighlight();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+
+    // -------------------------------------------------------------------------
     // Imperative handle for programmatic node selection from parent (App.tsx)
     // Allows sidebar interactions (risk click, dependency click) to highlight
     // the selected node and its dependency edges on the canvas.
@@ -294,7 +436,7 @@ export function ArchCanvas({
     if (canvasRef) {
       canvasRef.current = {
         selectNodeOnCanvas: (nodeId: string) => {
-          clearSelection(nodeRenderer);
+          clearEdgeHighlight();
           highlightNode(nodeId, nodeRenderer);
           // Highlight dependency edges (same logic as click handler)
           const currentState = graphStore.getState();
@@ -318,6 +460,8 @@ export function ArchCanvas({
       stage.off('click tap');
       stage.off('wheel');
       stage.off('dragend');
+      stage.off('mousemove');
+      document.removeEventListener('keydown', handleKeyDown);
       if (viewportControllerRef) {
         viewportControllerRef.current = null;
       }

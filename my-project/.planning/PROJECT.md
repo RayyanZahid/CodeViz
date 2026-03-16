@@ -52,11 +52,21 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ### Active
 
-### Future
-
 - [ ] Time-travel replay — scrub through architecture evolution over time
 - [ ] Intent inference from code change patterns (commit messages, file groupings)
 - [ ] Intent panel showing inferred agent objectives and subtasks
+
+## Current Milestone: v3.0 Architecture Intelligence
+
+**Goal:** Add temporal awareness and intent inference — users can replay how the architecture evolved and understand what the AI agent is trying to accomplish.
+
+**Target features:**
+- Time-travel replay: scrub through architecture evolution across sessions
+- Intent inference: detect patterns in code changes to infer agent objectives
+- Intent panel: display inferred agent objectives and subtasks in the UI
+
+### Future
+
 - [ ] Go and Rust language support via tree-sitter
 - [ ] Export architecture map as SVG or PNG screenshot
 
@@ -123,4 +133,4 @@ The architecture map is now a fully interactive live supervision tool with all p
 | DirectoryBar co-located in App.tsx | Follows NavButton/PipelineStatusDot small-component pattern | ✓ Good — no unnecessary file sprawl |
 
 ---
-*Last updated: 2026-03-16 after v2.2 milestone*
+*Last updated: 2026-03-16 after v3.0 milestone start*

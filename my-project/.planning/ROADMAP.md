@@ -155,5 +155,5 @@ Plans:
 | 9. Inspector Panel | v2.1 | 2/2 | Complete | 2026-03-16 |
 | 10. Risk Panel | 2/2 | Complete    | 2026-03-16 | - |
 | 11. Activity Feed | 1/1 | Complete    | 2026-03-16 | - |
-| 12. Edge Interaction and Component Glow | 2/2 | Complete   | 2026-03-16 | - |
+| 12. Edge Interaction and Component Glow | 2/2 | Complete    | 2026-03-16 | - |
 | 13. Watch Any Project | v2.2 | 0/2 | Not started | - |

@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 8 of 13 (Data Pipeline Repair)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-16 — v2.0 roadmap created, 6 phases defined (8-13)
+Plan: 1 of 4 complete
+Status: In progress
+Last activity: 2026-03-16 — Phase 8 Plan 01 complete (Zod schemas + ComponentAggregator map)
 
-Progress: [░░░░░░░░░░] 0% (v2.0)
+Progress: [█░░░░░░░░░] 4% (v2.0)
 
 ## Performance Metrics
 
@@ -29,7 +29,11 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 |-------|-------|--------|
 | 1-7 | 21/21 | Complete |
 
-**v2.0:** No plans completed yet.
+**v2.0:** 1 plan completed.
+
+| Phase | Plans | Duration | Status |
+|-------|-------|----------|--------|
+| 08 P01 | 1/4 | 1 min | Complete |
 
 *Updated after each plan completion*
 
@@ -45,6 +49,9 @@ Recent decisions affecting v2.0:
 - Phases 9, 10, 11 depend on Phase 8 but are otherwise independent — can be executed sequentially without coordination overhead.
 - Phase 12 (edge + glow) is canvas-layer work, independent of sidebar panel logic.
 - Phase 13 (watch any project) is fully independent of all other v2.0 phases.
+- [Phase 08-data-pipeline-repair]: Zod schemas remain strict (no .passthrough()) — strip unknown fields for safety
+- [Phase 08-data-pipeline-repair]: fileToComponentMap is rebuilt on every aggregateSnapshot() call — always current, no staleness
+- [Phase 08-data-pipeline-repair]: getFileToComponentMap() returns the internal Map directly — callers should not mutate it
 
 ### Pending Todos
 
@@ -56,6 +63,6 @@ None — v1.0 shipped clean. v2.0 starts with known data pipeline gap (PIPE-01 t
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T18:58:55.222Z
-**Stopped at:** Phase 8 context gathered
-**Resume file:** .planning/phases/08-data-pipeline-repair/08-CONTEXT.md
+**Last session:** 2026-03-16T19:12:28.434Z
+**Stopped at:** Completed 08-01-PLAN.md
+**Resume file:** None

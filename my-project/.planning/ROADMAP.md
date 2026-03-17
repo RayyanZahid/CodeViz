@@ -83,12 +83,12 @@ Plans:
 
 ### Phase 14.2: Fix: Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Replace placeholder Phase 14 journey tests with real tests that verify all four success criteria via diagnostic REST endpoints: graph_snapshots CRUD with positions, intent_sessions CRUD, shared type compilation, and delta-threshold snapshot behavior
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 14.2 to break down)
+- [ ] 14.2-01-PLAN.md -- Diagnostic plugin endpoints and real journey test rewrites
 
 ### Phase 14.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
 

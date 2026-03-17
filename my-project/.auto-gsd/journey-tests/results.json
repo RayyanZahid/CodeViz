@@ -1,0 +1,536 @@
+{
+  "config": {
+    "configFile": "F:\\Directory\\FrontierIntelligenceHack\\my-project\\.auto-gsd\\journey-tests\\playwright.config.ts",
+    "rootDir": "F:/Directory/FrontierIntelligenceHack/my-project/.auto-gsd/journey-tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "F:/Directory/FrontierIntelligenceHack/my-project/.auto-gsd/journey-tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "F:/Directory/FrontierIntelligenceHack/my-project/.auto-gsd/journey-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://localhost:5173",
+      "timeout": 120000,
+      "reuseExistingServer": true,
+      "cwd": "F:\\Directory\\FrontierIntelligenceHack\\my-project",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  },
+  "suites": [
+    {
+      "title": "journey-build-and-start.spec.ts",
+      "file": "journey-build-and-start.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Build and Start",
+          "file": "journey-build-and-start.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "App builds without errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1758,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:03.469Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c26a080982c4d2683d84-9947c275c109aeba29d5",
+              "file": "journey-build-and-start.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "Build outputs exist in dist folders",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:05.244Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c26a080982c4d2683d84-53f72ee53744109b3b1b",
+              "file": "journey-build-and-start.spec.ts",
+              "line": 20,
+              "column": 3
+            },
+            {
+              "title": "Dev server starts and responds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 295,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:05.266Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c26a080982c4d2683d84-a325ae47997042ffd3f6",
+              "file": "journey-build-and-start.spec.ts",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "No JavaScript errors on load",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2155,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:05.650Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c26a080982c4d2683d84-e3e817ebdee63edd4028",
+              "file": "journey-build-and-start.spec.ts",
+              "line": 36,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journey-phase-14.spec.ts",
+      "file": "journey-phase-14.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 14: Schema Foundation and Shared Types",
+          "file": "journey-phase-14.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "A `graph_snapshots` Drizzle table exists with a `positions_json` column, and inserting a row with node positions succeeds without error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 372,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:07.842Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc47d26b275993779821-bf935231391fbd60b986",
+              "file": "journey-phase-14.spec.ts",
+              "line": 6,
+              "column": 3
+            },
+            {
+              "title": "An `intent_sessions` Drizzle table exists and a new intent session row can be written and read back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 51,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:08.225Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc47d26b275993779821-11a9018607ac3358590b",
+              "file": "journey-phase-14.spec.ts",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "`shared/src/types/timeline.ts` exports `SnapshotMeta`, `IntentSession`, and the three new WebSocket message types, and TypeScript compiles with no errors across all packages",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 50,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:08.285Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc47d26b275993779821-f328b6d4982dfc4b034b",
+              "file": "journey-phase-14.spec.ts",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "Snapshot writes are triggered only at the delta threshold (not every event), preventing unbounded storage growth from day one",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5089,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:08.344Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc47d26b275993779821-de4c58182ec7ed4dad2d",
+              "file": "journey-phase-14.spec.ts",
+              "line": 48,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journey-phase-15.spec.ts",
+      "file": "journey-phase-15.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 15: Server Replay Layer",
+          "file": "journey-phase-15.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "`GET /api/timeline` returns a list of snapshot metadata with sequence numbers and timestamps after file changes occur",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2090,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:13.471Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "eca5d58b7a0c7e6c32c2-f9f76e04e0980f99b23b",
+              "file": "journey-phase-15.spec.ts",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "`GET /api/snapshot/:id` returns a complete graph snapshot (nodes, edges, positions) reconstructed from the nearest checkpoint in at most 50 replay steps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2099,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:15.572Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "eca5d58b7a0c7e6c32c2-ace24573584bb4b3ca7f",
+              "file": "journey-phase-15.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "The `IntentAnalyzer` classifies a realistic sequence of architectural events into one of the 4-6 coarse categories and returns a confidence score",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2101,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:17.683Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "eca5d58b7a0c7e6c32c2-6556d774d60676ca592b",
+              "file": "journey-phase-15.spec.ts",
+              "line": 129,
+              "column": 3
+            },
+            {
+              "title": "Writing files during an active session does not cause the pipeline to pause — new events continue to arrive while the replay read path is active",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3121,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-17T05:38:19.794Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "eca5d58b7a0c7e6c32c2-b021a8d6e37a336f2d98",
+              "file": "journey-phase-15.spec.ts",
+              "line": 196,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-17T05:38:02.344Z",
+    "duration": 20676.406,
+    "expected": 12,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

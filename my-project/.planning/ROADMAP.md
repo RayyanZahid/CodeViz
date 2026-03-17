@@ -127,12 +127,12 @@ Plans:
 
 ### Phase 15.6: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore 4 auto-gsd-overwritten journey test files from git HEAD, add a canary spec file that detects future placeholder overwrites, and verify all 13 tests pass green
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.6 to break down)
+- [ ] 15.6-01-PLAN.md -- Restore 4 journey test files from git HEAD, create canary overwrite detector, verify 13/13 pass
 
 ### Phase 15.5: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 

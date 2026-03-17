@@ -1,7 +1,7 @@
 ---
 phase: 16-client-state-layer-and-mode-isolation
-verified: 2026-03-17T12:30:00Z
-status: passed
+verified: 2026-03-17T14:00:00Z
+status: human_needed
 score: 4/4 must-haves verified
 re_verification:
   previous_status: passed
@@ -27,19 +27,17 @@ human_verification:
 # Phase 16: Client State Layer and Mode Isolation Verification Report
 
 **Phase Goal:** Users can enter and exit replay mode, and live WebSocket deltas are completely blocked from mutating the displayed graph while in replay mode
-**Verified:** 2026-03-17T12:30:00Z
-**Status:** passed (all automated checks confirmed; 4 items need runtime verification)
-**Re-verification:** Yes — re-verification after initial pass on 2026-03-17
+**Verified:** 2026-03-17T14:00:00Z
+**Status:** human_needed (all automated checks passed; 4 items require runtime testing)
+**Re-verification:** Yes — independent re-verification of all codebase files; previous verification dated 2026-03-17
 
 ---
 
 ## Re-verification Summary
 
-Previous VERIFICATION.md had `status: passed`, `score: 4/4`, no `gaps:` section. This re-verification independently read every file from scratch to confirm no regressions have occurred.
+A previous VERIFICATION.md existed with `status: passed`, `score: 4/4`, no `gaps:` section. This re-verification independently read every source file from scratch rather than trusting the prior report's assertions.
 
-**Result:** No regressions. All 4 observable truths remain VERIFIED. All 8 artifacts remain substantive and wired. Both REPLAY-03 and REPLAY-04 requirements remain satisfied. TypeScript compiles with zero errors.
-
-One plan-level deviation noted (ActivityFeed timestamp filtering — see note below) that does not affect the 4 phase success criteria.
+**Result:** No regressions detected. All 4 observable truths remain VERIFIED. All 8 artifacts remain substantive and wired. Both REPLAY-03 and REPLAY-04 requirements remain satisfied. TypeScript compiles with zero errors. One pre-existing plan-level deviation (ActivityFeed timestamp filtering) noted and confirmed still non-blocking against the 4 phase success criteria.
 
 ---
 
@@ -49,9 +47,9 @@ One plan-level deviation noted (ActivityFeed timestamp filtering — see note be
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | When replay mode is active, a visible "REPLAY MODE" indicator is present on screen | VERIFIED | `ReplayBanner.tsx` line 45: `if (!isReplay) return null;` — returns non-null JSX with amber banner and "REPLAY MODE" text when `isReplay=true`; mounted in `App.tsx` line 280 above `DirectoryBar` |
-| 2 | User exits replay mode with a single action (button click or Escape) | VERIFIED | `ReplayBanner.tsx` line 100: "Return to Live" button calls `onExitReplay` prop; `App.tsx` lines 184-193: ESC key handler checks `isReplay` first with priority over inspector dismiss |
-| 3 | Live graph_delta and inference WebSocket messages are buffered (not applied) during replay | VERIFIED | `wsClient.ts` lines 202-206: `graph_delta` guard checks `replayStore.getState().isReplay`, calls `bufferGraphDelta`, updates `lastQueuedVersion`, breaks before normal dispatch; lines 231-234: `inference` guard calls `bufferInference` and breaks |
+| 1 | When replay mode is active, a visible "REPLAY MODE" indicator is present on screen | VERIFIED | `ReplayBanner.tsx` line 45: `if (!isReplay) return null;` returns non-null JSX with amber banner and "REPLAY MODE" text when `isReplay=true`; mounted in `App.tsx` line 280 above `<DirectoryBar />` |
+| 2 | User exits replay mode with a single action (button click or Escape) | VERIFIED | `ReplayBanner.tsx` line 100: "Return to Live" button calls `onExitReplay` prop; `App.tsx` lines 183-197: ESC key handler checks `isReplay` first with priority over inspector dismiss; both paths call `handleExitReplay` |
+| 3 | Live `graph_delta` and `inference` WebSocket messages are buffered (not applied) during replay | VERIFIED | `wsClient.ts` lines 202-206: `graph_delta` guard checks `replayStore.getState().isReplay`, calls `bufferGraphDelta`, updates `lastQueuedVersion`, breaks before normal dispatch; lines 231-234: `inference` guard calls `bufferInference` and breaks |
 | 4 | After exiting replay, buffered events are applied and the activity feed catches up | VERIFIED | `App.tsx` lines 132-177: `handleExitReplay` reads `bufferedGraphDeltas`/`bufferedInferenceMessages`, exits replay, fetches live snapshot (large buffers) or applies deltas (small), calls `insertReplaySeparator`, drains up to 50 inference messages, then calls `clearBuffer()` |
 
 **Score:** 4/4 truths verified
@@ -64,23 +62,23 @@ One plan-level deviation noted (ActivityFeed timestamp filtering — see note be
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `packages/client/src/store/replayStore.ts` | Replay mode state machine (isReplay, buffer, actions) | VERIFIED | 143 lines; exports `useReplayStore`, `replayStore`, `ReplayStore` interface; all state fields confirmed (isReplay, replaySnapshotId, replayTimestamp, replayNodes, replayEdges, bufferedGraphDeltas, bufferedInferenceMessages, bufferedEventCount, bufferOverflowed); all actions implemented (enterReplay, exitReplay, bufferGraphDelta, bufferInference, clearBuffer); buffer cap at 500 with `bufferOverflowed` flag; exitReplay intentionally preserves buffers for caller to drain |
-| `packages/client/src/ws/wsClient.ts` | Delta interception during replay mode | VERIFIED | `replayStore` imported at line 4; replay guards present in `initial_state` (line 168), `graph_delta` (line 202), `inference` (line 231), `watch_root_changed` (line 241); `lastQueuedVersion` updated during buffering on line 204 per RESEARCH.md Pitfall 2 |
+| `packages/client/src/store/replayStore.ts` | Replay mode state machine (isReplay, buffer, actions) | VERIFIED | 143 lines; exports `useReplayStore`, `replayStore`, `ReplayStore` interface; all 9 state fields present (`isReplay`, `replaySnapshotId`, `replayTimestamp`, `replayNodes`, `replayEdges`, `bufferedGraphDeltas`, `bufferedInferenceMessages`, `bufferedEventCount`, `bufferOverflowed`); all 5 actions implemented (`enterReplay`, `exitReplay`, `bufferGraphDelta`, `bufferInference`, `clearBuffer`); `BUFFER_CAP=500` with `bufferOverflowed` flag; `exitReplay` intentionally preserves buffers for caller to drain |
+| `packages/client/src/ws/wsClient.ts` | Delta interception during replay mode | VERIFIED | `replayStore` imported at line 4; replay guards present in `initial_state` (line 168), `graph_delta` (line 202), `inference` (line 231), `watch_root_changed` (line 241); `lastQueuedVersion` updated during `graph_delta` buffering on line 204 per RESEARCH.md Pitfall 2 |
 
 ### Plan 02 Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `packages/client/src/panels/ReplayBanner.tsx` | Amber banner UI for replay mode indicator | VERIFIED | 119 lines; `useReplayStore` selectors for `isReplay`, `replayTimestamp`, `bufferedEventCount`; amber background `#92400e`, border `#d97706`, height 44, zIndex 500; "REPLAY MODE — {timestamp}" via `Intl.DateTimeFormat`; buffered event counter conditionally rendered; "Return to Live" button with `replayButtonPulse` CSS animation injected via `useEffect` style tag with cleanup; returns null when `!isReplay` |
-| `packages/client/src/App.tsx` | Banner mounting, Escape key handler, handleExitReplay | VERIFIED | `ReplayBanner` imported line 9, mounted line 280 above `DirectoryBar`; `handleExitReplay` async callback lines 132-177 with full buffer drain logic; ESC handler lines 183-197 checks `isReplay` first; `DirectoryBar.handleSubmit` lines 489-495 auto-exits replay before watch-root switch |
-| `packages/client/src/store/inferenceStore.ts` | insertReplaySeparator action and isReplaySeparator field | VERIFIED | `isReplaySeparator?: boolean` and `replayEventCount?: number` on `ActivityItem` interface lines 23-25; `insertReplaySeparator(totalCount: number)` action in interface line 64 and implementation lines 449-462; inserts amber separator at head of feed |
-| `packages/client/src/panels/ActivityFeed.tsx` | Replay separator rendering as highlighted divider | VERIFIED | `FeedItem` lines 33-59: checks `item.isReplaySeparator` before normal render path; returns amber-tinted divider with italic "Events during replay" label |
+| `packages/client/src/panels/ReplayBanner.tsx` | Amber banner UI for replay mode indicator | VERIFIED | 119 lines; `useReplayStore` selectors for `isReplay` (line 24), `replayTimestamp` (line 25), `bufferedEventCount` (line 26); amber background `#92400e`, border `#d97706`, height 44, zIndex 500; "REPLAY MODE — {timestamp}" via `Intl.DateTimeFormat`; buffered event counter rendered when `bufferedEventCount > 0`; "Return to Live" button with `replayButtonPulse` CSS animation injected via `useEffect` style tag with cleanup; returns null when `!isReplay` (line 45) |
+| `packages/client/src/App.tsx` | Banner mounting, Escape key handler, handleExitReplay | VERIFIED | `ReplayBanner` imported line 9, mounted line 280 above `<DirectoryBar />`; `handleExitReplay` async callback lines 132-177 with full buffer drain logic; ESC handler lines 183-197 checks `isReplay` first; `DirectoryBar.handleSubmit` lines 489-495 auto-exits replay before watch-root switch |
+| `packages/client/src/store/inferenceStore.ts` | insertReplaySeparator action and isReplaySeparator field | VERIFIED | `isReplaySeparator?: boolean` (line 24) and `replayEventCount?: number` (line 26) on `ActivityItem` interface; `insertReplaySeparator(totalCount: number)` in interface (line 64) and implementation (lines 449-462); inserts amber separator at head of feed with `iconColor: '#eab308'` |
+| `packages/client/src/panels/ActivityFeed.tsx` | Replay separator rendering as highlighted divider | VERIFIED | `FeedItem` lines 33-59: checks `item.isReplaySeparator` before normal render path; returns amber-tinted divider with italic "Events during replay" label, amber borders and background |
 
 ### Plan 03 Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `packages/client/src/canvas/replayTransitions.ts` | Morph animation helpers, blue tint apply/restore, fade-in/out | VERIFIED | 195 lines; exports all 5 functions: `morphNodesToPositions` (lines 26-47, Konva.Tween x/y, EaseInOut, 500ms default, destroys tween onFinish), `fadeInNodes` (lines 58-81, opacity 0->1), `fadeOutNodes` (lines 92-114, opacity to 0, restores on finish), `applyReplayTint` (lines 130-157, blue shadow glow #64a0ff, saves originals to tintedFills Map), `restoreOriginalTint` (lines 169-194, restores from tintedFills, clears map); pure functions with no store imports |
+| `packages/client/src/canvas/replayTransitions.ts` | Morph animation helpers, blue tint apply/restore, fade-in/out | VERIFIED | 195 lines; exports all 5 functions: `morphNodesToPositions` (lines 26-47, Konva.Tween x/y, EaseInOut, 500ms default, destroys tween onFinish), `fadeInNodes` (lines 58-81, opacity 0->1), `fadeOutNodes` (lines 92-114, opacity to 0, restores on finish), `applyReplayTint` (lines 130-157, blue shadow glow `#64a0ff`, saves originals to `tintedFills` Map), `restoreOriginalTint` (lines 169-194, restores from `tintedFills`, clears map); pure functions with no store imports |
 | `packages/client/src/canvas/ArchCanvas.tsx` | Replay subscription guard, replay entry/exit orchestration, loadSnapshotAndEnterReplay | VERIFIED | `replayStore` imported line 33; `graphStore.subscribe` guard at lines 219-221 returns early when `isReplay=true`; `replayStore.subscribe` lines 297-420 orchestrates full enter/exit with morph/fade/tint/viewport; empty graph overlay lines 653-670 when `isReplay && replayNodeCount === 0`; `loadSnapshotAndEnterReplay` exported lines 724-766; `replayUnsub()` in cleanup line 619 |
 
 ---
@@ -91,25 +89,25 @@ One plan-level deviation noted (ActivityFeed timestamp filtering — see note be
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `wsClient.ts` | `replayStore.ts` | `import replayStore, check isReplay in handleMessage` | WIRED | `import { replayStore }` confirmed line 4; `replayStore.getState().isReplay` confirmed in 4 message cases |
-| `wsClient.ts` | `replayStore.ts` | `bufferGraphDelta and bufferInference calls` | WIRED | `replayStore.getState().bufferGraphDelta(...)` line 203; `replayStore.getState().bufferInference(...)` line 232 both confirmed |
-| `App.tsx` | `replayStore.ts` | `DirectoryBar calls exitReplay before POST /api/watch` | WIRED | `replayStore.getState().isReplay` check + `exitReplay()` + `clearBuffer()` at lines 492-495 in `handleSubmit` |
+| `wsClient.ts` | `replayStore.ts` | `import replayStore, check isReplay in handleMessage` | WIRED | `import { replayStore }` confirmed line 4; `replayStore.getState().isReplay` confirmed at lines 168, 202, 231, 241 — all 4 message-type cases |
+| `wsClient.ts` | `replayStore.ts` | `bufferGraphDelta and bufferInference calls` | WIRED | `replayStore.getState().bufferGraphDelta(...)` line 203; `replayStore.getState().bufferInference(...)` line 232 — both confirmed |
+| `App.tsx` | `replayStore.ts` | `DirectoryBar calls exitReplay before POST /api/watch` | WIRED | `replayStore.getState().isReplay` check + `exitReplay()` + `clearBuffer()` at lines 492-495 in `handleSubmit` confirmed |
 
 ### Plan 02 Key Links
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
 | `ReplayBanner.tsx` | `replayStore.ts` | `useReplayStore selectors for isReplay, replayTimestamp, bufferedEventCount` | WIRED | All 3 selectors confirmed lines 24-26 |
-| `App.tsx` | `ReplayBanner.tsx` | `ReplayBanner mounted above DirectoryBar` | WIRED | `<ReplayBanner onExitReplay={...} />` line 280, above `<DirectoryBar />` line 283 |
+| `App.tsx` | `ReplayBanner.tsx` | `ReplayBanner mounted above DirectoryBar` | WIRED | `<ReplayBanner onExitReplay={() => void handleExitReplay()} />` line 280, immediately above `<DirectoryBar />` line 283 |
 | `App.tsx` | `replayStore.ts` | `handleExitReplay reads buffer, calls exitReplay, fetches live snapshot` | WIRED | Full async flow confirmed lines 132-177: reads buffer state, calls `exitReplay()` line 137, fetches `/api/snapshot` for large buffers lines 143-151, applies deltas for small buffers lines 153-158, inserts separator line 167, drains inference lines 169-172, calls `clearBuffer()` line 176 |
 
 ### Plan 03 Key Links
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `ArchCanvas.tsx` | `replayStore.ts` | `replayStore.subscribe for enterReplay/exitReplay transitions` | WIRED | `replayStore.subscribe((state, prev) => {...})` line 297 confirmed with enter gate line 299 `state.isReplay && !prev.isReplay` and exit gate line 368 `!state.isReplay && prev.isReplay && wasInReplay` |
+| `ArchCanvas.tsx` | `replayStore.ts` | `replayStore.subscribe for enterReplay/exitReplay transitions` | WIRED | `replayStore.subscribe((state, prev) => {...})` line 297; enter gate line 299 `state.isReplay && !prev.isReplay`; exit gate line 368 `!state.isReplay && prev.isReplay && wasInReplay` |
 | `ArchCanvas.tsx` | `replayTransitions.ts` | `import morph/tint helpers, call during replay transitions` | WIRED | All 5 helpers imported lines 43-48; `morphNodesToPositions` called lines 339 and 390; `fadeInNodes` lines 346 and 399; `fadeOutNodes` line 349; `applyReplayTint` line 356; `restoreOriginalTint` line 372 |
-| `ArchCanvas.tsx` | `ViewportController.ts` | `viewport.fitToView() on replay entry for auto-zoom` | WIRED | `setTimeout(() => viewport.fitToView(), 100)` called on both replay entry line 360 and exit line 416 |
+| `ArchCanvas.tsx` | `ViewportController.ts` | `viewport.fitToView() on replay entry for auto-zoom` | WIRED | `setTimeout(() => viewport.fitToView(), 100)` called on both replay entry (line 360) and exit (line 416) |
 
 ---
 
@@ -117,10 +115,10 @@ One plan-level deviation noted (ActivityFeed timestamp filtering — see note be
 
 | Requirement | Source Plans | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| REPLAY-03 | 16-01, 16-02, 16-03 | User sees a clear "REPLAY" mode indicator when viewing historical state | SATISFIED | `ReplayBanner.tsx` renders amber "REPLAY MODE — {timestamp}" banner at zIndex 500 when `isReplay=true`; REQUIREMENTS.md line 14 marked `[x]` complete; coverage table line 76 shows Phase 16 / Complete |
-| REPLAY-04 | 16-01, 16-02, 16-03 | User can return to live view with a single action from replay mode | SATISFIED | Two exit paths implemented: (1) "Return to Live" button in banner, (2) Escape key with replay priority; `handleExitReplay` restores live graph state, drains buffer, inserts activity separator; REQUIREMENTS.md line 15 marked `[x]` complete; coverage table line 77 shows Phase 16 / Complete |
+| REPLAY-03 | 16-01, 16-02, 16-03 | User sees a clear "REPLAY" mode indicator when viewing historical state | SATISFIED | `ReplayBanner.tsx` renders amber "REPLAY MODE — {timestamp}" banner at zIndex 500 when `isReplay=true`; REQUIREMENTS.md line 14 marked `[x]` complete; traceability table line 76 shows Phase 16 / Complete |
+| REPLAY-04 | 16-01, 16-02, 16-03 | User can return to live view with a single action from replay mode | SATISFIED | Two exit paths: (1) "Return to Live" button in banner, (2) Escape key with replay priority; `handleExitReplay` restores live graph state, drains buffer, inserts activity separator; REQUIREMENTS.md line 15 marked `[x]` complete; traceability table line 77 shows Phase 16 / Complete |
 
-No orphaned requirements — REPLAY-03 and REPLAY-04 are claimed across all three plans and fully implemented. Both IDs confirmed complete in REQUIREMENTS.md coverage table.
+No orphaned requirements. REPLAY-03 and REPLAY-04 are claimed across all three plans and fully implemented. Both confirmed `[x]` complete in REQUIREMENTS.md with Phase 16 / Complete in the coverage table.
 
 ---
 
@@ -132,7 +130,7 @@ No anti-patterns detected across any phase-modified files.
 |------|---------|----------|--------|
 | `replayStore.ts` | — | — | Clean |
 | `wsClient.ts` | — | — | Clean |
-| `ReplayBanner.tsx` | — | — | Clean |
+| `ReplayBanner.tsx` | `return null` at line 45 | ℹ️ Info | Normal conditional rendering — not a stub; returns full JSX when `isReplay=true` |
 | `App.tsx` | — | — | Clean |
 | `inferenceStore.ts` | — | — | Clean |
 | `ActivityFeed.tsx` | — | — | Clean |
@@ -145,11 +143,11 @@ No anti-patterns detected across any phase-modified files.
 
 ### ActivityFeed timestamp filtering not implemented
 
-Plan 16-02 `must_haves.truths` item 6 stated: "During replay, the activity feed is filtered to show only events with timestamps up to the replayed moment." The actual `ActivityFeed.tsx` does NOT import `useReplayStore` and does NOT filter `activityFeed` by `replayTimestamp`. The SUMMARY for plan 16-02 does not note this as a deviation.
+Plan 16-02 `must_haves.truths` item 6 stated: "During replay, the activity feed is filtered to show only events with timestamps up to the replayed moment." The actual `ActivityFeed.tsx` does NOT import `useReplayStore` and does NOT filter `activityFeed` by `replayTimestamp` — it reads `activityFeed` directly from `useInferenceStore` and renders all items without a replay-aware filter.
 
-**Assessment:** This is a plan-truth gap but NOT a phase-goal gap. The 4 success criteria specified for this phase do not include activity feed timestamp filtering during replay. The UAT (16-UAT.md) marks all 11 tests passed including "Activity feed separator on replay exit" — confirming the separator (post-exit catch-up) works correctly. The filtering would improve the "looking at the past" experience during replay but its absence does not block any of the 4 stated success criteria. The phase goal is achieved without it.
+**Assessment:** This is a plan-truth deviation but NOT a phase-goal deviation. The 4 success criteria specified for this phase do not include activity feed timestamp filtering during replay. The 16-UAT.md marks all 11 tests passed including "Activity feed separator on replay exit" — confirming the separator (post-exit catch-up) works correctly. The filtering would improve the "looking at the past" experience during replay but its absence does not block any of the 4 stated success criteria.
 
-**Impact:** During replay, the activity feed continues to show live/historical events mixed (filtered only by the 50-item cap), rather than showing only events up to the replayed moment. Visual experience during replay is slightly less immersive, but replay isolation of the canvas graph is fully functional.
+**Impact:** During replay, the activity feed continues to show all historical events (up to the 50-item cap) without filtering to the replayed moment. Replay isolation of the canvas graph is fully functional.
 
 ---
 
@@ -191,15 +189,15 @@ Plan 16-02 `must_haves.truths` item 6 stated: "During replay, the activity feed 
 
 No gaps found against the 4 phase success criteria:
 
-1. Visible "VIEWING HISTORY" (REPLAY MODE) indicator — fully implemented in `ReplayBanner.tsx` and `App.tsx`
+1. Visible "REPLAY MODE" indicator — fully implemented in `ReplayBanner.tsx` and `App.tsx`
 2. Single-action exit to live state — fully implemented via button + Escape key + `handleExitReplay`
 3. Live deltas blocked from canvas during replay — fully implemented in `wsClient.ts` for `graph_delta` and `inference` messages
 4. Activity feed catches up after replay exit — fully implemented in `handleExitReplay` (separator + inference drain)
 
-One plan-level deviation noted (ActivityFeed timestamp filtering during replay) that does not affect goal achievement. The automated checks confirm all 8 artifacts are substantive and wired, all 9 key links confirmed present, both REPLAY-03 and REPLAY-04 satisfied, TypeScript compiles cleanly, no stubs or anti-patterns detected.
+One pre-existing plan-level deviation (ActivityFeed timestamp filtering during replay) does not affect goal achievement. All 8 artifacts are substantive and wired, all 9 key links confirmed present, both REPLAY-03 and REPLAY-04 satisfied, TypeScript compiles cleanly, no stubs or anti-patterns detected.
 
 ---
 
-_Verified: 2026-03-17T12:30:00Z_
+_Verified: 2026-03-17T14:00:00Z_
 _Verifier: Claude (gsd-verifier)_
-_Re-verification: Yes — after initial pass on 2026-03-17_
+_Re-verification: Yes — independent read of all source files; no regressions from prior verification_

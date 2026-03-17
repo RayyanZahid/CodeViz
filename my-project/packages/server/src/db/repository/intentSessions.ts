@@ -40,6 +40,13 @@ export const intentSessionsRepository = {
       .run();
   },
 
+  updateConfidence(id: number, confidence: number, objective: string): void {
+    db.update(intentSessions)
+      .set({ confidence, objective })
+      .where(eq(intentSessions.id, id))
+      .run();
+  },
+
   deleteBySession(sessionId: string): void {
     db.delete(intentSessions).where(eq(intentSessions.sessionId, sessionId)).run();
   },

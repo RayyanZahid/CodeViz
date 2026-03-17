@@ -7,8 +7,8 @@ export const IntentCategory = {
   BUG_FIXING: 'bug_fixing',
   REFACTORING: 'refactoring',
   TEST_WRITING: 'test_writing',
-  INFRASTRUCTURE: 'infrastructure',
-  UNCERTAIN: 'uncertain',
+  DEPENDENCY_UPDATE: 'dependency_update',
+  CLEANUP: 'cleanup',
 } as const;
 
 export type IntentCategory = typeof IntentCategory[keyof typeof IntentCategory];

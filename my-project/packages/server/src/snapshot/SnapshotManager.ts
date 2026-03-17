@@ -4,6 +4,7 @@ import type { GraphDelta } from '@archlens/shared/types';
 import type { SnapshotMeta } from '@archlens/shared/types';
 import { snapshotsRepository } from '../db/repository/snapshots.js';
 import { positionsRepository } from '../db/repository/positions.js';
+import { checkpointsRepository } from '../db/repository/checkpoints.js';
 import { broadcast } from '../plugins/websocket.js';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,12 @@ const DEBOUNCE_MS = 3000;
 
 /** FIFO cap targeting ~10-20MB budget (200 over 500 for safer sizing). */
 const MAX_SNAPSHOTS = 200;
+
+/** Every Nth snapshot becomes a checkpoint (retention anchor). */
+const CHECKPOINT_INTERVAL = 50;
+
+/** Maximum number of checkpoints to retain per session. */
+const MAX_CHECKPOINTS = 10;
 
 // ---------------------------------------------------------------------------
 // SnapshotManager
@@ -200,10 +207,27 @@ export class SnapshotManager {
       riskSnapshot: [],
     });
 
-    // 7. FIFO pruning — remove oldest if over cap
+    // 6b. Checkpoint creation — every CHECKPOINT_INTERVAL snapshots
+    if (this.sequenceNumber % CHECKPOINT_INTERVAL === 0) {
+      checkpointsRepository.insert({
+        sessionId: this.sessionId,
+        watchRoot: this.watchRoot,
+        sequenceNumber: this.sequenceNumber,
+        snapshotId: insertedId,
+        createdAt: new Date(),
+      });
+      // Prune old checkpoints beyond MAX_CHECKPOINTS
+      const cpCount = checkpointsRepository.getCount(this.sessionId);
+      if (cpCount > MAX_CHECKPOINTS) {
+        checkpointsRepository.deleteOldest(this.sessionId);
+      }
+      console.log(`[Snapshot] Checkpoint created at sequence #${this.sequenceNumber}`);
+    }
+
+    // 7. FIFO pruning — remove oldest NON-CHECKPOINT if over cap
     const count = snapshotsRepository.getCount(this.sessionId);
     if (count > MAX_SNAPSHOTS) {
-      snapshotsRepository.deleteOldest(this.sessionId);
+      snapshotsRepository.deleteOldestNonCheckpoint(this.sessionId);
     }
 
     // 8. Build SnapshotMeta and broadcast to connected WebSocket clients

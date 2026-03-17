@@ -76,7 +76,10 @@ See `milestones/v2.2-ROADMAP.md` for full phase details.
   2. An `intent_sessions` Drizzle table exists and a new intent session row can be written and read back
   3. `shared/src/types/timeline.ts` exports `SnapshotMeta`, `IntentSession`, and the three new WebSocket message types, and TypeScript compiles with no errors across all packages
   4. Snapshot writes are triggered only at the delta threshold (not every event), preventing unbounded storage growth from day one
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 14-01-PLAN.md -- Schema, shared types, message protocol, and repository modules (INFRA-01)
+- [ ] 14-02-PLAN.md -- SnapshotManager delta-threshold logic and server lifecycle wiring (INFRA-02)
 
 ### Phase 15: Server Replay Layer
 **Goal**: The server records graph snapshots automatically, can reconstruct any historical snapshot in O(50-max) operations, and emits inferred intent sessions over WebSocket
@@ -140,7 +143,7 @@ See `milestones/v2.2-ROADMAP.md` for full phase details.
 | 11. Activity Feed | v2.2 | 1/1 | Complete | 2026-03-16 |
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
-| 14. Schema Foundation and Shared Types | v3.0 | 0/? | Not started | - |
+| 14. Schema Foundation and Shared Types | v3.0 | 0/2 | Not started | - |
 | 15. Server Replay Layer | v3.0 | 0/? | Not started | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |

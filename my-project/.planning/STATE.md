@@ -46,6 +46,11 @@ Key v3.0 decisions (pre-planning):
 
 None.
 
+### Roadmap Evolution
+
+- Phase 14.1 inserted after Phase 14: Fix Journey Build and Start completes successfully (blocker) (URGENT)
+- Phase 14.2 inserted after Phase 14: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (URGENT)
+
 ### Blockers/Concerns
 
 - [Phase 15]: IntentAnalyzer 90-second activity-gap threshold is a starting estimate — inspect actual changeEvents timing patterns before committing to implementation
@@ -53,6 +58,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T00:24:10.147Z
-**Stopped at:** Completed 14-schema-foundation-and-shared-types/14-02-PLAN.md
-**Resume file:** None
+**Last session:** 2026-03-17T00:41:40.514Z
+**Stopped at:** Phase 15 context gathered
+**Resume file:** .planning/phases/15-server-replay-layer/15-CONTEXT.md

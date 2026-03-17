@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 17 of 18 (Timeline Slider and Intent Panel UI)
-Plan: 1 of 3 completed in current phase
+Plan: 4 of 6 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 17-01 (intentStore + replayStore extended + WsClient routing) complete
+Last activity: 2026-03-17 — Plan 17-04 (ActivityFeed epoch filtering + slide-in animation during replay) complete
 
-Progress: [████████░░] 78% (v3.0: Phase 17 started, 1/3 plans done)
+Progress: [████████░░] 80% (v3.0: Phase 17 in progress, 4/6 plans done)
 
 ## Performance Metrics
 
@@ -82,6 +82,9 @@ Key v3.0 decisions (pre-planning):
 - [Phase 17-01]: intentStore focus-shift detection checks category change — archives old session to history before replacing active session on applyIntentUpdated
 - [Phase 17-01]: replayStore.snapshots persists across replay sessions (cleared only on watch_root_changed) — playbackSpeed also persists as user preference
 - [Phase 17-01]: appendSnapshot called even during replay — live edge must grow regardless of replay state
+- [Phase 17]: [Phase 17-04]: ActivityFeed epoch-context header embeds count in title text during replay — no separate badge; item count badge hidden in replay mode, shown only in live mode
+- [Phase 17-02]: IntentPanel derives subtasks client-side from activityFeed iconColor map — no server API needed; iconColor encodes event category
+- [Phase 17-02]: History sub-section starts collapsed (historyCollapsed=true) — reduces visual noise on load
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T09:56:40Z
-**Stopped at:** Completed 17-01-PLAN.md (intentStore + replayStore timeline extension + WsClient routing)
-**Resume file:** .planning/phases/17-timeline-slider-and-intent-panel-ui/17-01-SUMMARY.md
+**Last session:** 2026-03-17T10:02:28.270Z
+**Stopped at:** Completed 17-02-PLAN.md (IntentPanel collapsible sidebar component)
+**Resume file:** None

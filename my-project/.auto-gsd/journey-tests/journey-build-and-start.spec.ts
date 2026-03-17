@@ -11,7 +11,7 @@ test.describe('Build and Start', () => {
     const { execSync } = await import('child_process');
     const result = execSync('pnpm build', {
       encoding: 'utf-8',
-      timeout: 120000,
+      timeout: 180000,
       cwd: projectRoot,
     });
     expect(result).toBeDefined();

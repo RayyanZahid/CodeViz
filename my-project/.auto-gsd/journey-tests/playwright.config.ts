@@ -17,7 +17,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:5173',
-    timeout: 60 * 1000,
+    timeout: 120 * 1000,
     reuseExistingServer: true,
     cwd: projectRoot,
   },

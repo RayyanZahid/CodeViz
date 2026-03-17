@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "pnpm build:workers && concurrently -n server,client -c cyan,yellow \"pnpm --filter @archlens/server dev\" \"pnpm --filter @archlens/client dev\"",
     "build:workers": "pnpm --filter @archlens/server build:workers",
+    "build": "pnpm build:workers && tsc -b packages/shared packages/server packages/client",
     "typecheck": "tsc -b packages/server packages/client"
   },
   "devDependencies": {

@@ -221,7 +221,10 @@ Plans:
   2. After switching watch roots and generating new activity, fresh snapshots and intent sessions appear correctly for the new directory
   3. Writing files during replay (mode isolation test) produces no canvas mutation, confirming the guard holds after a watch-root switch
   4. A 4-hour simulated session stores less than 20MB in SQLite snapshots and scrubbing to any position completes in under 200ms
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 18-01-PLAN.md -- SQLite purge for replay/intent tables on watch-root switch and replay-exit toast notification
+- [ ] 18-02-PLAN.md -- Journey tests validating all 4 success criteria end-to-end
 
 ## Progress
 
@@ -244,4 +247,4 @@ Plans:
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | 3/3 | Complete    | 2026-03-17 | - |
 | 17. Timeline Slider and Intent Panel UI | 5/5 | Complete    | 2026-03-17 | - |
-| 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |
+| 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/2 | Not started | - |

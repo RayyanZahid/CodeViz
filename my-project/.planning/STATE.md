@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15.4 of 18 (Fix Journey Build and Start completes successfully — blocker)
+Phase: 15.5 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.4-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, verify 12/12 Playwright tests pass) complete
+Last activity: 2026-03-17 — Plan 15.5-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, verify 12/12 Playwright tests pass, document root cause) complete
 
-Progress: [████░░░░░░] 20% (v3.0: Phase 15.4 complete, 1/1 plans done)
+Progress: [████░░░░░░] 20% (v3.0: Phase 15.5 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15.3]: Node IDs are relative paths ('a.ts') not absolute paths — Pipeline.handleBatch passes event.relativePath to parser, not absolute path
 - [Phase 15.4]: No regression prevention mechanism added — accept the auto-GSD overwrite pattern and follow the same restore-from-HEAD playbook each time
 - [Phase 15.4]: Restore playbook confirmed: git -C .. checkout HEAD -- my-project/<path> handles both staged and unstaged changes simultaneously
+- [Phase 15.5]: Restore-from-HEAD playbook confirmed as standard mitigation for auto-gsd journey test overwrites (4th occurrence); OttoGSD journey-test-generator.ts root cause documented; no prevention mechanism added as it requires OttoGSD binary changes
 
 ### Pending Todos
 
@@ -87,6 +88,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T05:54:05.834Z
-**Stopped at:** Phase 15.5 context gathered
-**Resume file:** .planning/phases/15.5-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully/15.5-CONTEXT.md
+**Last session:** 2026-03-17T06:17:32.649Z
+**Stopped at:** Completed 15.5-01-PLAN.md
+**Resume file:** None

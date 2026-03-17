@@ -138,7 +138,7 @@ Plans:
 
 **Goal:** Restore 4 auto-gsd-overwritten journey test files from git HEAD, verify all 12 journey tests pass green, and document the root cause of the recurring overwrite pattern (OttoGSD journey-test-generator.ts)
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15.5-01-PLAN.md -- Restore journey test files from git HEAD, verify 12/12 pass, document root cause

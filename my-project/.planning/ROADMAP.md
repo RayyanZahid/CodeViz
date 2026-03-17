@@ -154,12 +154,12 @@ Plans:
 
 ### Phase 15.3: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore 3 regressed infrastructure files from git HEAD and write journey-phase-15.spec.ts with deep CONTEXT.md-level assertions (timeline shape + monotonic sequenceNumbers, snapshot node/edge/positions validation, IntentSession full shape, concurrency write+read, error cases 404/400) so all 12 journey tests pass green
 **Depends on:** Phase 15
-**Plans:** 3/3 plans complete
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.3 to break down)
+- [ ] 15.3-01-PLAN.md -- Restore infrastructure files from HEAD, write Phase 15 journey tests with deep API assertions
 
 ### Phase 15.2: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 

@@ -143,7 +143,7 @@ Plans:
 | 11. Activity Feed | v2.2 | 1/1 | Complete | 2026-03-16 |
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
-| 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
+| 14. Schema Foundation and Shared Types | 2/2 | Complete    | 2026-03-17 | - |
 | 15. Server Replay Layer | v3.0 | 0/? | Not started | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |

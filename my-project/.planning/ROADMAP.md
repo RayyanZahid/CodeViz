@@ -172,12 +172,12 @@ Plans:
 
 ### Phase 15.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore all 4 auto-gsd-overwritten journey test files from git HEAD so all 12 journey tests (build-and-start, phase-14, phase-15) pass green end-to-end
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.1 to break down)
+- [ ] 15.1-01-PLAN.md -- Restore journey test files from git HEAD and verify all 12 tests pass
 
 ### Phase 16: Client State Layer and Mode Isolation
 **Goal**: Users can enter and exit replay mode, and live WebSocket deltas are completely blocked from mutating the displayed graph while in replay mode

@@ -76,7 +76,7 @@ test.describe('Phase 15: Server Replay Layer', () => {
     const sessions = (await res.json()) as Array<Record<string, unknown>>;
     if (sessions.length > 0) {
       const session = sessions[0];
-      const validCategories = ['FEATURE_BUILDING', 'BUG_FIXING', 'REFACTORING', 'TEST_WRITING', 'DEPENDENCY_UPDATE', 'CLEANUP'];
+      const validCategories = ['feature_building', 'bug_fixing', 'refactoring', 'test_writing', 'dependency_update', 'cleanup'];
       expect(validCategories).toContain(session.category);
       expect(typeof session.confidence).toBe('number');
       expect(session.confidence as number).toBeGreaterThanOrEqual(0);

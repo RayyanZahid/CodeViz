@@ -3,6 +3,7 @@ import type { DependencyGraph } from '../graph/DependencyGraph.js';
 import type { GraphDelta } from '@archlens/shared/types';
 import type { SnapshotMeta } from '@archlens/shared/types';
 import { snapshotsRepository } from '../db/repository/snapshots.js';
+import { positionsRepository } from '../db/repository/positions.js';
 import { broadcast } from '../plugins/websocket.js';
 
 // ---------------------------------------------------------------------------
@@ -164,11 +165,17 @@ export class SnapshotManager {
     // 1. Get full graph state (nodes + edges in wire format)
     const snapshot = this.graph.getSnapshot();
 
-    // 2. Build graph JSON blob (positions not yet tracked — reserved for Phase 6)
+    // 2. Build positions record from persisted layout positions
+    const allPositions = positionsRepository.findAll();
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const row of allPositions) {
+      positions[row.nodeId] = { x: row.x, y: row.y };
+    }
+
     const graphJson = {
       nodes: snapshot.nodes,
       edges: snapshot.edges,
-      positions: {} as Record<string, { x: number; y: number }>,
+      positions,
     };
 
     // 3. Build human-readable summary

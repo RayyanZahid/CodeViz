@@ -57,6 +57,9 @@ None.
 
 - Phase 14.1 inserted after Phase 14: Fix Journey Build and Start completes successfully (blocker) (URGENT)
 - Phase 14.2 inserted after Phase 14: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (URGENT)
+- Phase 15.1 inserted after Phase 15: Fix Journey Build and Start completes successfully (blocker) (URGENT)
+- Phase 15.2 inserted after Phase 15: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (URGENT)
+- Phase 15.3 inserted after Phase 15: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (URGENT)
 
 ### Blockers/Concerns
 
@@ -64,6 +67,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T01:11:16Z
-**Stopped at:** Completed 15-03-PLAN.md (Timeline REST plugin, IntentAnalyzer lifecycle wiring) — Phase 15 complete
-**Resume file:** .planning/phases/16-mode-state-machine/16-01-PLAN.md
+**Last session:** 2026-03-17T01:24:19.658Z
+**Stopped at:** Phase 14.1 context gathered
+**Resume file:** .planning/phases/14.1-fix-journey-build-and-start-completes-successfully-blocker/14.1-CONTEXT.md

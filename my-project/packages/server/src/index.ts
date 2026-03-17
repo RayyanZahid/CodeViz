@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { healthPlugin } from './plugins/health.js';
 import { websocketPlugin, broadcast, translateInferenceToComponentIds } from './plugins/websocket.js';
@@ -9,6 +10,7 @@ import { DependencyGraph } from './graph/DependencyGraph.js';
 import { ComponentAggregator } from './graph/ComponentAggregator.js';
 import { Pipeline } from './pipeline/Pipeline.js';
 import { InferenceEngine } from './inference/InferenceEngine.js';
+import { SnapshotManager } from './snapshot/SnapshotManager.js';
 import type { InferenceMessage, InferenceResult } from '@archlens/shared/types';
 
 // Reference db to trigger connection initialization and WAL mode setup
@@ -38,6 +40,10 @@ const aggregator = new ComponentAggregator(graph);
 // Initialize inference engine — subscribes to graph delta events
 let inferenceEngine = new InferenceEngine(graph, currentWatchRoot);
 inferenceEngine.loadPersistedZones();
+
+// Initialize snapshot manager — subscribes to graph delta events for threshold-based snapshots
+let snapshotManager = new SnapshotManager(graph, randomUUID(), currentWatchRoot);
+console.log(`[ArchLens] Snapshot manager initialized (session: ${snapshotManager.getSessionId().slice(0, 8)}...)`)
 
 // ---------------------------------------------------------------------------
 // Inference broadcast helper — wired on startup and re-wired on watch switch
@@ -121,6 +127,9 @@ async function switchWatchRoot(newDir: string): Promise<void> {
   // 2. Destroy current inference engine (removes graph delta listener + stops ConfigLoader)
   inferenceEngine.destroy();
 
+  // 2b. Destroy current snapshot manager (clears timer, removes graph delta listener)
+  snapshotManager.destroy();
+
   // 3. Clear in-memory graph state
   graph.reset();
 
@@ -144,9 +153,18 @@ async function switchWatchRoot(newDir: string): Promise<void> {
   // 9. Wire inference broadcast on the new engine
   wireInferenceBroadcast(inferenceEngine);
 
+  // 8b. Create new SnapshotManager for the new directory
+  snapshotManager = new SnapshotManager(graph, randomUUID(), newDir);
+  console.log(`[ArchLens] Snapshot manager initialized (session: ${snapshotManager.getSessionId().slice(0, 8)}...)`);
+
   // 10. Create and start new Pipeline on the new directory
   pipeline = new Pipeline(newDir, (batch) => graph.onParseResult(batch));
   await pipeline.start();
+
+  // 10b. Capture initial snapshot after new scan completes
+  setTimeout(() => {
+    snapshotManager.captureInitialSnapshot();
+  }, 2000);
 
   console.log(`[ArchLens] Switched to watching ${newDir}`);
 }
@@ -159,6 +177,7 @@ fastify.register(watchRootPlugin, {
 
 // Graceful cleanup on server close — must be registered before listen()
 fastify.addHook('onClose', async () => {
+  snapshotManager.destroy();
   inferenceEngine.destroy();
   await pipeline.stop();
 });
@@ -167,6 +186,12 @@ const start = async () => {
   try {
     await pipeline.start();
     console.log(`[ArchLens] Watching ${currentWatchRoot} for changes`);
+
+    // Capture initial snapshot after first scan populates the graph.
+    // 2-second delay lets scan deltas flush through DependencyGraph's 50ms consolidation window.
+    setTimeout(() => {
+      snapshotManager.captureInitialSnapshot();
+    }, 2000);
 
     await fastify.listen({ port: 3100, host: '0.0.0.0' });
   } catch (err) {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GraphNode, GraphEdge } from '@archlens/shared/types';
 import type { GraphDeltaMessage, InferenceMessage } from '@archlens/shared/types';
+import type { SnapshotMeta } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
 // ReplayStore interface — mode state machine for historical snapshot viewing
@@ -25,6 +26,21 @@ export interface ReplayStore {
   bufferedEventCount: number;
   /** True when buffer exceeds 500 entries — exit-replay uses snapshot fetch instead of buffer drain */
   bufferOverflowed: boolean;
+
+  // -------------------------------------------------------------------------
+  // Timeline and playback state — added Phase 17 (timeline slider)
+  // -------------------------------------------------------------------------
+
+  /** Snapshot metadata list loaded from GET /api/timeline; grows via appendSnapshot */
+  snapshots: SnapshotMeta[];
+  /** Index of the currently displayed snapshot in the snapshots array (-1 when not scrubbing) */
+  currentSnapshotIndex: number;
+  /** True when auto-playback is active */
+  isPlaying: boolean;
+  /** Playback speed multiplier */
+  playbackSpeed: 0.5 | 1 | 2 | 4;
+  /** Second snapshot ID for diff overlay (shift-click to set); null when no diff active */
+  diffBaseSnapshotId: number | null;
 
   // Actions — called by WsClient, App.tsx, and Phase 17 timeline slider
   /**
@@ -54,6 +70,26 @@ export interface ReplayStore {
    * Call this after draining the buffers on exit-replay.
    */
   clearBuffer: () => void;
+
+  // -------------------------------------------------------------------------
+  // Timeline actions — Phase 17
+  // -------------------------------------------------------------------------
+
+  /** Replace the snapshots array (called after GET /api/timeline). */
+  setSnapshots: (metas: SnapshotMeta[]) => void;
+  /**
+   * Append a single snapshot to the snapshots array.
+   * Called on snapshot_saved WS message — even during replay so the live edge grows.
+   */
+  appendSnapshot: (meta: SnapshotMeta) => void;
+  /** Set the currently scrubbed snapshot index (-1 = not scrubbing). */
+  setCurrentSnapshotIndex: (index: number) => void;
+  /** Toggle auto-playback state. */
+  setIsPlaying: (playing: boolean) => void;
+  /** Set playback speed multiplier. */
+  setPlaybackSpeed: (speed: 0.5 | 1 | 2 | 4) => void;
+  /** Set or clear the diff-base snapshot ID for diff overlay (shift-click). */
+  setDiffBase: (snapshotId: number | null) => void;
 }
 
 // Buffer cap — prevents memory issues during long replay sessions.
@@ -76,6 +112,13 @@ export const useReplayStore = create<ReplayStore>()((set, get) => ({
   bufferedEventCount: 0,
   bufferOverflowed: false,
 
+  // Timeline and playback defaults
+  snapshots: [],
+  currentSnapshotIndex: -1,
+  isPlaying: false,
+  playbackSpeed: 1,
+  diffBaseSnapshotId: null,
+
   enterReplay: (snapshotId, timestamp, nodes, edges) => {
     const nodesMap = new Map<string, GraphNode>(nodes.map((n) => [n.id, n]));
     const edgesMap = new Map<string, GraphEdge>(edges.map((e) => [e.id, e]));
@@ -89,17 +132,25 @@ export const useReplayStore = create<ReplayStore>()((set, get) => ({
       bufferedInferenceMessages: [],
       bufferedEventCount: 0,
       bufferOverflowed: false,
+      // Entering replay always starts paused — user must explicitly play
+      isPlaying: false,
     });
   },
 
   exitReplay: () => {
     // NOTE: buffers are intentionally preserved — caller drains them, then calls clearBuffer()
+    // NOTE: snapshots and playbackSpeed are preserved — snapshots persist across replay sessions;
+    //       playbackSpeed is a user preference that persists.
     set({
       isReplay: false,
       replaySnapshotId: null,
       replayTimestamp: null,
       replayNodes: new Map<string, GraphNode>(),
       replayEdges: new Map<string, GraphEdge>(),
+      // Reset scrubbing/playback state (but not snapshots or playbackSpeed)
+      currentSnapshotIndex: -1,
+      isPlaying: false,
+      diffBaseSnapshotId: null,
     });
   },
 
@@ -132,6 +183,34 @@ export const useReplayStore = create<ReplayStore>()((set, get) => ({
       bufferedEventCount: 0,
       bufferOverflowed: false,
     });
+  },
+
+  // -------------------------------------------------------------------------
+  // Timeline action implementations — Phase 17
+  // -------------------------------------------------------------------------
+
+  setSnapshots: (metas: SnapshotMeta[]) => {
+    set({ snapshots: metas });
+  },
+
+  appendSnapshot: (meta: SnapshotMeta) => {
+    set((s) => ({ snapshots: [...s.snapshots, meta] }));
+  },
+
+  setCurrentSnapshotIndex: (index: number) => {
+    set({ currentSnapshotIndex: index });
+  },
+
+  setIsPlaying: (playing: boolean) => {
+    set({ isPlaying: playing });
+  },
+
+  setPlaybackSpeed: (speed: 0.5 | 1 | 2 | 4) => {
+    set({ playbackSpeed: speed });
+  },
+
+  setDiffBase: (snapshotId: number | null) => {
+    set({ diffBaseSnapshotId: snapshotId });
   },
 }));
 

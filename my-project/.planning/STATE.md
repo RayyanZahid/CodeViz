@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15.2 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully)
+Phase: 15.3 of 18 (Fix Journey Phase 15 Server Replay Layer completes successfully)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.2-01 (rewrite journey-phase-14.spec.ts with real diagnostic assertions, restore 3 infra files, add NODE_ENV=development) complete
+Last activity: 2026-03-17 — Plan 15.3-01 (write journey-phase-15.spec.ts with deep API assertions, restore 3 infra files, add workers:1 to playwright config) complete
 
-Progress: [████░░░░░░] 19% (v3.0: Phase 15.2 complete, 1/1 plans done)
+Progress: [████░░░░░░] 19% (v3.0: Phase 15.3 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -60,6 +60,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15.2]: journey-phase-14.spec.ts rewritten fresh per CONTEXT.md — HEAD version had placeholder body-length checks; real diagnostic endpoint assertions required
 - [Phase 15.2]: NODE_ENV=development added to playwright.config.ts webServer.env — ensures diagnostic endpoints (/api/debug/*) are available during test runs
 - [Phase 15.2]: Delta-threshold test uses FILE_COUNT=18 and fixed 5s wait — files written before POST /api/watch so burst scan triggers threshold
+- [Phase 15.3]: workers:1 in playwright.config.ts — tests sharing server state via POST /api/watch cannot run in parallel; watch root is global mutable server state
+- [Phase 15.3]: Node IDs are relative paths ('a.ts') not absolute paths — Pipeline.handleBatch passes event.relativePath to parser, not absolute path
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T04:44:58.939Z
-**Stopped at:** Phase 15.3 context gathered
-**Resume file:** .planning/phases/15.3-fix-journey-phase-15-server-replay-layer-completes-successfully-major/15.3-CONTEXT.md
+**Last session:** 2026-03-17T05:08:38.305Z
+**Stopped at:** Completed 15.3-01-PLAN.md
+**Resume file:** None

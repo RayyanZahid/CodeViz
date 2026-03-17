@@ -90,6 +90,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T06:57:00Z
-**Stopped at:** Completed 15.6-01-PLAN.md — 13/13 Playwright tests passing, canary created
-**Resume file:** .planning/phases/15.6-fix-journey-phase-15-server-replay-layer-completes-successfully-major/15.6-01-SUMMARY.md
+**Last session:** 2026-03-17T07:11:37.243Z
+**Stopped at:** Phase 16 context gathered
+**Resume file:** .planning/phases/16-client-state-layer-and-mode-isolation/16-CONTEXT.md

@@ -81,6 +81,24 @@ Plans:
 - [ ] 14-01-PLAN.md -- Schema, shared types, message protocol, and repository modules (INFRA-01)
 - [ ] 14-02-PLAN.md -- SnapshotManager delta-threshold logic and server lifecycle wiring (INFRA-02)
 
+### Phase 14.2: Fix: Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 14.2 to break down)
+
+### Phase 14.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 14.1 to break down)
+
 ### Phase 15: Server Replay Layer
 **Goal**: The server records graph snapshots automatically, can reconstruct any historical snapshot in O(50-max) operations, and emits inferred intent sessions over WebSocket
 **Depends on**: Phase 14
@@ -90,7 +108,11 @@ Plans:
   2. `GET /api/snapshot/:id` returns a complete graph snapshot (nodes, edges, positions) reconstructed from the nearest checkpoint in at most 50 replay steps
   3. The `IntentAnalyzer` classifies a realistic sequence of architectural events into one of the 4-6 coarse categories and returns a confidence score
   4. Writing files during an active session does not cause the pipeline to pause — new events continue to arrive while the replay read path is active
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 15-01-PLAN.md -- Checkpoint schema, repository layer, IntentCategory alignment, and repository extensions (INFRA-03)
+- [ ] 15-02-PLAN.md -- IntentAnalyzer heuristic classification engine and SnapshotManager checkpoint integration (INFRA-03)
+- [ ] 15-03-PLAN.md -- Timeline REST plugin and server lifecycle wiring for IntentAnalyzer (INFRA-03)
 
 ### Phase 16: Client State Layer and Mode Isolation
 **Goal**: Users can enter and exit replay mode, and live WebSocket deltas are completely blocked from mutating the displayed graph while in replay mode
@@ -144,7 +166,7 @@ Plans:
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 14. Schema Foundation and Shared Types | 2/2 | Complete    | 2026-03-17 | - |
-| 15. Server Replay Layer | v3.0 | 0/? | Not started | - |
+| 15. Server Replay Layer | v3.0 | 0/3 | Planned | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v3.0 Architecture Intelligence — Phase 15: Server Replay Layer
+**Current focus:** v3.0 Architecture Intelligence — Phase 16: Client State Layer and Mode Isolation
 
 ## Current Position
 
-Phase: 15.6 of 18 (Fix Journey Phase 15 Server Replay Layer completes successfully — major)
-Plan: 1 of 1 completed in current phase
-Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.6-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, create journey-canary.spec.ts, verify 13/13 Playwright tests pass) complete
+Phase: 16 of 18 (Client State Layer and Mode Isolation)
+Plan: 1 of 3 completed in current phase
+Status: In Progress
+Last activity: 2026-03-17 — Plan 16-01 (replayStore Zustand slice + WsClient delta interception + watch-root auto-exit) complete
 
-Progress: [████░░░░░░] 22% (v3.0: Phase 15.6 complete, 1/1 plans done)
+Progress: [████░░░░░░] 25% (v3.0: Phase 16 in progress, 1/3 plans done)
 
 ## Performance Metrics
 
@@ -67,6 +67,11 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15.5]: Restore-from-HEAD playbook confirmed as standard mitigation for auto-gsd journey test overwrites (4th occurrence); OttoGSD journey-test-generator.ts root cause documented; no prevention mechanism added as it requires OttoGSD binary changes
 - [Phase 15.6]: journey-canary.spec.ts added as overwrite detector — scans all sibling specs for bodyText.length and page.goto-without-SERVER_URL patterns; canary itself will be overwritten by auto-gsd (it is journey-*.spec.ts) but makes next overwrite immediately visible as test failure
 - [Phase 15.6]: journey-build-and-start.spec.ts exempted from page.goto-without-API check in canary — it legitimately uses BASE_URL browser navigation, not SERVER_URL API calls
+- [Phase 16-01]: replayStore is a separate Zustand slice (not merged into graphStore) — mode state is a different concern; avoids coupling with live graph state
+- [Phase 16-01]: bufferedEventCount is a dedicated primitive counter (not array.length) — prevents React selector re-render on every buffer push; Zustand equality check on primitives is efficient
+- [Phase 16-01]: exitReplay() deliberately preserves buffers — caller reads bufferedGraphDeltas/bufferedInferenceMessages before calling exitReplay, then calls clearBuffer() after draining (Plan 02 implements drain logic)
+- [Phase 16-01]: initial_state during replay applies silently to graphStore (for exit-replay accuracy) without scanning/summary side effects — ArchCanvas guard to skip visual updates added in Plan 03
+- [Phase 16-01]: Buffer cap at 500 entries with bufferOverflowed flag — overflow triggers snapshot fetch path on exit instead of buffer drain
 
 ### Pending Todos
 
@@ -90,6 +95,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T07:11:37.243Z
-**Stopped at:** Phase 16 context gathered
-**Resume file:** .planning/phases/16-client-state-layer-and-mode-isolation/16-CONTEXT.md
+**Last session:** 2026-03-17T07:34:16Z
+**Stopped at:** Completed 16-01-PLAN.md (replayStore + WsClient interception)
+**Resume file:** .planning/phases/16-client-state-layer-and-mode-isolation/16-02-PLAN.md

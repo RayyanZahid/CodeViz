@@ -204,7 +204,13 @@ Plans:
   3. The timeline slider shows timestamp labels, auto-detected epoch markers at significant moments, and the activity feed scrolls in sync with the current scrubber position
   4. The intent panel shows the inferred objective label with a confidence indicator, a list of derived subtasks, and updates automatically as new events stream in during live view
   5. The intent panel shows historical intent during replay (not the current live intent), and displays a focus-shift notification when the agent transitions between objectives
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 17-01-PLAN.md -- intentStore Zustand slice, replayStore timeline/playback extension, WsClient message routing
+- [ ] 17-02-PLAN.md -- IntentPanel sidebar component (objective, confidence, subtasks, history, risk correlation)
+- [ ] 17-03-PLAN.md -- TimelineBar component, epoch detection, App.tsx layout restructure
+- [ ] 17-04-PLAN.md -- Activity feed epoch-based filtering during replay
+- [ ] 17-05-PLAN.md -- PlaybackController auto-play, keyboard shortcuts, diff overlay
 
 ### Phase 18: Watch-Root Integration and End-to-End Validation
 **Goal**: Switching the watched directory resets all replay and intent state, and the complete v3.0 feature set is validated end-to-end
@@ -237,5 +243,5 @@ Plans:
 | 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | 3/3 | Complete    | 2026-03-17 | - |
-| 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |
+| 17. Timeline Slider and Intent Panel UI | v3.0 | 0/5 | Planned | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

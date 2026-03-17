@@ -163,12 +163,12 @@ Plans:
 
 ### Phase 15.2: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore 3 regressed journey test infrastructure files from git HEAD (with NODE_ENV=development addition), rewrite journey-phase-14.spec.ts per updated CONTEXT.md decisions (15-20 files, fixed 5s wait, hasIntentCategory check), and verify all 12 journey tests pass green
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.2 to break down)
+- [ ] 15.2-01-PLAN.md -- Restore infrastructure files, rewrite Phase 14 journey tests per CONTEXT.md decisions
 
 ### Phase 15.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
 

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v3.0 Architecture Intelligence — Phase 18: Watch-Root Integration and End-to-End Validation
+**Current focus:** v3.0 Architecture Intelligence — Phase 18: Watch-Root Integration and End-to-End Validation — COMPLETE
 
 ## Current Position
 
 Phase: 18 of 18 (Watch-Root Integration and End-to-End Validation)
-Plan: 1 of 1 completed in current phase
-Status: In Progress
-Last activity: 2026-03-17 — Plan 18-01 (SQLite purge on watch-root switch + replay-exit toast) complete
+Plan: 2 of 2 completed in current phase
+Status: Complete
+Last activity: 2026-03-17 — Plan 18-02 (Phase 18 journey tests — 26/26 passing) complete
 
-Progress: [██████████] 95% (v3.0: Phase 18 in progress, 1/1 plans done)
+Progress: [██████████] 100% (v3.0: Phase 18 complete, all plans done)
 
 ## Performance Metrics
 
@@ -96,6 +96,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 18-01]: setReplayExitedForSwitch only fires inside isReplay guard in watch_root_changed — toast must not appear on every root switch, only when user was in replay mode
 - [Phase 18-01]: changeEvents table has no watchRoot column — db.delete(changeEvents).run() clears all rows (session-scoped, no value after switch)
 - [Phase 18-01]: layoutPositions NOT deleted on watch-root switch — positions persist per watch root per CONTEXT.md design decision
+- [Phase 18-02]: Wait 500ms (not 2000ms) after POST /api/watch to check empty timeline — captureInitialSnapshot fires at t+2000ms after HTTP 200; 500ms window reliably validates purge-and-empty state before initial snapshot creation
+- [Phase 18-02]: journey-phase-16/17 stubs updated with SERVER_URL health check — canary flags page.goto without SERVER_URL; adding health check satisfies canary while preserving UI stub structure
 
 ### Pending Todos
 
@@ -119,6 +121,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T10:47:14Z
-**Stopped at:** Completed 18-01-PLAN.md — Phase 18 Plan 01 (SQLite purge + replay-exit toast) complete
-**Resume file:** .planning/phases/18-watch-root-integration-and-end-to-end-validation/18-01-SUMMARY.md
+**Last session:** 2026-03-17T11:05:00Z
+**Stopped at:** Completed 18-02-PLAN.md — Phase 18 Plan 02 (journey tests, 26/26 passing) complete — v3.0 milestone DONE
+**Resume file:** .planning/phases/18-watch-root-integration-and-end-to-end-validation/18-02-SUMMARY.md

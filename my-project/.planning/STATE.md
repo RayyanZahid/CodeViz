@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 17 of 18 (Timeline Slider and Intent Panel UI)
-Plan: 4 of 6 completed in current phase
+Plan: 5 of 6 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 17-04 (ActivityFeed epoch filtering + slide-in animation during replay) complete
+Last activity: 2026-03-17 — Plan 17-05 (PlaybackController auto-play, keyboard shortcuts, diff overlay) complete
 
-Progress: [████████░░] 80% (v3.0: Phase 17 in progress, 4/6 plans done)
+Progress: [█████████░] 85% (v3.0: Phase 17 in progress, 5/6 plans done)
 
 ## Performance Metrics
 
@@ -88,6 +88,10 @@ Key v3.0 decisions (pre-planning):
 - [Phase 17]: detectEpochs uses prev.endedAt ?? curr.startedAt for focus-shift transition timestamp — handles both closed and ongoing session boundaries
 - [Phase 17]: TimelineBar drag thumb uses visual-only fraction update (no fetch during drag); single loadSnapshotAndEnterReplay call on pointerUp — prevents HTTP request flood
 - [Phase 17]: App.tsx inner column flex layout: canvas+sidebar row needs minHeight:0 so timeline 60px bar fits within 100vh without overflow
+- [Phase 17-05]: PlaybackController uses BASE_INTERVAL_MS/speed for interval — 1000ms at 1x, 500ms at 2x, 250ms at 4x; pure class with no React deps
+- [Phase 17-05]: cancelAllTweens uses module-level activeTweens Set registered in morphNodesToPositions — simplest reliable approach without Konva internals
+- [Phase 17-05]: applyDiffTint stores original shadow AND group opacity in same OriginalShadowSettings — restoreDiffTint must restore both (removed nodes have opacity 0.4)
+- [Phase 17-05]: Diff overlay subscription: async IIFE inside replayStore.subscribe for diffBaseSnapshotId changes — avoids refactoring existing subscribe block structure
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T10:06:25.090Z
-**Stopped at:** Completed 17-03-PLAN.md (TimelineBar component + App.tsx layout restructure)
+**Last session:** 2026-03-17T10:12:18Z
+**Stopped at:** Completed 17-05-PLAN.md (PlaybackController auto-play, keyboard shortcuts, diff overlay)
 **Resume file:** None

@@ -62,7 +62,7 @@ See `milestones/v2.2-ROADMAP.md` for full phase details.
 - [x] **Phase 14: Schema Foundation and Shared Types** - Persist graph snapshots with layout positions and wire new shared TypeScript types for all replay and intent messages (completed 2026-03-17)
 - [x] **Phase 15: Server Replay Layer** - Build server-side snapshot recording with checkpoint-based reconstruction and heuristic intent analysis (completed 2026-03-17)
 - [x] **Phase 16: Client State Layer and Mode Isolation** - Establish the replay mode state machine so live deltas cannot corrupt historical graph views (completed 2026-03-17)
-- [ ] **Phase 17: Timeline Slider and Intent Panel UI** - Deliver all user-facing replay controls and intent display in the client
+- [x] **Phase 17: Timeline Slider and Intent Panel UI** - Deliver all user-facing replay controls and intent display in the client (completed 2026-03-17)
 - [ ] **Phase 18: Watch-Root Integration and End-to-End Validation** - Clear replay and intent data on directory switch and validate the complete v3.0 feature set
 
 ## Phase Details
@@ -243,5 +243,5 @@ Plans:
 | 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | 3/3 | Complete    | 2026-03-17 | - |
-| 17. Timeline Slider and Intent Panel UI | 4/5 | In Progress|  | - |
+| 17. Timeline Slider and Intent Panel UI | 5/5 | Complete   | 2026-03-17 | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

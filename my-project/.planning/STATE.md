@@ -85,6 +85,9 @@ Key v3.0 decisions (pre-planning):
 - [Phase 17]: [Phase 17-04]: ActivityFeed epoch-context header embeds count in title text during replay — no separate badge; item count badge hidden in replay mode, shown only in live mode
 - [Phase 17-02]: IntentPanel derives subtasks client-side from activityFeed iconColor map — no server API needed; iconColor encodes event category
 - [Phase 17-02]: History sub-section starts collapsed (historyCollapsed=true) — reduces visual noise on load
+- [Phase 17]: detectEpochs uses prev.endedAt ?? curr.startedAt for focus-shift transition timestamp — handles both closed and ongoing session boundaries
+- [Phase 17]: TimelineBar drag thumb uses visual-only fraction update (no fetch during drag); single loadSnapshotAndEnterReplay call on pointerUp — prevents HTTP request flood
+- [Phase 17]: App.tsx inner column flex layout: canvas+sidebar row needs minHeight:0 so timeline 60px bar fits within 100vh without overflow
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T10:02:28.270Z
-**Stopped at:** Completed 17-02-PLAN.md (IntentPanel collapsible sidebar component)
-**Resume file:** .planning/phases/17-timeline-slider-and-intent-panel-ui/17-02-SUMMARY.md
+**Last session:** 2026-03-17T10:06:25.090Z
+**Stopped at:** Completed 17-03-PLAN.md (TimelineBar component + App.tsx layout restructure)
+**Resume file:** None

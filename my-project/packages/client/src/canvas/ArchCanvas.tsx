@@ -45,6 +45,8 @@ import {
   fadeOutNodes,
   applyReplayTint,
   restoreOriginalTint,
+  applyDiffTint,
+  restoreDiffTint,
 } from './replayTransitions.js';
 
 // ---------------------------------------------------------------------------
@@ -294,7 +296,123 @@ export function ArchCanvas({
     // Track whether a replay was entered (gate for exit logic)
     let wasInReplay = false;
 
+    // Diff overlay state
+    let currentDiffBase: number | null = null;
+    let diffTintedFills: Map<string, string> = new Map();
+
     const replayUnsub = replayStore.subscribe((state, prev) => {
+      // --- DIFF OVERLAY: diffBaseSnapshotId changed ---
+      if (state.isReplay && state.diffBaseSnapshotId !== prev.diffBaseSnapshotId) {
+        if (state.diffBaseSnapshotId !== null) {
+          // Shift-click set a new diff base — fetch and compute diff
+          void (async () => {
+            try {
+              const baseRes = await fetch(`/api/snapshot/${state.diffBaseSnapshotId}`);
+              if (!baseRes.ok) {
+                console.warn('[ArchCanvas] Failed to fetch diff base snapshot:', baseRes.status);
+                return;
+              }
+
+              const baseData = await baseRes.json() as {
+                graphJson: {
+                  nodes: Array<{ id: string; zone: string | null; fileList: string[]; incomingEdgeCount: number; outgoingEdgeCount: number }>;
+                  edges: Array<{ id: string; sourceId: string; targetId: string }>;
+                };
+              };
+
+              // Build base snapshot node set
+              const baseNodes = new Map(baseData.graphJson.nodes.map((n) => [n.id, n]));
+              const currentNodes = state.replayNodes;
+
+              // Compute diff sets
+              const added = new Set<string>();
+              const removed = new Set<string>();
+              const changed = new Set<string>();
+
+              // Nodes in current but not in base → added (green)
+              for (const id of currentNodes.keys()) {
+                if (!baseNodes.has(id)) {
+                  added.add(id);
+                } else {
+                  // Check for changes: zone, fileList length, or edge counts
+                  const baseNode = baseNodes.get(id)!;
+                  const currNode = currentNodes.get(id)!;
+                  if (
+                    baseNode.zone !== currNode.zone ||
+                    baseNode.fileList.length !== currNode.fileList.length ||
+                    baseNode.incomingEdgeCount !== currNode.incomingEdgeCount ||
+                    baseNode.outgoingEdgeCount !== currNode.outgoingEdgeCount
+                  ) {
+                    changed.add(id);
+                  }
+                }
+              }
+
+              // Nodes in base but not in current → removed (red)
+              for (const id of baseNodes.keys()) {
+                if (!currentNodes.has(id)) {
+                  removed.add(id);
+                }
+              }
+
+              // Restore any previous diff tint before applying new one
+              restoreDiffTint(nodeRenderer, diffTintedFills);
+
+              // Apply blue replay tint was already applied on enter; now apply diff on top
+              diffTintedFills = applyDiffTint(nodeRenderer, added, removed, changed);
+              currentDiffBase = state.diffBaseSnapshotId;
+
+              // Apply edge diff colors
+              const baseEdgeEndpoints = new Set(
+                baseData.graphJson.edges.map((e) => `${e.sourceId}:${e.targetId}`)
+              );
+              const currentEdgeEndpoints = new Set(
+                Array.from(state.replayEdges.values()).map((e) => `${e.sourceId}:${e.targetId}`)
+              );
+
+              for (const [, arrow] of edgeRenderer.getAllLines()) {
+                const sourceId = arrow.getAttr('sourceId') as string | undefined;
+                const targetId = arrow.getAttr('targetId') as string | undefined;
+                if (!sourceId || !targetId) continue;
+
+                const key = `${sourceId}:${targetId}`;
+                if (!baseEdgeEndpoints.has(key) && currentEdgeEndpoints.has(key)) {
+                  // Edge in current but not in base → green
+                  arrow.stroke('rgba(34, 197, 94, 0.7)');
+                  arrow.fill('rgba(34, 197, 94, 0.7)');
+                } else if (baseEdgeEndpoints.has(key) && !currentEdgeEndpoints.has(key)) {
+                  // Edge in base but not in current → red (faded)
+                  arrow.stroke('rgba(239, 68, 68, 0.5)');
+                  arrow.fill('rgba(239, 68, 68, 0.5)');
+                }
+              }
+
+              gl.batchDraw();
+            } catch (err) {
+              console.warn('[ArchCanvas] Diff overlay error:', err);
+            }
+          })();
+        } else {
+          // diffBaseSnapshotId cleared (shift-click toggle or replay exit)
+          restoreDiffTint(nodeRenderer, diffTintedFills);
+          currentDiffBase = null;
+
+          // Reset edge colors back to default replay state
+          for (const [, arrow] of edgeRenderer.getAllLines()) {
+            const dependencyCount = (arrow.getAttr('dependencyCount') as number | undefined) ?? 1;
+            const opacity = dependencyCount >= 6 ? 0.7 : dependencyCount >= 3 ? 0.6 : 0.5;
+            const strokeColor = `rgba(150, 200, 255, ${opacity})`;
+            arrow.stroke(strokeColor);
+            arrow.fill(strokeColor);
+          }
+
+          // Re-apply blue replay tint since we're still in replay mode
+          applyReplayTint(nodeRenderer, tintedFills);
+
+          gl.batchDraw();
+        }
+      }
+
       // --- ENTER REPLAY ---
       if (state.isReplay && !prev.isReplay) {
         wasInReplay = true;
@@ -367,6 +485,21 @@ export function ArchCanvas({
       // --- EXIT REPLAY ---
       if (!state.isReplay && prev.isReplay && wasInReplay) {
         wasInReplay = false;
+
+        // 0. Clear any active diff tint before restoring replay tint
+        if (diffTintedFills.size > 0) {
+          restoreDiffTint(nodeRenderer, diffTintedFills);
+          currentDiffBase = null;
+        }
+
+        // Reset edge colors back to default in case diff overlay was active
+        for (const [, arrow] of edgeRenderer.getAllLines()) {
+          const dependencyCount = (arrow.getAttr('dependencyCount') as number | undefined) ?? 1;
+          const opacity = dependencyCount >= 6 ? 0.7 : dependencyCount >= 3 ? 0.6 : 0.5;
+          const strokeColor = `rgba(150, 200, 255, ${opacity})`;
+          arrow.stroke(strokeColor);
+          arrow.fill(strokeColor);
+        }
 
         // 1. Restore original tint (remove blue glow)
         restoreOriginalTint(nodeRenderer, tintedFills);

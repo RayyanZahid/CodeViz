@@ -8,10 +8,20 @@
 //   - EaseInOut easing for smooth morph/fade transitions
 //   - 500ms default duration per Phase 16 CONTEXT.md spec
 //   - onFinish callback destroys tween for GC cleanup
+//
+// cancelAllTweens: module-level Set<Konva.Tween> tracks active tweens from
+//   morphNodesToPositions so high-speed playback can destroy them before the
+//   next snapshot loads.
 // ---------------------------------------------------------------------------
 
 import Konva from 'konva';
 import type { NodeRenderer } from './NodeRenderer.js';
+
+// ---------------------------------------------------------------------------
+// Active tween registry — populated by morphNodesToPositions, consumed by
+// cancelAllTweens. Allows high-speed playback to abort in-flight animations.
+// ---------------------------------------------------------------------------
+const activeTweens = new Set<Konva.Tween>();
 
 // ---------------------------------------------------------------------------
 // morphNodesToPositions — Animate existing nodes from their current rendered
@@ -39,9 +49,11 @@ export function morphNodesToPositions(
       duration,
       easing: Konva.Easings.EaseInOut,
       onFinish: () => {
+        activeTweens.delete(tween);
         tween.destroy();
       },
     });
+    activeTweens.add(tween);
     tween.play();
   }
 }
@@ -191,4 +203,137 @@ export function restoreOriginalTint(
   }
 
   tintedFills.clear();
+}
+
+// ---------------------------------------------------------------------------
+// cancelAllTweens — Destroy all in-flight morph tweens registered by
+// morphNodesToPositions. Called before loading a snapshot at high speeds
+// (2x, 4x) to prevent animation pile-up.
+// ---------------------------------------------------------------------------
+
+/**
+ * Cancel and destroy all active Konva.Tween instances created by morphNodesToPositions.
+ * Safe to call even when no tweens are active (no-op in that case).
+ */
+export function cancelAllTweens(): void {
+  for (const tween of activeTweens) {
+    tween.destroy();
+  }
+  activeTweens.clear();
+}
+
+// ---------------------------------------------------------------------------
+// applyDiffTint — Apply shadow glow diff colors to nodes based on diff sets.
+//
+// Color scheme:
+//   Added nodes   → green  (#22c55e, shadowBlur 12, shadowOpacity 0.7)
+//   Removed nodes → red    (#ef4444, shadowBlur 12, shadowOpacity 0.5, opacity 0.4)
+//   Changed nodes → amber  (#eab308, shadowBlur 10, shadowOpacity 0.6)
+//
+// Returns a Map<nodeId, JSON> of original shadow settings for restoration.
+// ---------------------------------------------------------------------------
+
+interface OriginalShadowSettings {
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOpacity: number;
+  shadowEnabled: boolean;
+  opacity: number;
+}
+
+/**
+ * Apply diff-mode shadow glow tints to nodes based on their diff classification.
+ * @param nodeRenderer — renderer holding all node shapes
+ * @param added        — node IDs that are new in the current snapshot
+ * @param removed      — node IDs that existed in the base but not the current
+ * @param changed      — node IDs that exist in both but have different properties
+ * @returns Map of nodeId → JSON-serialized original shadow+opacity settings
+ */
+export function applyDiffTint(
+  nodeRenderer: NodeRenderer,
+  added: Set<string>,
+  removed: Set<string>,
+  changed: Set<string>,
+): Map<string, string> {
+  const diffTintedFills = new Map<string, string>();
+
+  function tintNode(id: string, settings: {
+    shadowColor: string;
+    shadowBlur: number;
+    shadowOpacity: number;
+    opacity?: number;
+  }): void {
+    const shape = nodeRenderer.getShape(id);
+    if (!shape) return;
+
+    const rect = shape.findOne<Konva.Rect>('Rect');
+    if (!rect) return;
+
+    // Save original settings (including group opacity)
+    const original: OriginalShadowSettings = {
+      shadowColor: rect.shadowColor(),
+      shadowBlur: rect.shadowBlur(),
+      shadowOpacity: rect.shadowOpacity(),
+      shadowEnabled: rect.shadowEnabled(),
+      opacity: shape.opacity(),
+    };
+    diffTintedFills.set(id, JSON.stringify(original));
+
+    // Apply diff tint
+    rect.shadowColor(settings.shadowColor);
+    rect.shadowBlur(settings.shadowBlur);
+    rect.shadowOpacity(settings.shadowOpacity);
+    rect.shadowEnabled(true);
+
+    if (settings.opacity !== undefined) {
+      shape.opacity(settings.opacity);
+    }
+  }
+
+  for (const id of added) {
+    tintNode(id, { shadowColor: '#22c55e', shadowBlur: 12, shadowOpacity: 0.7 });
+  }
+
+  for (const id of removed) {
+    tintNode(id, { shadowColor: '#ef4444', shadowBlur: 12, shadowOpacity: 0.5, opacity: 0.4 });
+  }
+
+  for (const id of changed) {
+    tintNode(id, { shadowColor: '#eab308', shadowBlur: 10, shadowOpacity: 0.6 });
+  }
+
+  return diffTintedFills;
+}
+
+// ---------------------------------------------------------------------------
+// restoreDiffTint — Restore node shapes to their pre-diff shadow settings.
+// Same pattern as restoreOriginalTint but also restores group opacity.
+// ---------------------------------------------------------------------------
+
+/**
+ * Restore all nodes to their pre-diff shadow settings and clear the Map.
+ * @param nodeRenderer    — renderer holding all node shapes
+ * @param diffTintedFills — Map populated by applyDiffTint
+ */
+export function restoreDiffTint(
+  nodeRenderer: NodeRenderer,
+  diffTintedFills: Map<string, string>,
+): void {
+  for (const [nodeId, savedJson] of diffTintedFills) {
+    const shape = nodeRenderer.getShape(nodeId);
+    if (!shape) continue;
+
+    const rect = shape.findOne<Konva.Rect>('Rect');
+    if (!rect) continue;
+
+    const original = JSON.parse(savedJson) as OriginalShadowSettings;
+
+    rect.shadowColor(original.shadowColor);
+    rect.shadowBlur(original.shadowBlur);
+    rect.shadowOpacity(original.shadowOpacity);
+    rect.shadowEnabled(original.shadowEnabled);
+    shape.opacity(original.opacity);
+  }
+
+  diffTintedFills.clear();
 }

@@ -188,7 +188,11 @@ Plans:
   2. When the user exits replay mode with a single action, the canvas immediately shows the current live architecture state
   3. Writing a file while in replay mode produces no change on the canvas — live deltas are blocked at the WebSocket entry point until the user exits replay
   4. After exiting replay, any live events that arrived during the replay session are applied and the activity feed catches up
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 16-01-PLAN.md -- replayStore Zustand slice and WsClient delta interception (REPLAY-03, REPLAY-04)
+- [ ] 16-02-PLAN.md -- ReplayBanner UI, Escape key, handleExitReplay, activity feed separator (REPLAY-03, REPLAY-04)
+- [ ] 16-03-PLAN.md -- ArchCanvas replay transitions: morph animation, blue tint, viewport zoom, subscription guard (REPLAY-03, REPLAY-04)
 
 ### Phase 17: Timeline Slider and Intent Panel UI
 **Goal**: Users can scrub through the full architecture evolution timeline and read the inferred AI agent intent in a dedicated sidebar panel
@@ -232,6 +236,6 @@ Plans:
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
-| 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
+| 16. Client State Layer and Mode Isolation | v3.0 | 0/3 | Planned | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

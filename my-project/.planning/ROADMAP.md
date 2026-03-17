@@ -166,7 +166,7 @@ Plans:
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 14. Schema Foundation and Shared Types | 2/2 | Complete    | 2026-03-17 | - |
-| 15. Server Replay Layer | v3.0 | 0/3 | Planned | - |
+| 15. Server Replay Layer | 1/3 | In Progress|  | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

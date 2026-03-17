@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v3.0 Architecture Intelligence — Phase 14: Schema Foundation and Shared Types
+**Current focus:** v3.0 Architecture Intelligence — Phase 15: Server Replay Layer
 
 ## Current Position
 
-Phase: 14 of 18 (Schema Foundation and Shared Types)
-Plan: 2 of 2 completed in current phase
-Status: Phase Complete
-Last activity: 2026-03-17 — Plan 14-02 (SnapshotManager delta-threshold) complete
+Phase: 15 of 18 (Server Replay Layer)
+Plan: 1 of 3 completed in current phase
+Status: In Progress
+Last activity: 2026-03-17 — Plan 15-01 (Checkpoint schema, repository layer, type alignment) complete
 
-Progress: [███░░░░░░░] 11% (v3.0: Phase 14 complete, 2/2 plans done)
+Progress: [████░░░░░░] 14% (v3.0: Phase 15 in progress, 1/3 plans done)
 
 ## Performance Metrics
 
@@ -41,6 +41,9 @@ Key v3.0 decisions (pre-planning):
 - [Phase 14]: DependencyGraph.getSnapshot() returns {nodes, edges} only — positions field in graphJson snapshot set to {} as placeholder for Phase 6 layout persistence
 - [Phase 14]: GraphDelta.addedNodes is string[] (file path IDs directly) — plan spec said 'their id field' but strings ARE the IDs; adapted trigger file collection in SnapshotManager
 - [Phase 14]: DependencyGraph.getSnapshot() returns {nodes, edges} only — positions field in SnapshotManager graphJson set to {} as placeholder reserved for Phase 6 layout persistence
+- [Phase 15-01]: IntentCategory updated to 6 user-specified categories — DEPENDENCY_UPDATE replaces INFRASTRUCTURE, CLEANUP replaces UNCERTAIN; backward-compatible (SQLite category column is plain text)
+- [Phase 15-01]: snapshotCheckpoints uses logical FK (no .references()) — consistent with intentSessions.startSnapshotId pattern; FK enforcement OFF in connection.ts
+- [Phase 15-01]: deleteOldestNonCheckpoint guards notInArray with cpIds.length > 0 to prevent invalid NOT IN () SQL
 
 ### Pending Todos
 
@@ -58,6 +61,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T00:41:40.514Z
-**Stopped at:** Phase 15 context gathered
-**Resume file:** .planning/phases/15-server-replay-layer/15-CONTEXT.md
+**Last session:** 2026-03-17T01:00:50Z
+**Stopped at:** Completed 15-01-PLAN.md (Checkpoint schema, repository layer, type alignment)
+**Resume file:** .planning/phases/15-server-replay-layer/15-02-PLAN.md

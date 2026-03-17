@@ -24,6 +24,8 @@ import { useReplayStore, replayStore } from '../store/replayStore.js';
 import { useIntentStore, intentStore } from '../store/intentStore.js';
 import { loadSnapshotAndEnterReplay } from '../canvas/ArchCanvas.js';
 import { detectEpochs } from './epochDetection.js';
+import { PlaybackController } from './PlaybackController.js';
+import { cancelAllTweens } from '../canvas/replayTransitions.js';
 import type { IntentSession, SnapshotMeta } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,9 @@ export function TimelineBar({ onExitReplay }: TimelineBarProps) {
   // Track ref stores intent sessions for epoch detection (avoids stale closure)
   const intentSessionsRef = useRef<IntentSession[]>([]);
 
+  // PlaybackController ref — manages auto-play interval timer
+  const playbackRef = useRef(new PlaybackController());
+
   // Local drag state
   const [isDragging, setIsDragging] = useState(false);
   const [dragVisualFraction, setDragVisualFraction] = useState(0);
@@ -83,6 +88,133 @@ export function TimelineBar({ onExitReplay }: TimelineBarProps) {
   const playbackSpeed = useReplayStore((s) => s.playbackSpeed);
   const diffBaseSnapshotId = useReplayStore((s) => s.diffBaseSnapshotId);
   const intentHistory = useIntentStore((s) => s.intentHistory);
+
+  // -------------------------------------------------------------------------
+  // PlaybackController cleanup on unmount
+  // -------------------------------------------------------------------------
+  useEffect(() => () => playbackRef.current.stop(), []);
+
+  // -------------------------------------------------------------------------
+  // onTick — advance one snapshot per interval; returns false at live edge
+  // -------------------------------------------------------------------------
+  const handlePlaybackTick = useCallback(async (): Promise<boolean> => {
+    const { snapshots, currentSnapshotIndex } = replayStore.getState();
+    const nextIndex = currentSnapshotIndex + 1;
+
+    if (nextIndex >= snapshots.length) {
+      // Reached live edge — exit replay and stop playback
+      replayStore.getState().setIsPlaying(false);
+      onExitReplay();
+      return false;
+    }
+
+    // At high speeds (2x+), cancel in-flight Konva tweens to prevent animation pile-up
+    const { playbackSpeed } = replayStore.getState();
+    if (playbackSpeed >= 2) {
+      cancelAllTweens();
+    }
+
+    replayStore.getState().setCurrentSnapshotIndex(nextIndex);
+    await loadSnapshotAndEnterReplay(snapshots[nextIndex].id);
+    return true;
+  }, [onExitReplay]);
+
+  // -------------------------------------------------------------------------
+  // Play/pause effect — start or stop the PlaybackController when isPlaying or
+  // playbackSpeed changes. Speed changes restart the timer with a new interval.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (isPlaying) {
+      playbackRef.current.start(playbackSpeed, handlePlaybackTick);
+    } else {
+      playbackRef.current.stop();
+    }
+    return () => playbackRef.current.stop();
+  }, [isPlaying, playbackSpeed, handlePlaybackTick]);
+
+  // -------------------------------------------------------------------------
+  // Keyboard shortcuts — Space=play/pause, Left/Right=step, +/-=speed
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Guard: only handle if not typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      const { snapshots } = replayStore.getState();
+
+      switch (e.key) {
+        case ' ': { // Space = play/pause
+          e.preventDefault();
+          if (snapshots.length === 0) break;
+          const { isPlaying: playing } = replayStore.getState();
+          if (playing) {
+            replayStore.getState().setIsPlaying(false);
+          } else {
+            // If not in replay, enter at first snapshot then start playing
+            if (!replayStore.getState().isReplay) {
+              if (snapshots.length > 0) {
+                replayStore.getState().setCurrentSnapshotIndex(0);
+                void loadSnapshotAndEnterReplay(snapshots[0].id).then(() => {
+                  replayStore.getState().setIsPlaying(true);
+                });
+              }
+            } else {
+              replayStore.getState().setIsPlaying(true);
+            }
+          }
+          break;
+        }
+        case 'ArrowRight': { // Step forward
+          e.preventDefault();
+          if (snapshots.length === 0) break;
+          const { currentSnapshotIndex: idx, isReplay: inReplay } = replayStore.getState();
+          if (!inReplay) {
+            replayStore.getState().setCurrentSnapshotIndex(0);
+            void loadSnapshotAndEnterReplay(snapshots[0].id);
+          } else if (idx < snapshots.length - 1) {
+            const next = idx + 1;
+            replayStore.getState().setCurrentSnapshotIndex(next);
+            void loadSnapshotAndEnterReplay(snapshots[next].id);
+          }
+          break;
+        }
+        case 'ArrowLeft': { // Step backward
+          e.preventDefault();
+          if (snapshots.length === 0) break;
+          const { currentSnapshotIndex: idx2, isReplay: inReplay2 } = replayStore.getState();
+          if (inReplay2 && idx2 > 0) {
+            const prev = idx2 - 1;
+            replayStore.getState().setCurrentSnapshotIndex(prev);
+            void loadSnapshotAndEnterReplay(snapshots[prev].id);
+          }
+          break;
+        }
+        case '+':
+        case '=': { // Increase speed
+          e.preventDefault();
+          const speeds: Array<0.5 | 1 | 2 | 4> = [0.5, 1, 2, 4];
+          const currentSpeed = replayStore.getState().playbackSpeed;
+          const idx3 = speeds.indexOf(currentSpeed);
+          const nextSpeed = speeds[Math.min(idx3 + 1, speeds.length - 1)];
+          replayStore.getState().setPlaybackSpeed(nextSpeed);
+          break;
+        }
+        case '-': { // Decrease speed
+          e.preventDefault();
+          const speeds: Array<0.5 | 1 | 2 | 4> = [0.5, 1, 2, 4];
+          const currentSpeed = replayStore.getState().playbackSpeed;
+          const idx4 = speeds.indexOf(currentSpeed);
+          const prevSpeed = speeds[Math.max(idx4 - 1, 0)];
+          replayStore.getState().setPlaybackSpeed(prevSpeed);
+          break;
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onExitReplay]);
 
   // -------------------------------------------------------------------------
   // On mount: fetch timeline and intents data in parallel

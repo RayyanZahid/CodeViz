@@ -247,4 +247,4 @@ Plans:
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | 3/3 | Complete    | 2026-03-17 | - |
 | 17. Timeline Slider and Intent Panel UI | 5/5 | Complete    | 2026-03-17 | - |
-| 18. Watch-Root Integration and End-to-End Validation | 2/2 | Complete   | 2026-03-17 | - |
+| 18. Watch-Root Integration and End-to-End Validation | 2/2 | Complete    | 2026-03-17 | - |

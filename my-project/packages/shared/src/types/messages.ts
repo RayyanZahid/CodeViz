@@ -1,5 +1,6 @@
 import type { GraphNode, GraphEdge } from './graph.js';
 import type { ZoneUpdate, ArchitecturalEvent, RiskSignal } from './inference.js';
+import type { SnapshotSavedMessage, IntentUpdatedMessage, IntentClosedMessage } from './timeline.js';
 
 export interface GraphDeltaMessage {
   type: 'graph_delta';
@@ -38,4 +39,12 @@ export interface WatchRootChangedMessage {
   directory: string;
 }
 
-export type ServerMessage = GraphDeltaMessage | InitialStateMessage | InferenceMessage | ErrorMessage | WatchRootChangedMessage;
+export type ServerMessage =
+  | GraphDeltaMessage
+  | InitialStateMessage
+  | InferenceMessage
+  | ErrorMessage
+  | WatchRootChangedMessage
+  | SnapshotSavedMessage
+  | IntentUpdatedMessage
+  | IntentClosedMessage;

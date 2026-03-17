@@ -52,7 +52,33 @@ const RiskSignalSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Message schemas — 4-member discriminated union matching ServerMessage
+// Sub-schemas — Timeline types
+// ---------------------------------------------------------------------------
+
+const SnapshotMetaSchema = z.object({
+  id: z.number(),
+  sessionId: z.string(),
+  sequenceNumber: z.number(),
+  timestamp: z.number(),
+  summary: z.string(),
+  triggerFiles: z.array(z.string()),
+});
+
+const IntentSessionSchema = z.object({
+  id: z.number(),
+  sessionId: z.string(),
+  category: z.string(),
+  objective: z.string(),
+  confidence: z.number(),
+  subtasks: z.array(z.string()),
+  startSnapshotId: z.number().nullable(),
+  endSnapshotId: z.number().nullable(),
+  startedAt: z.number(),
+  endedAt: z.number().nullable(),
+});
+
+// ---------------------------------------------------------------------------
+// Message schemas — 8-member discriminated union matching ServerMessage
 // ---------------------------------------------------------------------------
 
 const GraphDeltaMessageSchema = z.object({
@@ -92,6 +118,22 @@ const WatchRootChangedMessageSchema = z.object({
   directory: z.string(),
 });
 
+const SnapshotSavedMessageSchema = z.object({
+  type: z.literal('snapshot_saved'),
+  meta: SnapshotMetaSchema,
+});
+
+const IntentUpdatedMessageSchema = z.object({
+  type: z.literal('intent_updated'),
+  session: IntentSessionSchema,
+});
+
+const IntentClosedMessageSchema = z.object({
+  type: z.literal('intent_closed'),
+  sessionId: z.string(),
+  endSnapshotId: z.number().nullable(),
+});
+
 // ---------------------------------------------------------------------------
 // Top-level discriminated union
 // ---------------------------------------------------------------------------
@@ -102,6 +144,9 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   InferenceMessageSchema,
   ErrorMessageSchema,
   WatchRootChangedMessageSchema,
+  SnapshotSavedMessageSchema,
+  IntentUpdatedMessageSchema,
+  IntentClosedMessageSchema,
 ]);
 
 export type ServerMessageParsed = z.infer<typeof ServerMessageSchema>;
@@ -113,4 +158,6 @@ export {
   ZoneUpdateSchema,
   ArchitecturalEventSchema,
   RiskSignalSchema,
+  SnapshotMetaSchema,
+  IntentSessionSchema,
 };

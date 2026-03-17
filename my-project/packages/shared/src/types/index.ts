@@ -5,3 +5,4 @@ export * from './watcher.js';
 export * from './parser.js';
 export * from './graph-delta.js';
 export * from './inference.js';
+export * from './timeline.js';

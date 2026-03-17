@@ -34,3 +34,33 @@ export const layoutPositions = sqliteTable('layout_positions', {
   zone: text('zone'),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
+
+export const graphSnapshots = sqliteTable('graph_snapshots', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: text('session_id').notNull(),
+  watchRoot: text('watch_root').notNull(),
+  sequenceNumber: integer('sequence_number').notNull(),
+  timestamp: integer('timestamp', { mode: 'timestamp_ms' }).notNull(),
+  graphJson: text('graph_json', { mode: 'json' })
+    .$type<{ nodes: unknown[]; edges: unknown[]; positions: Record<string, { x: number; y: number }> }>()
+    .notNull(),
+  summary: text('summary').notNull(),
+  triggerFiles: text('trigger_files', { mode: 'json' }).$type<string[]>().notNull(),
+  riskSnapshot: text('risk_snapshot', { mode: 'json' }).$type<unknown[]>().notNull().default([]),
+});
+
+export const intentSessions = sqliteTable('intent_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: text('session_id').notNull(),
+  watchRoot: text('watch_root').notNull(),
+  category: text('category').notNull(),
+  objective: text('objective').notNull(),
+  confidence: real('confidence').notNull(),
+  subtasks: text('subtasks', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  evidence: text('evidence', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  riskSnapshot: text('risk_snapshot', { mode: 'json' }).$type<unknown[]>().notNull().default([]),
+  startSnapshotId: integer('start_snapshot_id'),
+  endSnapshotId: integer('end_snapshot_id'),
+  startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),
+  endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
+});

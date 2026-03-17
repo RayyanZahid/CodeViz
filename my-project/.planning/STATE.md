@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 16 of 18 (Client State Layer and Mode Isolation)
-Plan: 1 of 3 completed in current phase
+Plan: 3 of 3 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 16-01 (replayStore Zustand slice + WsClient delta interception + watch-root auto-exit) complete
+Last activity: 2026-03-17 — Plan 16-03 (replayTransitions.ts + ArchCanvas replay orchestration + canvas subscription guard) complete
 
-Progress: [████░░░░░░] 25% (v3.0: Phase 16 in progress, 1/3 plans done)
+Progress: [████████░░] 75% (v3.0: Phase 16 complete, 3/3 plans done)
 
 ## Performance Metrics
 
@@ -72,6 +72,13 @@ Key v3.0 decisions (pre-planning):
 - [Phase 16-01]: exitReplay() deliberately preserves buffers — caller reads bufferedGraphDeltas/bufferedInferenceMessages before calling exitReplay, then calls clearBuffer() after draining (Plan 02 implements drain logic)
 - [Phase 16-01]: initial_state during replay applies silently to graphStore (for exit-replay accuracy) without scanning/summary side effects — ArchCanvas guard to skip visual updates added in Plan 03
 - [Phase 16-01]: Buffer cap at 500 entries with bufferOverflowed flag — overflow triggers snapshot fetch path on exit instead of buffer drain
+- [Phase 16-02]: handleExitReplay uses bufferOverflowed || bufferedGraphDeltas.length >= 50 threshold — below 50 entries, sequential delta apply is accurate; above, fresh /api/snapshot fetch guarantees correctness
+- [Phase 16-02]: insertReplaySeparator inserts separator BEFORE draining inference messages — separator visually separates historical events from live catch-up events in correct chronological order
+- [Phase 16-02]: ReplayBanner receives onExitReplay as prop (not calling exitReplay directly) — async exit orchestration (fetch, drain, clearBuffer) belongs to App.tsx coordinator
+- [Phase 16-02]: Selected node check happens AFTER graphStore restore — ensures nodes.has(selectedNodeId) reflects live graph state, not stale replay graph
+- [Phase 16-03]: NodeRenderer.createShape is private — historical-only nodes added via syncAll with merged Map (live + historical-only), reconciled back on exit via syncAll(liveNodes)
+- [Phase 16-03]: Blue replay tint via shadow glow (shadowColor #64a0ff, shadowBlur 8, shadowOpacity 0.5) — preserves zone colors while adding blue overlay; original shadow settings stored as JSON in tintedFills Map for exact restoration
+- [Phase 16-03]: ArchCanvas Stage wrapped in relative-positioned div to allow absolute overlay positioning for empty graph message
 
 ### Pending Todos
 
@@ -95,6 +102,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T07:34:16Z
-**Stopped at:** Completed 16-01-PLAN.md (replayStore + WsClient interception)
-**Resume file:** .planning/phases/16-client-state-layer-and-mode-isolation/16-02-PLAN.md
+**Last session:** 2026-03-17T07:43:29Z
+**Stopped at:** Completed 16-03-PLAN.md (replayTransitions.ts + ArchCanvas replay orchestration)
+**Resume file:** .planning/phases/17-timeline-slider/17-01-PLAN.md

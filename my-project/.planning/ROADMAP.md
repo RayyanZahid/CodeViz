@@ -92,12 +92,13 @@ Plans:
 
 ### Phase 14.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** The "Build and Start" journey test passes end-to-end: `pnpm build` produces TypeScript output for all packages, Playwright auto-starts the dev server, and all 4 journey tests pass without external setup
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Requirements:** INFRA-01, INFRA-02
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 14.1 to break down)
+- [ ] 14.1-01-PLAN.md -- Add root build script, fix tsconfigs for tsc -b, add Playwright webServer block, fix journey test commands
 
 ### Phase 15: Server Replay Layer
 **Goal**: The server records graph snapshots automatically, can reconstruct any historical snapshot in O(50-max) operations, and emits inferred intent sessions over WebSocket
@@ -113,6 +114,33 @@ Plans:
 - [ ] 15-01-PLAN.md -- Checkpoint schema, repository layer, IntentCategory alignment, and repository extensions (INFRA-03)
 - [ ] 15-02-PLAN.md -- IntentAnalyzer heuristic classification engine and SnapshotManager checkpoint integration (INFRA-03)
 - [ ] 15-03-PLAN.md -- Timeline REST plugin and server lifecycle wiring for IntentAnalyzer (INFRA-03)
+
+### Phase 15.3: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.3 to break down)
+
+### Phase 15.2: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.2 to break down)
+
+### Phase 15.1: Fix Journey Build and Start completes successfully (blocker) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.1 to break down)
 
 ### Phase 16: Client State Layer and Mode Isolation
 **Goal**: Users can enter and exit replay mode, and live WebSocket deltas are completely blocked from mutating the displayed graph while in replay mode

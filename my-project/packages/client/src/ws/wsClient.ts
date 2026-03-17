@@ -2,7 +2,8 @@ import { ServerMessageSchema } from '../schemas/serverMessages.js';
 import { graphStore } from '../store/graphStore.js';
 import { inferenceStore } from '../store/inferenceStore.js';
 import { replayStore } from '../store/replayStore.js';
-import type { GraphDeltaMessage, InitialStateMessage, InferenceMessage } from '@archlens/shared/types';
+import { intentStore } from '../store/intentStore.js';
+import type { GraphDeltaMessage, InitialStateMessage, InferenceMessage, IntentSession, SnapshotMeta } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -247,6 +248,10 @@ export class WsClient {
         graphStore.getState().resetState();
         // 2. Clear inference state — panels will show empty
         inferenceStore.getState().resetState();
+        // 2b. Clear intent state — old project sessions are invalid
+        intentStore.getState().resetState();
+        // 2c. Clear timeline snapshots — old project timeline is invalid
+        replayStore.getState().setSnapshots([]);
         // 3. Update watchRoot in store for UI display
         graphStore.getState().setWatchRoot(msg.directory);
         // 4. Mark as scanning — UI will show loading indicators
@@ -260,6 +265,22 @@ export class WsClient {
           this.batchTimer = null;
         }
         this.pendingDeltas = [];
+        break;
+      }
+
+      case 'snapshot_saved': {
+        // Always append to snapshots array — even during replay, the live edge must grow
+        replayStore.getState().appendSnapshot(msg.meta as unknown as SnapshotMeta);
+        break;
+      }
+
+      case 'intent_updated': {
+        intentStore.getState().applyIntentUpdated(msg.session as unknown as IntentSession);
+        break;
+      }
+
+      case 'intent_closed': {
+        intentStore.getState().applyIntentClosed(msg.sessionId, msg.endSnapshotId);
         break;
       }
 

@@ -110,4 +110,4 @@ None.
 
 **Last session:** 2026-03-17T10:02:28.270Z
 **Stopped at:** Completed 17-02-PLAN.md (IntentPanel collapsible sidebar component)
-**Resume file:** None
+**Resume file:** .planning/phases/17-timeline-slider-and-intent-panel-ui/17-02-SUMMARY.md

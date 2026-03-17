@@ -22,14 +22,14 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 
 ### Intent Inference
 
-- [ ] **INTENT-01**: User sees an inferred objective label describing what the AI agent is working on
-- [ ] **INTENT-02**: User sees a confidence indicator on the inferred intent
-- [ ] **INTENT-03**: User can view inferred intent in a dedicated sidebar panel
-- [ ] **INTENT-04**: User sees inferred subtasks derived from architectural event clusters
+- [x] **INTENT-01**: User sees an inferred objective label describing what the AI agent is working on
+- [x] **INTENT-02**: User sees a confidence indicator on the inferred intent
+- [x] **INTENT-03**: User can view inferred intent in a dedicated sidebar panel
+- [x] **INTENT-04**: User sees inferred subtasks derived from architectural event clusters
 - [x] **INTENT-05**: Intent panel auto-updates as new architectural events stream in
-- [ ] **INTENT-06**: User sees when the agent's focus shifts ("switched from X to Y")
-- [ ] **INTENT-07**: User sees risk-correlated intent linking detected risks to the current objective
-- [ ] **INTENT-08**: User can review an intent history log of past objectives with timestamps
+- [x] **INTENT-06**: User sees when the agent's focus shifts ("switched from X to Y")
+- [x] **INTENT-07**: User sees risk-correlated intent linking detected risks to the current objective
+- [x] **INTENT-08**: User can review an intent history log of past objectives with timestamps
 
 ### Infrastructure
 
@@ -83,14 +83,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPLAY-08 | Phase 17 | Pending |
 | REPLAY-09 | Phase 17 | Pending |
 | REPLAY-10 | Phase 17 | Complete |
-| INTENT-01 | Phase 17 | Pending |
-| INTENT-02 | Phase 17 | Pending |
-| INTENT-03 | Phase 17 | Pending |
-| INTENT-04 | Phase 17 | Pending |
+| INTENT-01 | Phase 17 | Complete |
+| INTENT-02 | Phase 17 | Complete |
+| INTENT-03 | Phase 17 | Complete |
+| INTENT-04 | Phase 17 | Complete |
 | INTENT-05 | Phase 17 | Complete |
-| INTENT-06 | Phase 17 | Pending |
-| INTENT-07 | Phase 17 | Pending |
-| INTENT-08 | Phase 17 | Pending |
+| INTENT-06 | Phase 17 | Complete |
+| INTENT-07 | Phase 17 | Complete |
+| INTENT-08 | Phase 17 | Complete |
 | INFRA-04 | Phase 18 | Pending |
 
 **Coverage:**

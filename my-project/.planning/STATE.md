@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15 of 18 (Server Replay Layer)
-Plan: 3 of 3 completed in current phase
+Phase: 14.1 of 18 (Fix Journey Build and Start — blocker)
+Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15-03 (Timeline REST plugin, IntentAnalyzer lifecycle wiring) complete
+Last activity: 2026-03-17 — Plan 14.1-01 (root build script, tsconfig composite, Playwright webServer) complete
 
-Progress: [████░░░░░░] 15% (v3.0: Phase 15 complete, 3/3 plans done)
+Progress: [████░░░░░░] 15% (v3.0: Phase 14.1 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -48,6 +48,10 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15-02]: Activity gap 90s threshold is implemented as the starting estimate; can be tuned in Phase 16+ based on real timing patterns
 - [Phase 15-03]: timelinePlugin uses getSessionId closure over snapshotManager — after switchWatchRoot replaces snapshotManager, closure returns new session ID automatically without plugin re-registration
 - [Phase 15-03]: IntentAnalyzer destroyed at step 2c in switchWatchRoot (before graph reset) — ensures closeSession records endSnapshotId from correct session before SQLite tables are purged
+- [Phase 14.1-01]: root build script runs pnpm build:workers && tsc -b packages/shared packages/server packages/client — workers must compile before tsc -b
+- [Phase 14.1-01]: client tsconfig Option A (modify existing) — remove noEmit: true, add composite: true + outDir: dist; Vite ignores these options so dev workflow unaffected
+- [Phase 14.1-01]: tsconfig.workers.json must override composite: false to prevent TS6304 when extending tsconfig.json that has composite: true
+- [Phase 14.1-01]: Playwright webServer reuseExistingServer: true — safe for local dev and CI environments
 
 ### Pending Todos
 
@@ -67,6 +71,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T01:24:19.658Z
-**Stopped at:** Phase 14.1 context gathered
-**Resume file:** .planning/phases/14.1-fix-journey-build-and-start-completes-successfully-blocker/14.1-CONTEXT.md
+**Last session:** 2026-03-17T01:46:00Z
+**Stopped at:** Completed 14.1-01-PLAN.md (Fix Journey Build and Start — blocker)
+**Resume file:** .planning/phases/14.1-fix-journey-build-and-start-completes-successfully-blocker/14.1-01-SUMMARY.md

@@ -95,7 +95,7 @@ Plans:
 **Goal:** The "Build and Start" journey test passes end-to-end: `pnpm build` produces TypeScript output for all packages, Playwright auto-starts the dev server, and all 4 journey tests pass without external setup
 **Depends on:** Phase 14
 **Requirements:** INFRA-01, INFRA-02
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 14.1-01-PLAN.md -- Add root build script, fix tsconfigs for tsc -b, add Playwright webServer block, fix journey test commands

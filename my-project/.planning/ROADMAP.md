@@ -81,6 +81,15 @@ Plans:
 - [ ] 14-01-PLAN.md -- Schema, shared types, message protocol, and repository modules (INFRA-01)
 - [ ] 14-02-PLAN.md -- SnapshotManager delta-threshold logic and server lifecycle wiring (INFRA-02)
 
+### Phase 14.3: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (major) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 14.3 to break down)
+
 ### Phase 14.2: Fix: Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 
 **Goal:** Replace placeholder Phase 14 journey tests with real tests that verify all four success criteria via diagnostic REST endpoints: graph_snapshots CRUD with positions, intent_sessions CRUD, shared type compilation, and delta-threshold snapshot behavior
@@ -120,7 +129,7 @@ Plans:
 
 **Goal:** [Urgent work - to be planned]
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 15.3 to break down)

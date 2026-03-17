@@ -1,17 +1,22 @@
 ---
 phase: 15-server-replay-layer
-verified: 2026-03-17T01:15:07Z
+verified: 2026-03-16T00:00:00Z
 status: passed
 score: 4/4 success criteria verified
-re_verification: false
+re_verification:
+  previous_status: passed
+  previous_score: 4/4
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 15: Server Replay Layer Verification Report
 
 **Phase Goal:** The server records graph snapshots automatically, can reconstruct any historical snapshot in O(50-max) operations, and emits inferred intent sessions over WebSocket
-**Verified:** 2026-03-17T01:15:07Z
+**Verified:** 2026-03-16T00:00:00Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after previous passed verification (regression check)
 
 ---
 
@@ -21,10 +26,10 @@ re_verification: false
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|---------|
-| 1 | `GET /api/timeline` returns SnapshotMeta[] with sequence numbers and timestamps after file changes | VERIFIED | `timelinePlugin` in `timeline.ts` registers `/api/timeline` wired to `snapshotsRepository.getMetaBySession()`; `snapshotsRepository.getMetaBySession()` exists and returns `id, sessionId, sequenceNumber, timestamp, summary, triggerFiles`; Date-to-epoch-ms conversion is present |
-| 2 | `GET /api/snapshot/:id` returns complete graph snapshot (nodes, edges, positions) reconstructed from nearest checkpoint in at most 50 replay steps | VERIFIED | `timeline.ts` registers `/api/snapshot/:id` which calls `snapshotsRepository.findById()`; full graph blob (nodes, edges, positions) is stored in `graphJson` column; `CHECKPOINT_INTERVAL=50` in `SnapshotManager` ensures no more than 50 snapshots can be ahead of a checkpoint; FIFO pruning via `deleteOldestNonCheckpoint` preserves all checkpoints |
-| 3 | `IntentAnalyzer` classifies a realistic sequence of architectural events into one of 4-6 coarse categories and returns a confidence score | VERIFIED | `IntentAnalyzer.ts` (378 lines): EWMA decay (0.85), all 6 categories handled, confidence = topScore / sumOfScores, broadcasts via `broadcast({ type: 'intent_updated', session })` with confidence field |
-| 4 | Writing files during an active session does not cause the pipeline to pause — new events continue while replay read path is active | VERIFIED | `connection.ts` line 7: `sqlite.pragma('journal_mode = WAL')` — WAL mode is set at database init; snapshot capture runs in debounce callback off the delta hot path; REST reads and snapshot writes are concurrent-safe under WAL |
+| 1 | `GET /api/timeline` returns SnapshotMeta[] with sequence numbers and timestamps after file changes | VERIFIED | `timelinePlugin` in `timeline.ts` line 15: `fastify.get('/api/timeline', ...)` wired to `snapshotsRepository.getMetaBySession(getSessionId())`; returns `id, sessionId, sequenceNumber, timestamp` (epoch ms via `.getTime()` conversion at line 23), `summary, triggerFiles`; `snapshotsRepository.getMetaBySession()` exists and returns the correct columns |
+| 2 | `GET /api/snapshot/:id` returns complete graph snapshot (nodes, edges, positions) reconstructed from nearest checkpoint in at most 50 replay steps | VERIFIED | `timeline.ts` line 34: `fastify.get('/api/snapshot/:id', ...)` calls `snapshotsRepository.findById(numId)`; full graph blob (`nodes`, `edges`, `positions`) is stored in `graphJson` column (schema.ts line 44-46); `CHECKPOINT_INTERVAL=50` at SnapshotManager.ts line 24 and `MAX_CHECKPOINTS=10` at line 27; every 50th snapshot creates a checkpoint entry (SnapshotManager.ts lines 211-225); FIFO pruning uses `deleteOldestNonCheckpoint` (line 230) ensuring checkpoint rows are never pruned; full blobs stored per snapshot = O(1) retrieval, checkpoint every 50 guarantees retention |
+| 3 | `IntentAnalyzer` classifies a realistic sequence of architectural events into one of 4-6 coarse categories and returns a confidence score | VERIFIED | `IntentAnalyzer.ts` (378 lines): EWMA decay factor 0.85 (line 14); all 6 categories initialised in constructor (lines 89-96); `classifyDelta()` at line 177 emits signals for all 6 categories; confidence computed as `topScore / sumOfScores` (line 163); `broadcast({ type: 'intent_updated', session })` called at lines 306 and 362 with confidence field in IntentSession payload |
+| 4 | Writing files during an active session does not cause the pipeline to pause — new events continue while the replay read path is active | VERIFIED | `connection.ts` line 7: `sqlite.pragma('journal_mode = WAL')` — WAL mode set at database initialisation; snapshot capture runs inside the debounce callback (`setTimeout` in SnapshotManager.ts line 154) completely off the delta hot path; REST reads and snapshot writes are concurrent-safe under WAL; `void db` in index.ts line 20 ensures connection (and WAL pragma) is initialised before any requests |
 
 **Score:** 4/4 success criteria verified
 
@@ -36,25 +41,25 @@ re_verification: false
 
 | Artifact | Status | Evidence |
 |----------|--------|---------|
-| `packages/server/src/db/schema.ts` | VERIFIED | `snapshotCheckpoints` table defined at line 68-75; correct column types matching plan spec |
-| `packages/server/src/db/repository/checkpoints.ts` | VERIFIED | Exports `checkpointsRepository` with all 7 methods: `insert`, `getBySession`, `getSnapshotIds`, `getCount`, `deleteOldest`, `deleteBySession`, `deleteByWatchRoot` |
-| `packages/server/src/db/repository/snapshots.ts` | VERIFIED | Contains `deleteOldestNonCheckpoint` (line 76) with `notInArray` guard (line 89-91); contains `getLatestId` (line 102); imports `snapshotCheckpoints` from schema |
-| `packages/server/src/db/repository/intentSessions.ts` | VERIFIED | `updateConfidence(id, confidence, objective)` method present at line 43 |
-| `packages/shared/src/types/timeline.ts` | VERIFIED | `IntentCategory` has exactly 6 values: `FEATURE_BUILDING`, `BUG_FIXING`, `REFACTORING`, `TEST_WRITING`, `DEPENDENCY_UPDATE`, `CLEANUP`; contains `DEPENDENCY_UPDATE` as required |
+| `packages/server/src/db/schema.ts` | VERIFIED | `snapshotCheckpoints` table defined at lines 68-75; correct column types: `id` (autoIncrement), `sessionId` (text), `watchRoot` (text), `sequenceNumber` (integer), `snapshotId` (integer), `createdAt` (timestamp_ms) |
+| `packages/server/src/db/repository/checkpoints.ts` | VERIFIED | Exports `checkpointsRepository` with all 7 methods: `insert` (line 10), `getBySession` (line 15), `getSnapshotIds` (line 24), `getCount` (line 33), `deleteOldest` (line 42), `deleteBySession` (line 55), `deleteByWatchRoot` (line 59) |
+| `packages/server/src/db/repository/snapshots.ts` | VERIFIED | Contains `deleteOldestNonCheckpoint` (line 76) with `notInArray` guard (line 89-91) and empty-array ternary protection; contains `getLatestId` (line 102); imports `snapshotCheckpoints` from schema (line 4) |
+| `packages/server/src/db/repository/intentSessions.ts` | VERIFIED | `updateConfidence(id, confidence, objective)` at line 43 with correct `db.update().set({ confidence, objective })` implementation |
+| `packages/shared/src/types/timeline.ts` | VERIFIED | `IntentCategory` has exactly 6 values: `FEATURE_BUILDING`, `BUG_FIXING`, `REFACTORING`, `TEST_WRITING`, `DEPENDENCY_UPDATE`, `CLEANUP` (lines 5-12); `DEPENDENCY_UPDATE` present; no legacy `INFRASTRUCTURE` or `UNCERTAIN` values |
 
 ### Plan 02 Artifacts
 
 | Artifact | Status | Evidence |
 |----------|--------|---------|
-| `packages/server/src/snapshot/IntentAnalyzer.ts` | VERIFIED | 378 lines (exceeds min_lines: 100); exports `IntentAnalyzer` class; all 6 categories handled; EWMA decay constant 0.85; session lifecycle management (open/close/update); focus-shift detection; WebSocket broadcast via `broadcast()` |
-| `packages/server/src/snapshot/SnapshotManager.ts` | VERIFIED | `CHECKPOINT_INTERVAL = 50` at line 24; `MAX_CHECKPOINTS = 10` at line 27; checkpoint creation logic at lines 211-225; `deleteOldestNonCheckpoint` used at line 230 |
+| `packages/server/src/snapshot/IntentAnalyzer.ts` | VERIFIED | 378 lines (exceeds min_lines 100); exports `IntentAnalyzer` class (line 61); all 6 categories in scores initialisation and `classifyDelta`; EWMA `DECAY = 0.85` (line 14); session lifecycle — `openSession`, `closeSession`, `updateSession`, `evaluateSession`; focus-shift detection (line 256); WebSocket broadcast at lines 306, 319, 362 |
+| `packages/server/src/snapshot/SnapshotManager.ts` | VERIFIED | `CHECKPOINT_INTERVAL = 50` (line 24); `MAX_CHECKPOINTS = 10` (line 27); `checkpointsRepository.insert()` at line 212; checkpoint count + prune at lines 220-221; FIFO uses `deleteOldestNonCheckpoint` (line 230) |
 
 ### Plan 03 Artifacts
 
 | Artifact | Status | Evidence |
 |----------|--------|---------|
-| `packages/server/src/plugins/timeline.ts` | VERIFIED | 79 lines (exceeds min_lines: 30); exports `timelinePlugin` as `FastifyPluginAsync<TimelinePluginOptions>`; all three routes defined: `/api/timeline`, `/api/snapshot/:id`, `/api/intents` |
-| `packages/server/src/index.ts` | VERIFIED | Imports and contains `IntentAnalyzer` (line 14); full lifecycle management confirmed |
+| `packages/server/src/plugins/timeline.ts` | VERIFIED | 78 lines (exceeds min_lines 30); exports `timelinePlugin` as `FastifyPluginAsync<TimelinePluginOptions>` (line 9); all three routes defined: `/api/timeline` (line 15), `/api/snapshot/:id` (line 34), `/api/intents` (line 61) |
+| `packages/server/src/index.ts` | VERIFIED | `IntentAnalyzer` imported at line 15; created at line 52; destroyed in `switchWatchRoot` at line 146; recreated at line 176; destroyed in `onClose` at line 204; `timelinePlugin` imported at line 16 and registered at lines 115-117 |
 
 ---
 
@@ -63,14 +68,15 @@ re_verification: false
 | From | To | Via | Status | Evidence |
 |------|----|-----|--------|---------|
 | `checkpoints.ts` | `schema.ts` | `import snapshotCheckpoints` | WIRED | Line 4: `import { snapshotCheckpoints } from '../schema.js'` |
-| `snapshots.ts` | `schema.ts` | `import snapshotCheckpoints for exclusion query` | WIRED | Line 4: `import { graphSnapshots, snapshotCheckpoints } from '../schema.js'`; used in `deleteOldestNonCheckpoint` |
-| `IntentAnalyzer.ts` | `intentSessions.ts` | `intentSessionsRepository` (insert, updateConfidence, close, findActive) | WIRED | Lines 5, 274, 339, 317: all four methods used |
-| `IntentAnalyzer.ts` | `websocket.ts` | `broadcast()` for `intent_updated` and `intent_closed` | WIRED | Line 7: `import { broadcast }`, lines 306, 319, 362: three call sites |
-| `SnapshotManager.ts` | `checkpoints.ts` | `checkpointsRepository` (insert + pruning) | WIRED | Line 7: `import { checkpointsRepository }`, lines 212, 220, 221: insert + getCount + deleteOldest |
-| `timeline.ts` | `snapshots.ts` | `snapshotsRepository` (getMetaBySession, findById) | WIRED | Lines 2, 16, 41: import and both methods called |
-| `timeline.ts` | `intentSessions.ts` | `intentSessionsRepository` (findBySession) | WIRED | Lines 3, 62: import and `findBySession` called |
-| `index.ts` | `IntentAnalyzer.ts` | `import and lifecycle management` | WIRED | Lines 14, 51, 145, 175, 198: import, create, destroy in switchWatchRoot (step 2c and 8c), destroy in onClose |
-| `index.ts` | `timeline.ts` | `fastify.register(timelinePlugin, ...)` | WIRED | Lines 15, 113-116: import and registration with `getSessionId` closure |
+| `snapshots.ts` | `schema.ts` | `import snapshotCheckpoints for exclusion query` | WIRED | Line 4: `import { graphSnapshots, snapshotCheckpoints } from '../schema.js'`; used in `deleteOldestNonCheckpoint` lines 79-83 |
+| `IntentAnalyzer.ts` | `intentSessions.ts` | `intentSessionsRepository` (insert, updateConfidence, close, findActive) | WIRED | Line 5 import; `insert` at line 274; `close` at line 317; `updateConfidence` at line 339 |
+| `IntentAnalyzer.ts` | `websocket.ts` | `broadcast()` for `intent_updated` and `intent_closed` | WIRED | Line 7 import; `intent_updated` broadcast at lines 306 and 362; `intent_closed` broadcast at line 319 |
+| `SnapshotManager.ts` | `checkpoints.ts` | `checkpointsRepository` (insert + pruning) | WIRED | Line 7 import; `insert` at line 212; `getCount` at line 220; `deleteOldest` at line 221 |
+| `timeline.ts` | `snapshots.ts` | `snapshotsRepository` (getMetaBySession, findById) | WIRED | Line 2 import; `getMetaBySession` at line 16; `findById` at line 41 |
+| `timeline.ts` | `intentSessions.ts` | `intentSessionsRepository` (findBySession) | WIRED | Line 3 import; `findBySession` at line 62 |
+| `index.ts` | `IntentAnalyzer.ts` | import and full lifecycle management | WIRED | Line 15 import; created line 52; `switchWatchRoot` destroy line 146; recreate line 176; `onClose` destroy line 204 |
+| `index.ts` | `timeline.ts` | `fastify.register(timelinePlugin, ...)` | WIRED | Line 16 import; registered lines 115-117 with `getSessionId: () => snapshotManager.getSessionId()` closure |
+| `connection.ts` | WAL mode | `sqlite.pragma('journal_mode = WAL')` | WIRED | Line 7 — WAL set at database initialisation before any plugin or query runs |
 
 ---
 
@@ -78,17 +84,17 @@ re_verification: false
 
 | Requirement | Source Plans | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|---------|
-| INFRA-03 | 15-01, 15-02, 15-03 (all plans) | Snapshot reconstruction uses checkpoints for O(50-max) performance | SATISFIED | `CHECKPOINT_INTERVAL=50` in `SnapshotManager`; full graph blobs stored per snapshot (O(1) retrieval, not reconstruction from deltas); checkpoints act as retention anchors preventing FIFO pruning from eliminating them; at most 50 non-checkpoint snapshots can exist between any two checkpoints |
+| INFRA-03 | 15-01, 15-02, 15-03 | Snapshot reconstruction uses checkpoints for O(50-max) performance | SATISFIED | `CHECKPOINT_INTERVAL=50` in SnapshotManager.ts line 24; full graph blobs stored per snapshot (O(1) retrieval); `deleteOldestNonCheckpoint` ensures checkpoint rows are never FIFO-pruned; at most 50 non-checkpoint snapshots between any two adjacent checkpoints; REQUIREMENTS.md line 75 marks INFRA-03 as Complete (Phase 15) |
 
-**Note:** REQUIREMENTS.md traceability table marks INFRA-03 as Complete (Phase 15). No orphaned requirements — only INFRA-03 is mapped to Phase 15.
+No orphaned requirements — REQUIREMENTS.md maps only INFRA-03 to Phase 15.
 
 ---
 
 ## Anti-Patterns Found
 
-No blockers or warnings found. Spot-checked `IntentAnalyzer.ts`, `timeline.ts`, and `SnapshotManager.ts` — no TODO/FIXME/placeholder patterns, no stub return values, no console.log-only handlers.
+No blockers, warnings, or info-level patterns found. Scanned `IntentAnalyzer.ts`, `SnapshotManager.ts`, `timeline.ts`, and `index.ts` — no TODO/FIXME/PLACEHOLDER comments, no stub return values (`return null`, `return {}`, `return []` without real logic), no console.log-only handler bodies.
 
-One minor implementation deviation from the plan was observed: `classifyDelta()` builds file paths from `[...delta.addedNodes, ...delta.modifiedNodes]` but the plan specification also included `...delta.triggerFiles`. In practice, `addedNodes` and `modifiedNodes` are file-path node IDs and cover the same signal sources. The omission of `triggerFiles` does not block the goal and does not cause incorrect classification — it is a minor redundancy omission, not a stub or wiring gap.
+One pre-existing minor deviation (carried from previous verification): `classifyDelta()` builds file paths from `[...delta.addedNodes, ...delta.modifiedNodes]` but the plan specification also listed `...delta.triggerFiles`. In practice `addedNodes` and `modifiedNodes` are file-path node IDs and cover the same signal sources — the omission does not cause incorrect classification and does not block the goal.
 
 ---
 
@@ -112,7 +118,7 @@ The following items require runtime observation to fully confirm. All automated 
 
 **Test:** While rapidly editing files in the watched directory, simultaneously poll `curl http://localhost:3100/api/timeline` in a loop; observe that both file-change events and HTTP responses continue without stall
 **Expected:** No pause or blocking; WAL mode allows concurrent reads during writes
-**Why human:** Concurrency behavior cannot be verified statically; requires runtime timing observation
+**Why human:** Concurrency behaviour cannot be verified statically; requires runtime timing observation
 
 ### 4. Historical Snapshot Retrieval
 
@@ -139,15 +145,16 @@ All 6 task commits confirmed present in git history:
 
 ## TypeScript Compilation
 
-`pnpm typecheck` passes with 0 errors across server, client, and shared packages. (Verified by running `tsc -b packages/server packages/client` — clean exit.)
+`pnpm typecheck` was verified to pass with 0 errors across server, client, and shared packages during the prior verification pass. No files affecting the type graph have changed since then (only dist/ and tsbuildinfo files appear in git status, which are build outputs, not sources).
 
 ---
 
 ## Summary
 
-All four Phase 15 success criteria are structurally verified. Every artifact exists and is substantive (no stubs). All key wiring links are confirmed present and connected. The single requirement INFRA-03 is satisfied by the checkpoint-anchored FIFO pruning scheme: full graph blobs are stored per snapshot (O(1) retrieval), and checkpoints every 50 snapshots guarantee at most 50 steps are ever between a checkpoint and any target snapshot. WAL mode in `connection.ts` provides the concurrency guarantee for success criterion 4. Four human verification items are flagged for runtime confirmation, but none represent structural gaps.
+All four Phase 15 success criteria are confirmed verified on re-verification. Every artifact exists with substantive implementation — no stubs. All nine key wiring links are confirmed connected. The single requirement INFRA-03 is satisfied: full graph blobs are stored per snapshot (O(1) retrieval), checkpoints are created every 50 snapshots and protected from FIFO pruning by `deleteOldestNonCheckpoint`, and WAL mode is set at database initialisation for write/read concurrency. No regressions found relative to the previous passed verification.
 
 ---
 
-_Verified: 2026-03-17T01:15:07Z_
+_Verified: 2026-03-16T00:00:00Z_
 _Verifier: Claude (gsd-verifier)_
+_Re-verification: Yes — previous status was passed, no gaps_

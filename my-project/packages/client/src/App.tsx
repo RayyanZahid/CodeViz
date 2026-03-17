@@ -7,6 +7,8 @@ import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
 import { ActivityFeed } from './panels/ActivityFeed.js';
 import { ReplayBanner } from './panels/ReplayBanner.js';
+import { IntentPanel } from './panels/IntentPanel.js';
+import { TimelineBar } from './timeline/TimelineBar.js';
 import { inferenceStore } from './store/inferenceStore.js';
 import { useGraphStore, graphStore } from './store/graphStore.js';
 import { useReplayStore, replayStore } from './store/replayStore.js';
@@ -282,8 +284,11 @@ export function App() {
       {/* Top bar — directory input */}
       <DirectoryBar />
 
-      {/* Main content — canvas + sidebar */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      {/* Main content — inner column: canvas+sidebar row + timeline bar */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+
+      {/* Canvas + sidebar row — flex: 1 with minHeight: 0 to allow shrinking */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
       {/* Canvas area — flex-grow fills remaining width after sidebar */}
       <div
@@ -436,7 +441,7 @@ export function App() {
           overflowX: 'hidden',
         }}
       >
-        {/* Panel order (top to bottom): Inspector, Risk, Feed */}
+        {/* Panel order (top to bottom): Inspector, Risk, Intent, Feed */}
         <NodeInspector
           selectedNodeId={selectedNodeId}
           onHighlightNode={handleHighlightNode}
@@ -445,10 +450,16 @@ export function App() {
         <RiskPanel
           onHighlightNode={handleHighlightNode}
         />
+        <IntentPanel />
         <ActivityFeed />
       </div>
 
-      </div> {/* End main content (canvas + sidebar) */}
+      </div> {/* End canvas + sidebar row */}
+
+      {/* TimelineBar — spans full width (canvas + sidebar) at bottom */}
+      <TimelineBar onExitReplay={() => void handleExitReplay()} />
+
+      </div> {/* End inner column (canvas+sidebar row + timeline) */}
     </div>
   );
 }

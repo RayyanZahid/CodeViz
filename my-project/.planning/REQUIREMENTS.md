@@ -17,7 +17,7 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 - [x] **REPLAY-06**: User sees only events from the current watch root session during replay
 - [x] **REPLAY-07**: User sees the activity feed synchronized with the current scrubber position
 - [x] **REPLAY-08**: User sees auto-detected epoch markers on the timeline at significant moments
-- [ ] **REPLAY-09**: User can see architecture diff overlay showing added/removed/changed components between two points
+- [x] **REPLAY-09**: User can see architecture diff overlay showing added/removed/changed components between two points
 - [x] **REPLAY-10**: User can control replay speed (0.5x, 1x, 2x, 4x)
 
 ### Intent Inference
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPLAY-06 | Phase 17 | Complete |
 | REPLAY-07 | Phase 17 | Complete |
 | REPLAY-08 | Phase 17 | Complete |
-| REPLAY-09 | Phase 17 | Pending |
+| REPLAY-09 | Phase 17 | Complete |
 | REPLAY-10 | Phase 17 | Complete |
 | INTENT-01 | Phase 17 | Complete |
 | INTENT-02 | Phase 17 | Complete |

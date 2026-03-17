@@ -85,7 +85,7 @@ Plans:
 
 **Goal:** Replace placeholder Phase 14 journey tests with real tests that verify all four success criteria via diagnostic REST endpoints: graph_snapshots CRUD with positions, intent_sessions CRUD, shared type compilation, and delta-threshold snapshot behavior
 **Depends on:** Phase 14
-**Plans:** 2/2 plans complete
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 14.2-01-PLAN.md -- Diagnostic plugin endpoints and real journey test rewrites

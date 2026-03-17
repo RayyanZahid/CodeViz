@@ -136,12 +136,12 @@ Plans:
 
 ### Phase 15.5: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore 4 auto-gsd-overwritten journey test files from git HEAD, verify all 12 journey tests pass green, and document the root cause of the recurring overwrite pattern (OttoGSD journey-test-generator.ts)
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.5 to break down)
+- [ ] 15.5-01-PLAN.md -- Restore journey test files from git HEAD, verify 12/12 pass, document root cause
 
 ### Phase 15.4: Fix: Journey Build and Start completes successfully (blocker) (INSERTED)
 

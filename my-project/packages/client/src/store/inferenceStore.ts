@@ -20,6 +20,10 @@ export interface ActivityItem {
   timestamp: number;
   /** #22c55e green = creation, #f97316 orange = risk, #3b82f6 blue = dependency change, #94a3b8 gray = file modification */
   iconColor: string;
+  /** True for separator items inserted into the activity feed on replay exit */
+  isReplaySeparator?: boolean;
+  /** Total event count that occurred during replay — shown in separator text */
+  replayEventCount?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +60,8 @@ export interface InferenceStore {
   pruneExpiredActive: () => void;
   /** Reset all inference state on watch-root switch — called by WsClient on watch_root_changed. */
   resetState: () => void;
+  /** Insert a replay separator item into the activity feed with the total buffered event count. */
+  insertReplaySeparator: (totalCount: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -438,6 +444,21 @@ export const useInferenceStore = create<InferenceStore>()((set, get) => ({
       risks: new Map<string, RiskItem>(),
       activeNodeIds: new Map<string, number>(),
     });
+  },
+
+  insertReplaySeparator: (totalCount: number) => {
+    const now = Date.now();
+    const separator: ActivityItem = {
+      id: `replay-sep-${now}`,
+      nodeId: '',
+      sentence: `${totalCount} event${totalCount !== 1 ? 's' : ''} during replay`,
+      iconColor: '#eab308', // amber — matches replay banner theme
+      timestamp: now,
+      isReplaySeparator: true,
+      replayEventCount: totalCount,
+    };
+    const updatedFeed = [separator, ...get().activityFeed].slice(0, 50);
+    set({ activityFeed: updatedFeed });
   },
 }));
 

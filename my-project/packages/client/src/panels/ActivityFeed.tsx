@@ -29,6 +29,36 @@ interface FeedItemProps {
 }
 
 function FeedItem({ item }: FeedItemProps) {
+  // Replay separator — rendered as highlighted amber divider row
+  if (item.isReplaySeparator) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 8px',
+          borderBottom: '1px solid rgba(234, 179, 8, 0.3)',
+          borderTop: '1px solid rgba(234, 179, 8, 0.3)',
+          background: 'rgba(234, 179, 8, 0.08)',
+        }}
+      >
+        <span
+          style={{
+            flex: 1,
+            fontSize: 11,
+            fontFamily: 'monospace',
+            color: '#eab308',
+            textAlign: 'center',
+            fontStyle: 'italic',
+          }}
+        >
+          Events during replay
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{

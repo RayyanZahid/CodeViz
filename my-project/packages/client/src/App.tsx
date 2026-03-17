@@ -6,10 +6,12 @@ import { MinimapStage } from './minimap/MinimapStage.js';
 import { NodeInspector } from './panels/NodeInspector.js';
 import { RiskPanel } from './panels/RiskPanel.js';
 import { ActivityFeed } from './panels/ActivityFeed.js';
+import { ReplayBanner } from './panels/ReplayBanner.js';
 import { inferenceStore } from './store/inferenceStore.js';
 import { useGraphStore, graphStore } from './store/graphStore.js';
-import { replayStore } from './store/replayStore.js';
+import { useReplayStore, replayStore } from './store/replayStore.js';
 import type { ConnectionStatus } from './store/graphStore.js';
+import type { InitialStateMessage } from '@archlens/shared/types';
 import type { ViewportController } from './canvas/ViewportController.js';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +58,9 @@ export function App() {
   const scanning = useGraphStore((s) => s.scanning);
   const nodeCount = useGraphStore((s) => s.nodes.size);
 
+  // Replay mode gate — true while viewing a historical snapshot
+  const isReplay = useReplayStore((s) => s.isReplay);
+
   // Ref to ViewportController — populated by ArchCanvas on init
   const viewportControllerRef = useRef<ViewportController | null>(null);
 
@@ -101,19 +106,6 @@ export function App() {
   }, []);
 
   // -------------------------------------------------------------------------
-  // ESC key handler — dismisses the inspector panel
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && selectedNodeId) {
-        setSelectedNodeId(null);
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId]);
-
-  // -------------------------------------------------------------------------
   // Navigation handlers — delegate to ViewportController
   // -------------------------------------------------------------------------
   const handleZoomIn = useCallback(() => {
@@ -131,6 +123,78 @@ export function App() {
   const handleToggleMinimap = useCallback(() => {
     setMinimapVisible((v) => !v);
   }, []);
+
+  // -------------------------------------------------------------------------
+  // handleExitReplay — called by ReplayBanner "Return to Live" button and
+  // the Escape key handler below. Restores live graph state and inserts a
+  // replay separator into the activity feed for catch-up events.
+  // -------------------------------------------------------------------------
+  const handleExitReplay = useCallback(async () => {
+    const { bufferedGraphDeltas, bufferedInferenceMessages, bufferOverflowed } = replayStore.getState();
+    const totalBuffered = bufferedGraphDeltas.length + bufferedInferenceMessages.length;
+
+    // 1. Exit replay mode — stops buffering new messages
+    replayStore.getState().exitReplay();
+
+    // 2. Restore live graph state (authoritative).
+    //    If buffer overflowed OR has many entries, fetch fresh snapshot from
+    //    server to guarantee accuracy. Otherwise, apply buffered graph deltas
+    //    sequentially for small buffers.
+    if (bufferOverflowed || bufferedGraphDeltas.length >= 50) {
+      try {
+        const res = await fetch('/api/snapshot');
+        if (res.ok) {
+          const data = await res.json() as InitialStateMessage;
+          graphStore.getState().applySnapshot(data);
+        }
+      } catch (err) {
+        console.warn('[Replay] Failed to fetch live snapshot on exit:', err);
+      }
+    } else {
+      // Apply buffered graph deltas sequentially for small buffers
+      for (const delta of bufferedGraphDeltas) {
+        graphStore.getState().applyDelta(delta);
+      }
+    }
+
+    // 3. Preserve selected node if still in live graph; clear if removed
+    if (selectedNodeId && !graphStore.getState().nodes.has(selectedNodeId)) {
+      setSelectedNodeId(null);
+    }
+
+    // 4. Add replay separator to activity feed if there were buffered events
+    if (totalBuffered > 0) {
+      inferenceStore.getState().insertReplaySeparator(totalBuffered);
+      // Drain inference messages (up to 50) to update the feed with events from during replay
+      const toApply = bufferedInferenceMessages.slice(-50);
+      for (const msg of toApply) {
+        inferenceStore.getState().applyInference(msg);
+      }
+    }
+
+    // 5. Clear the buffer after draining
+    replayStore.getState().clearBuffer();
+  }, [selectedNodeId]);
+
+  // -------------------------------------------------------------------------
+  // ESC key handler — exits replay mode first (priority), then dismisses
+  // the inspector panel if not in replay mode
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (isReplay) {
+          void handleExitReplay(); // Replay exit takes priority per CONTEXT.md
+          return;
+        }
+        if (selectedNodeId) {
+          setSelectedNodeId(null);
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId, isReplay, handleExitReplay]);
 
   // -------------------------------------------------------------------------
   // Cross-panel navigation callback
@@ -212,6 +276,9 @@ export function App() {
         background: '#0a0a0f',
       }}
     >
+      {/* Replay mode banner — amber indicator shown during historical view */}
+      <ReplayBanner onExitReplay={() => void handleExitReplay()} />
+
       {/* Top bar — directory input */}
       <DirectoryBar />
 

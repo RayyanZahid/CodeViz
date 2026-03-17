@@ -64,3 +64,12 @@ export const intentSessions = sqliteTable('intent_sessions', {
   startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),
   endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
 });
+
+export const snapshotCheckpoints = sqliteTable('snapshot_checkpoints', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: text('session_id').notNull(),
+  watchRoot: text('watch_root').notNull(),
+  sequenceNumber: integer('sequence_number').notNull(),
+  snapshotId: integer('snapshot_id').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});

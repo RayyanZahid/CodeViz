@@ -1,7 +1,7 @@
-import { eq, asc, desc, sql } from 'drizzle-orm';
+import { eq, asc, desc, sql, and, notInArray } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { db } from '../connection.js';
-import { graphSnapshots } from '../schema.js';
+import { graphSnapshots, snapshotCheckpoints } from '../schema.js';
 
 export type GraphSnapshotRow = InferSelectModel<typeof graphSnapshots>;
 export type GraphSnapshotInsert = InferInsertModel<typeof graphSnapshots>;
@@ -71,5 +71,42 @@ export const snapshotsRepository = {
 
   deleteByWatchRoot(watchRoot: string): void {
     db.delete(graphSnapshots).where(eq(graphSnapshots.watchRoot, watchRoot)).run();
+  },
+
+  deleteOldestNonCheckpoint(sessionId: string): void {
+    // Get all checkpoint snapshot IDs for this session
+    const cpIds = db
+      .select({ snapshotId: snapshotCheckpoints.snapshotId })
+      .from(snapshotCheckpoints)
+      .where(eq(snapshotCheckpoints.sessionId, sessionId))
+      .all()
+      .map(r => r.snapshotId);
+
+    const oldest = db
+      .select({ id: graphSnapshots.id })
+      .from(graphSnapshots)
+      .where(
+        cpIds.length > 0
+          ? and(eq(graphSnapshots.sessionId, sessionId), notInArray(graphSnapshots.id, cpIds))
+          : eq(graphSnapshots.sessionId, sessionId)
+      )
+      .orderBy(asc(graphSnapshots.sequenceNumber))
+      .limit(1)
+      .get();
+
+    if (oldest) {
+      db.delete(graphSnapshots).where(eq(graphSnapshots.id, oldest.id)).run();
+    }
+  },
+
+  getLatestId(sessionId: string): number | undefined {
+    const result = db
+      .select({ id: graphSnapshots.id })
+      .from(graphSnapshots)
+      .where(eq(graphSnapshots.sessionId, sessionId))
+      .orderBy(desc(graphSnapshots.sequenceNumber))
+      .limit(1)
+      .get();
+    return result?.id;
   },
 };

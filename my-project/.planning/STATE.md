@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15.3 of 18 (Fix Journey Phase 15 Server Replay Layer completes successfully)
+Phase: 15.4 of 18 (Fix Journey Build and Start completes successfully — blocker)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.3-01 (write journey-phase-15.spec.ts with deep API assertions, restore 3 infra files, add workers:1 to playwright config) complete
+Last activity: 2026-03-17 — Plan 15.4-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, verify 12/12 Playwright tests pass) complete
 
-Progress: [████░░░░░░] 19% (v3.0: Phase 15.3 complete, 1/1 plans done)
+Progress: [████░░░░░░] 20% (v3.0: Phase 15.4 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -62,6 +62,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15.2]: Delta-threshold test uses FILE_COUNT=18 and fixed 5s wait — files written before POST /api/watch so burst scan triggers threshold
 - [Phase 15.3]: workers:1 in playwright.config.ts — tests sharing server state via POST /api/watch cannot run in parallel; watch root is global mutable server state
 - [Phase 15.3]: Node IDs are relative paths ('a.ts') not absolute paths — Pipeline.handleBatch passes event.relativePath to parser, not absolute path
+- [Phase 15.4]: No regression prevention mechanism added — accept the auto-GSD overwrite pattern and follow the same restore-from-HEAD playbook each time
+- [Phase 15.4]: Restore playbook confirmed: git -C .. checkout HEAD -- my-project/<path> handles both staged and unstaged changes simultaneously
 
 ### Pending Todos
 
@@ -85,6 +87,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T05:26:13.650Z
-**Stopped at:** Phase 15.4 context gathered
-**Resume file:** .planning/phases/15.4-fix-journey-build-and-start-completes-successfully-blocker/15.4-CONTEXT.md
+**Last session:** 2026-03-17T05:40:59.134Z
+**Stopped at:** Completed 15.4-01-PLAN.md
+**Resume file:** None

@@ -147,7 +147,7 @@ Plans:
 
 **Goal:** Restore 4 auto-GSD-overwritten journey test files from git HEAD and verify all 12 tests (build-and-start, phase-14, phase-15) pass green end-to-end
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15.4-01-PLAN.md -- Restore journey test files from git HEAD and run full Playwright suite

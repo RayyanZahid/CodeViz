@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 15 of 18 (Server Replay Layer)
-Plan: 2 of 3 completed in current phase
-Status: In Progress
-Last activity: 2026-03-17 — Plan 15-02 (IntentAnalyzer EWMA classification engine, SnapshotManager checkpoint logic) complete
+Plan: 3 of 3 completed in current phase
+Status: Phase Complete
+Last activity: 2026-03-17 — Plan 15-03 (Timeline REST plugin, IntentAnalyzer lifecycle wiring) complete
 
-Progress: [████░░░░░░] 14% (v3.0: Phase 15 in progress, 2/3 plans done)
+Progress: [████░░░░░░] 15% (v3.0: Phase 15 complete, 3/3 plans done)
 
 ## Performance Metrics
 
@@ -46,6 +46,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15-01]: deleteOldestNonCheckpoint guards notInArray with cpIds.length > 0 to prevent invalid NOT IN () SQL
 - [Phase 15-02]: IntentAnalyzer re-broadcasts intent_updated only when confidence changes by >0.05 — prevents flooding during steady-state activity
 - [Phase 15-02]: Activity gap 90s threshold is implemented as the starting estimate; can be tuned in Phase 16+ based on real timing patterns
+- [Phase 15-03]: timelinePlugin uses getSessionId closure over snapshotManager — after switchWatchRoot replaces snapshotManager, closure returns new session ID automatically without plugin re-registration
+- [Phase 15-03]: IntentAnalyzer destroyed at step 2c in switchWatchRoot (before graph reset) — ensures closeSession records endSnapshotId from correct session before SQLite tables are purged
 
 ### Pending Todos
 
@@ -62,6 +64,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T01:06:38Z
-**Stopped at:** Completed 15-02-PLAN.md (IntentAnalyzer EWMA classification engine, SnapshotManager checkpoint logic)
-**Resume file:** .planning/phases/15-server-replay-layer/15-03-PLAN.md
+**Last session:** 2026-03-17T01:11:16Z
+**Stopped at:** Completed 15-03-PLAN.md (Timeline REST plugin, IntentAnalyzer lifecycle wiring) — Phase 15 complete
+**Resume file:** .planning/phases/16-mode-state-machine/16-01-PLAN.md

@@ -60,7 +60,7 @@ See `milestones/v2.2-ROADMAP.md` for full phase details.
 **Milestone Goal:** Add temporal awareness and intent inference — users can replay how the architecture evolved and understand what the AI agent is trying to accomplish.
 
 - [x] **Phase 14: Schema Foundation and Shared Types** - Persist graph snapshots with layout positions and wire new shared TypeScript types for all replay and intent messages (completed 2026-03-17)
-- [ ] **Phase 15: Server Replay Layer** - Build server-side snapshot recording with checkpoint-based reconstruction and heuristic intent analysis
+- [x] **Phase 15: Server Replay Layer** - Build server-side snapshot recording with checkpoint-based reconstruction and heuristic intent analysis (completed 2026-03-17)
 - [ ] **Phase 16: Client State Layer and Mode Isolation** - Establish the replay mode state machine so live deltas cannot corrupt historical graph views
 - [ ] **Phase 17: Timeline Slider and Intent Panel UI** - Deliver all user-facing replay controls and intent display in the client
 - [ ] **Phase 18: Watch-Root Integration and End-to-End Validation** - Clear replay and intent data on directory switch and validate the complete v3.0 feature set
@@ -166,7 +166,7 @@ Plans:
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 14. Schema Foundation and Shared Types | 2/2 | Complete    | 2026-03-17 | - |
-| 15. Server Replay Layer | 2/3 | In Progress|  | - |
+| 15. Server Replay Layer | 3/3 | Complete   | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

@@ -85,7 +85,7 @@ Plans:
 
 **Goal:** Replace placeholder Phase 14 journey tests with real tests that verify all four success criteria via diagnostic REST endpoints: graph_snapshots CRUD with positions, intent_sessions CRUD, shared type compilation, and delta-threshold snapshot behavior
 **Depends on:** Phase 14
-**Plans:** 1 plan
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 14.2-01-PLAN.md -- Diagnostic plugin endpoints and real journey test rewrites
@@ -194,7 +194,7 @@ Plans:
 | 11. Activity Feed | v2.2 | 1/1 | Complete | 2026-03-16 |
 | 12. Edge Interaction and Component Glow | v2.2 | 2/2 | Complete | 2026-03-16 |
 | 13. Watch Any Project | v2.2 | 2/2 | Complete | 2026-03-16 |
-| 14. Schema Foundation and Shared Types | 2/2 | Complete    | 2026-03-17 | - |
+| 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | v3.0 | 0/? | Not started | - |
 | 17. Timeline Slider and Intent Panel UI | v3.0 | 0/? | Not started | - |

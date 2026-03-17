@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 14.1 of 18 (Fix Journey Build and Start — blocker)
+Phase: 14.2 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 14.1-01 (root build script, tsconfig composite, Playwright webServer) complete
+Last activity: 2026-03-17 — Plan 14.2-01 (diagnostic plugin, journey test rewrite) complete
 
-Progress: [████░░░░░░] 15% (v3.0: Phase 14.1 complete, 1/1 plans done)
+Progress: [████░░░░░░] 17% (v3.0: Phase 14.2 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -52,6 +52,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 14.1-01]: client tsconfig Option A (modify existing) — remove noEmit: true, add composite: true + outDir: dist; Vite ignores these options so dev workflow unaffected
 - [Phase 14.1-01]: tsconfig.workers.json must override composite: false to prevent TS6304 when extending tsconfig.json that has composite: true
 - [Phase 14.1-01]: Playwright webServer reuseExistingServer: true — safe for local dev and CI environments
+- [Phase 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully]: diagnosticPlugin uses direct Drizzle calls — no repository abstraction needed for test-only diagnostic endpoints
+- [Phase 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully]: Journey tests use page.request against SERVER_URL (port 3100) — explicit constant prevents Vite port 5173 confusion
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T02:01:43.986Z
-**Stopped at:** Phase 14.2 context gathered
-**Resume file:** .planning/phases/14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully/14.2-CONTEXT.md
+**Last session:** 2026-03-17T02:19:00.166Z
+**Stopped at:** Completed 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully-01-PLAN.md
+**Resume file:** None

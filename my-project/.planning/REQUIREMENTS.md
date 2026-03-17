@@ -9,8 +9,8 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 
 ### Time-Travel Replay
 
-- [ ] **REPLAY-01**: User can scrub through architecture evolution via a timeline slider with event-count axis
-- [ ] **REPLAY-02**: User can play/pause/step through architecture changes automatically
+- [x] **REPLAY-01**: User can scrub through architecture evolution via a timeline slider with event-count axis
+- [x] **REPLAY-02**: User can play/pause/step through architecture changes automatically
 - [x] **REPLAY-03**: User sees a clear "REPLAY" mode indicator when viewing historical state
 - [x] **REPLAY-04**: User can return to live view with a single action from replay mode
 - [ ] **REPLAY-05**: User sees timestamp labels on the timeline showing when events occurred
@@ -18,7 +18,7 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 - [ ] **REPLAY-07**: User sees the activity feed synchronized with the current scrubber position
 - [ ] **REPLAY-08**: User sees auto-detected epoch markers on the timeline at significant moments
 - [ ] **REPLAY-09**: User can see architecture diff overlay showing added/removed/changed components between two points
-- [ ] **REPLAY-10**: User can control replay speed (0.5x, 1x, 2x, 4x)
+- [x] **REPLAY-10**: User can control replay speed (0.5x, 1x, 2x, 4x)
 
 ### Intent Inference
 
@@ -26,7 +26,7 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 - [ ] **INTENT-02**: User sees a confidence indicator on the inferred intent
 - [ ] **INTENT-03**: User can view inferred intent in a dedicated sidebar panel
 - [ ] **INTENT-04**: User sees inferred subtasks derived from architectural event clusters
-- [ ] **INTENT-05**: Intent panel auto-updates as new architectural events stream in
+- [x] **INTENT-05**: Intent panel auto-updates as new architectural events stream in
 - [ ] **INTENT-06**: User sees when the agent's focus shifts ("switched from X to Y")
 - [ ] **INTENT-07**: User sees risk-correlated intent linking detected risks to the current objective
 - [ ] **INTENT-08**: User can review an intent history log of past objectives with timestamps
@@ -75,19 +75,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-03 | Phase 15 | Complete |
 | REPLAY-03 | Phase 16 | Complete |
 | REPLAY-04 | Phase 16 | Complete |
-| REPLAY-01 | Phase 17 | Pending |
-| REPLAY-02 | Phase 17 | Pending |
+| REPLAY-01 | Phase 17 | Complete |
+| REPLAY-02 | Phase 17 | Complete |
 | REPLAY-05 | Phase 17 | Pending |
 | REPLAY-06 | Phase 17 | Pending |
 | REPLAY-07 | Phase 17 | Pending |
 | REPLAY-08 | Phase 17 | Pending |
 | REPLAY-09 | Phase 17 | Pending |
-| REPLAY-10 | Phase 17 | Pending |
+| REPLAY-10 | Phase 17 | Complete |
 | INTENT-01 | Phase 17 | Pending |
 | INTENT-02 | Phase 17 | Pending |
 | INTENT-03 | Phase 17 | Pending |
 | INTENT-04 | Phase 17 | Pending |
-| INTENT-05 | Phase 17 | Pending |
+| INTENT-05 | Phase 17 | Complete |
 | INTENT-06 | Phase 17 | Pending |
 | INTENT-07 | Phase 17 | Pending |
 | INTENT-08 | Phase 17 | Pending |

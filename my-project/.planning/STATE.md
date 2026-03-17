@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v3.0 Architecture Intelligence — Phase 16: Client State Layer and Mode Isolation
+**Current focus:** v3.0 Architecture Intelligence — Phase 17: Timeline Slider and Intent Panel UI
 
 ## Current Position
 
-Phase: 16 of 18 (Client State Layer and Mode Isolation)
-Plan: 3 of 3 completed in current phase
+Phase: 17 of 18 (Timeline Slider and Intent Panel UI)
+Plan: 1 of 3 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 16-03 (replayTransitions.ts + ArchCanvas replay orchestration + canvas subscription guard) complete
+Last activity: 2026-03-17 — Plan 17-01 (intentStore + replayStore extended + WsClient routing) complete
 
-Progress: [████████░░] 75% (v3.0: Phase 16 complete, 3/3 plans done)
+Progress: [████████░░] 78% (v3.0: Phase 17 started, 1/3 plans done)
 
 ## Performance Metrics
 
@@ -79,6 +79,9 @@ Key v3.0 decisions (pre-planning):
 - [Phase 16-03]: NodeRenderer.createShape is private — historical-only nodes added via syncAll with merged Map (live + historical-only), reconciled back on exit via syncAll(liveNodes)
 - [Phase 16-03]: Blue replay tint via shadow glow (shadowColor #64a0ff, shadowBlur 8, shadowOpacity 0.5) — preserves zone colors while adding blue overlay; original shadow settings stored as JSON in tintedFills Map for exact restoration
 - [Phase 16-03]: ArchCanvas Stage wrapped in relative-positioned div to allow absolute overlay positioning for empty graph message
+- [Phase 17-01]: intentStore focus-shift detection checks category change — archives old session to history before replacing active session on applyIntentUpdated
+- [Phase 17-01]: replayStore.snapshots persists across replay sessions (cleared only on watch_root_changed) — playbackSpeed also persists as user preference
+- [Phase 17-01]: appendSnapshot called even during replay — live edge must grow regardless of replay state
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T09:24:52.668Z
-**Stopped at:** Phase 17 context gathered
-**Resume file:** .planning/phases/17-timeline-slider-and-intent-panel-ui/17-CONTEXT.md
+**Last session:** 2026-03-17T09:56:40Z
+**Stopped at:** Completed 17-01-PLAN.md (intentStore + replayStore timeline extension + WsClient routing)
+**Resume file:** .planning/phases/17-timeline-slider-and-intent-panel-ui/17-01-SUMMARY.md

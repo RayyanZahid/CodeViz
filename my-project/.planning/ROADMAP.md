@@ -243,5 +243,5 @@ Plans:
 | 14. Schema Foundation and Shared Types | 2/2 | Complete   | 2026-03-17 | - |
 | 15. Server Replay Layer | 3/3 | Complete    | 2026-03-17 | - |
 | 16. Client State Layer and Mode Isolation | 3/3 | Complete    | 2026-03-17 | - |
-| 17. Timeline Slider and Intent Panel UI | v3.0 | 0/5 | Planned | - |
+| 17. Timeline Slider and Intent Panel UI | 1/5 | In Progress|  | - |
 | 18. Watch-Root Integration and End-to-End Validation | v3.0 | 0/? | Not started | - |

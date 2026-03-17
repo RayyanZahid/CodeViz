@@ -1,6 +1,7 @@
 import { ServerMessageSchema } from '../schemas/serverMessages.js';
 import { graphStore } from '../store/graphStore.js';
 import { inferenceStore } from '../store/inferenceStore.js';
+import { replayStore } from '../store/replayStore.js';
 import type { GraphDeltaMessage, InitialStateMessage, InferenceMessage } from '@archlens/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -161,6 +162,17 @@ export class WsClient {
 
     switch (msg.type) {
       case 'initial_state': {
+        // During replay, initial_state (e.g. from WS reconnect) silently updates
+        // graphStore for accurate exit-replay state, but does NOT change scanning
+        // state or compute change summary — the displayed canvas is showing historical data.
+        if (replayStore.getState().isReplay) {
+          // Silently update live graph store for accurate exit-replay state
+          graphStore.getState().applySnapshot(msg as unknown as InitialStateMessage);
+          this.lastQueuedVersion = msg.version;
+          // Do NOT change scanning state or compute change summary during replay
+          break;
+        }
+
         // Cast to shared type — Zod schema uses relaxed string types for forward compat,
         // but the runtime values are always valid NodeType/EdgeType string literals.
         graphStore.getState().applySnapshot(msg as unknown as InitialStateMessage);
@@ -184,6 +196,15 @@ export class WsClient {
       }
 
       case 'graph_delta': {
+        // During replay, buffer graph_delta instead of applying to graphStore.
+        // CRITICAL: still update lastQueuedVersion to maintain version continuity
+        // and prevent false version gap detection on replay exit (RESEARCH.md Pitfall 2).
+        if (replayStore.getState().isReplay) {
+          replayStore.getState().bufferGraphDelta(msg as unknown as GraphDeltaMessage);
+          this.lastQueuedVersion = msg.version;
+          break;
+        }
+
         // Turn off scanning indicator on first delta after watch root change
         if (graphStore.getState().scanning) {
           graphStore.getState().setScanning(false);
@@ -206,11 +227,21 @@ export class WsClient {
       }
 
       case 'inference': {
+        // During replay, buffer inference messages instead of applying to inferenceStore.
+        if (replayStore.getState().isReplay) {
+          replayStore.getState().bufferInference(msg as unknown as InferenceMessage);
+          break;
+        }
         inferenceStore.getState().applyInference(msg as unknown as InferenceMessage);
         break;
       }
 
       case 'watch_root_changed': {
+        // Per CONTEXT.md: "Switching watch directory during replay auto-exits replay mode first"
+        if (replayStore.getState().isReplay) {
+          replayStore.getState().exitReplay();
+          replayStore.getState().clearBuffer();
+        }
         console.log('[WS] Watch root changed to:', msg.directory);
         // 1. Clear graph state — canvas will re-render empty
         graphStore.getState().resetState();

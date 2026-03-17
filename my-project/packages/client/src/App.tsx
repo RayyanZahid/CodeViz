@@ -8,6 +8,7 @@ import { RiskPanel } from './panels/RiskPanel.js';
 import { ActivityFeed } from './panels/ActivityFeed.js';
 import { inferenceStore } from './store/inferenceStore.js';
 import { useGraphStore, graphStore } from './store/graphStore.js';
+import { replayStore } from './store/replayStore.js';
 import type { ConnectionStatus } from './store/graphStore.js';
 import type { ViewportController } from './canvas/ViewportController.js';
 
@@ -419,6 +420,13 @@ function DirectoryBar() {
   }, [watchRoot]);
 
   const handleSubmit = useCallback(async () => {
+    // Auto-exit replay before switching watch root per CONTEXT.md:
+    // "Switching watch directory during replay auto-exits replay mode first, then switches"
+    if (replayStore.getState().isReplay) {
+      replayStore.getState().exitReplay();
+      replayStore.getState().clearBuffer();
+    }
+
     const trimmed = inputValue.trim();
     if (!trimmed || trimmed === graphStore.getState().watchRoot) return;
 

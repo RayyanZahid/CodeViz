@@ -242,6 +242,9 @@ export class WsClient {
         if (replayStore.getState().isReplay) {
           replayStore.getState().exitReplay();
           replayStore.getState().clearBuffer();
+          // Signal toast: "Exited replay — switching to [new project]"
+          // IMPORTANT: only fire inside isReplay guard — do NOT fire on every root switch
+          replayStore.getState().setReplayExitedForSwitch(msg.directory);
         }
         console.log('[WS] Watch root changed to:', msg.directory);
         // 1. Clear graph state — canvas will re-render empty

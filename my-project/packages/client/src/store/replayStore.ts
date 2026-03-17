@@ -41,6 +41,12 @@ export interface ReplayStore {
   playbackSpeed: 0.5 | 1 | 2 | 4;
   /** Second snapshot ID for diff overlay (shift-click to set); null when no diff active */
   diffBaseSnapshotId: number | null;
+  /**
+   * Directory path set when replay mode is auto-exited due to a watch-root switch.
+   * Non-null while the toast is visible; reset to null after auto-dismiss (2s).
+   * Only set inside the isReplay guard — never fires on non-replay root switches.
+   */
+  replayExitedForSwitch: string | null;
 
   // Actions — called by WsClient, App.tsx, and Phase 17 timeline slider
   /**
@@ -90,6 +96,8 @@ export interface ReplayStore {
   setPlaybackSpeed: (speed: 0.5 | 1 | 2 | 4) => void;
   /** Set or clear the diff-base snapshot ID for diff overlay (shift-click). */
   setDiffBase: (snapshotId: number | null) => void;
+  /** Signal that replay mode was auto-exited due to a watch-root switch. Pass the new directory path, or null to clear. */
+  setReplayExitedForSwitch: (dir: string | null) => void;
 }
 
 // Buffer cap — prevents memory issues during long replay sessions.
@@ -118,6 +126,7 @@ export const useReplayStore = create<ReplayStore>()((set, get) => ({
   isPlaying: false,
   playbackSpeed: 1,
   diffBaseSnapshotId: null,
+  replayExitedForSwitch: null,
 
   enterReplay: (snapshotId, timestamp, nodes, edges) => {
     const nodesMap = new Map<string, GraphNode>(nodes.map((n) => [n.id, n]));
@@ -211,6 +220,10 @@ export const useReplayStore = create<ReplayStore>()((set, get) => ({
 
   setDiffBase: (snapshotId: number | null) => {
     set({ diffBaseSnapshotId: snapshotId });
+  },
+
+  setReplayExitedForSwitch: (dir: string | null) => {
+    set({ replayExitedForSwitch: dir });
   },
 }));
 

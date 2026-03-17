@@ -63,6 +63,9 @@ export function App() {
   // Replay mode gate — true while viewing a historical snapshot
   const isReplay = useReplayStore((s) => s.isReplay);
 
+  // Toast signal — non-null when replay mode was auto-exited due to a root switch
+  const replayExitedForSwitch = useReplayStore((s) => s.replayExitedForSwitch);
+
   // Ref to ViewportController — populated by ArchCanvas on init
   const viewportControllerRef = useRef<ViewportController | null>(null);
 
@@ -106,6 +109,18 @@ export function App() {
     }, 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Root-switch toast auto-dismiss — clears replayExitedForSwitch after 2s
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (replayExitedForSwitch) {
+      const timer = setTimeout(() => {
+        replayStore.getState().setReplayExitedForSwitch(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [replayExitedForSwitch]);
 
   // -------------------------------------------------------------------------
   // Navigation handlers — delegate to ViewportController
@@ -280,6 +295,29 @@ export function App() {
     >
       {/* Replay mode banner — amber indicator shown during historical view */}
       <ReplayBanner onExitReplay={() => void handleExitReplay()} />
+
+      {/* Replay-exit toast — shown briefly when replay is auto-exited on watch-root switch */}
+      {replayExitedForSwitch && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 80,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(234, 179, 8, 0.15)',
+            border: '1px solid rgba(234, 179, 8, 0.4)',
+            borderRadius: 6,
+            padding: '8px 16px',
+            color: '#eab308',
+            fontSize: 12,
+            fontFamily: 'monospace',
+            zIndex: 400,
+            pointerEvents: 'none',
+          }}
+        >
+          Exited replay — switching to {replayExitedForSwitch.split(/[\\/]/).pop()}
+        </div>
+      )}
 
       {/* Top bar — directory input */}
       <DirectoryBar />

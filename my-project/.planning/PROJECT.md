@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Users can click any component node to inspect its files, exports, and full dependency graph. The architecture map is fully interactive: risks surface with severity badges, edges show dependency details on hover, changed components pulse and glow, a live activity feed streams events in natural language, and the tool can be pointed at any codebase directory. Runs as a local web app alongside the developer's editor.
+A real-time architecture visualization system that monitors AI coding agents as they work and displays what they're building at a human-meaningful architectural level. It transforms low-level code edits through a pipeline — file watching, tree-sitter parsing, dependency graph, architectural inference — into an interactive 2D map with semantic zones, activity overlays, and risk detection. Users can click any component node to inspect its files, exports, and full dependency graph. The architecture map is fully interactive: risks surface with severity badges, edges show dependency details on hover, changed components pulse and glow, a live activity feed streams events in natural language, and the tool can be pointed at any codebase directory. Users can replay the entire architecture evolution over time via a timeline slider with drag-scrub, auto-playback, and diff overlay. An AI intent inference engine classifies code change patterns into objectives (feature building, bug fixing, refactoring, etc.) displayed in a dedicated sidebar panel with confidence scores, subtasks, and focus-shift notifications. Runs as a local web app alongside the developer's editor.
 
 ## Core Value
 
@@ -49,21 +49,17 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 - ✓ Full graph/DB/pipeline reset on directory switch — v2.2
 - ✓ Scanning indicator during fresh scan — v2.2
 - ✓ Works correctly on external projects (not just self-watching) — v2.2
+- ✓ Time-travel replay — scrub through architecture evolution via timeline slider with auto-playback and diff overlay — v3.0
+- ✓ Intent inference from code change patterns using heuristic classification into 6 categories — v3.0
+- ✓ Intent panel showing inferred agent objectives, confidence, subtasks, focus-shifts, and history — v3.0
+- ✓ Graph snapshot persistence to SQLite with layout positions and delta-threshold triggering — v3.0
+- ✓ Checkpoint-based snapshot reconstruction for O(50-max) performance — v3.0
+- ✓ Replay mode state machine with full delta isolation (live events buffered, not applied) — v3.0
+- ✓ Watch-root switching clears all replay/intent data and recreates infrastructure — v3.0
 
 ### Active
 
-- [ ] Time-travel replay — scrub through architecture evolution over time
-- [ ] Intent inference from code change patterns (commit messages, file groupings)
-- [ ] Intent panel showing inferred agent objectives and subtasks
-
-## Current Milestone: v3.0 Architecture Intelligence
-
-**Goal:** Add temporal awareness and intent inference — users can replay how the architecture evolved and understand what the AI agent is trying to accomplish.
-
-**Target features:**
-- Time-travel replay: scrub through architecture evolution across sessions
-- Intent inference: detect patterns in code changes to infer agent objectives
-- Intent panel: display inferred agent objectives and subtasks in the UI
+(None — planning next milestone)
 
 ### Future
 
@@ -83,12 +79,13 @@ A developer supervising an AI coding agent can glance at the screen and instantl
 
 ## Context
 
-Shipped v1.0 MVP, v2.0 data pipeline repair, v2.1 Inspector Panel, and v2.2 Interactive features all on 2026-03-16.
+Shipped v1.0-v2.2 (2026-03-16) and v3.0 Architecture Intelligence (2026-03-17).
 Tech stack: Fastify v5, SQLite/WAL + Drizzle ORM, tree-sitter (TS/JS/Python), @dagrejs/graphlib, Konva + d3-force, React 19 + Zustand, WebSocket streaming.
 Architecture: pnpm monorepo with 3 packages (server, client, shared).
-Total LOC: 10,086 TypeScript across all packages.
-All requirements delivered: v1.0 (48), v2.0 (4), v2.1 (6 INSP), v2.2 (16 interactive requirements).
-The architecture map is now a fully interactive live supervision tool with all planned features shipped.
+Total LOC: 13,661 TypeScript across all packages.
+All requirements delivered: v1.0 (48), v2.0 (4), v2.1 (6), v2.2 (16), v3.0 (22 — 10 REPLAY, 8 INTENT, 4 INFRA).
+v3.0 added time-travel replay (timeline slider, auto-playback, diff overlay), heuristic intent inference (6 categories, EWMA confidence), and full watch-root isolation.
+26 end-to-end journey tests passing across all milestones.
 
 ## Constraints
 
@@ -107,8 +104,12 @@ The architecture map is now a fully interactive live supervision tool with all p
 | Local web app (not Electron/extension) | Simplest delivery, any browser works, no IDE lock-in | ✓ Good — zero install friction |
 | Tree-sitter for parsing | Multi-language support, incremental parsing, widely adopted | ✓ Good — TS/JS/Python working; pinned to 0.21.1 for stability |
 | Canvas/WebGL rendering (not DOM) | Performance at scale with hundreds of nodes | ✓ Good — Konva delivers 60fps at 300 nodes |
-| Infer intent from changes (not agent hooks) | No agent integration needed, works universally | — Deferred to v3+ |
-| Persistent graph with time-travel | Users can review architecture evolution across sessions | ⚠️ Revisit — persistence works, time-travel deferred to v3+ |
+| Infer intent from changes (not agent hooks) | No agent integration needed, works universally | ✓ Good — heuristic EWMA classifier works well for 6 categories; no LLM needed |
+| Persistent graph with time-travel | Users can review architecture evolution across sessions | ✓ Good — SQLite snapshots + timeline slider + auto-playback all shipped in v3.0 |
+| Delta-threshold snapshotting (not wall-clock) | Controls storage growth, triggers on meaningful changes | ✓ Good — structural changes immediate, minor at 10 threshold, FIFO at 200 |
+| Event-count axis on timeline (not wall-clock) | Avoids dead zones in timeline when no activity occurs | ✓ Good — heatmap shows event density, no gaps |
+| Separate replayStore Zustand slice | Mode state is different concern from live graph state | ✓ Good — clean isolation, no coupling with graphStore |
+| Buffer-then-drain on replay exit | Preserves live events during replay for catch-up | ✓ Good — handles both small (apply deltas) and large (fetch snapshot) buffers |
 | TS/JS + Python first | Most common languages for AI-assisted development | ✓ Good — covers primary use cases |
 | Semantic zone layout | Provides stable, predictable positioning based on component role | ✓ Good — d3-force with zone constraints works well |
 | SQLite WAL + Drizzle ORM | Sync API correct for write-heavy event logging | ✓ Good — write-through persistence reliable |
@@ -133,4 +134,4 @@ The architecture map is now a fully interactive live supervision tool with all p
 | DirectoryBar co-located in App.tsx | Follows NavButton/PipelineStatusDot small-component pattern | ✓ Good — no unnecessary file sprawl |
 
 ---
-*Last updated: 2026-03-16 after v3.0 milestone start*
+*Last updated: 2026-03-17 after v3.0 milestone*

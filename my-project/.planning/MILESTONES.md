@@ -108,3 +108,32 @@ Milestone completed with 22 of 26 requirements unfinished (Phases 9-13 not start
 
 ---
 
+
+## v3.0 Architecture Intelligence (Shipped: 2026-03-17)
+
+**Delivered:** Time-travel replay and AI intent inference — users can scrub through architecture evolution via a timeline slider and see what the AI agent is working on in a dedicated intent panel.
+
+**Phases completed:** 5 core phases (14-18), 15 plans + 9 decimal fix phases (10 plans)
+**Files changed:** 148 (+25,371 lines)
+**Total LOC:** 13,661 TypeScript
+**Git range:** 5d818de → 35882d7
+**Timeline:** 2 days (2026-03-16 → 2026-03-17)
+**Requirements:** 22/22 (10 REPLAY, 8 INTENT, 4 INFRA)
+
+**Key accomplishments:**
+- SQLite persistence for graph snapshots with layout positions and delta-threshold triggering (FIFO at 200, checkpoints every 50)
+- IntentAnalyzer heuristic engine classifying code changes into 6 categories (feature building, bug fixing, refactoring, test writing, dependency update, cleanup) with EWMA confidence scoring
+- Replay mode state machine with full delta isolation — live WebSocket events buffered during replay, drained on exit with separator
+- Timeline slider with drag-scrub, click-to-jump, heatmap density visualization, epoch markers, auto-playback at 0.5x/1x/2x/4x with keyboard shortcuts
+- IntentPanel sidebar showing inferred objectives, confidence badges, derived subtasks, focus-shift notifications, risk correlation, and history log
+- Architecture diff overlay showing added (green), removed (red), and changed (amber) components between any two timeline points
+- Watch-root switching purges all replay/intent SQLite data and recreates infrastructure cleanly with toast notification
+- 26 end-to-end Playwright journey tests validating the complete feature set
+
+**Archives:**
+- `milestones/v3.0-ROADMAP.md` — full phase details
+- `milestones/v3.0-REQUIREMENTS.md` — 22/22 requirements complete
+- `milestones/v3.0-MILESTONE-AUDIT.md` — integration audit report (passed, graphJson bug fixed inline)
+
+---
+

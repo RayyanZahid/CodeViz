@@ -314,14 +314,12 @@ export function ArchCanvas({
               }
 
               const baseData = await baseRes.json() as {
-                graphJson: {
-                  nodes: Array<{ id: string; zone: string | null; fileList: string[]; incomingEdgeCount: number; outgoingEdgeCount: number }>;
-                  edges: Array<{ id: string; sourceId: string; targetId: string }>;
-                };
+                nodes: Array<{ id: string; zone: string | null; fileList: string[]; incomingEdgeCount: number; outgoingEdgeCount: number }>;
+                edges: Array<{ id: string; sourceId: string; targetId: string }>;
               };
 
               // Build base snapshot node set
-              const baseNodes = new Map(baseData.graphJson.nodes.map((n) => [n.id, n]));
+              const baseNodes = new Map(baseData.nodes.map((n) => [n.id, n]));
               const currentNodes = state.replayNodes;
 
               // Compute diff sets
@@ -364,7 +362,7 @@ export function ArchCanvas({
 
               // Apply edge diff colors
               const baseEdgeEndpoints = new Set(
-                baseData.graphJson.edges.map((e) => `${e.sourceId}:${e.targetId}`)
+                baseData.edges.map((e) => `${e.sourceId}:${e.targetId}`)
               );
               const currentEdgeEndpoints = new Set(
                 Array.from(state.replayEdges.values()).map((e) => `${e.sourceId}:${e.targetId}`)
@@ -861,32 +859,30 @@ export async function loadSnapshotAndEnterReplay(snapshotId: number): Promise<vo
   const data = await res.json() as {
     id: number;
     timestamp: number;
-    graphJson: {
-      nodes: Array<{
-        id: string;
-        name: string;
-        nodeType: string;
-        zone: string | null;
-        fileList: string[];
-        incomingEdgeCount: number;
-        outgoingEdgeCount: number;
-        lastModified: string | number;
-        fileCount?: number;
-        keyExports?: string[];
-      }>;
-      edges: Array<{
-        id: string;
-        sourceId: string;
-        targetId: string;
-        edgeType: string;
-        dependencyCount?: number;
-      }>;
-      positions: Record<string, { x: number; y: number }>;
-    };
+    nodes: Array<{
+      id: string;
+      name: string;
+      nodeType: string;
+      zone: string | null;
+      fileList: string[];
+      incomingEdgeCount: number;
+      outgoingEdgeCount: number;
+      lastModified: string | number;
+      fileCount?: number;
+      keyExports?: string[];
+    }>;
+    edges: Array<{
+      id: string;
+      sourceId: string;
+      targetId: string;
+      edgeType: string;
+      dependencyCount?: number;
+    }>;
+    positions: Record<string, { x: number; y: number }>;
   };
 
-  const nodes = data.graphJson.nodes;
-  const edges = data.graphJson.edges;
+  const nodes = data.nodes;
+  const edges = data.edges;
 
   replayStore.getState().enterReplay(
     data.id,

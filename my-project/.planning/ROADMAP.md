@@ -85,7 +85,7 @@ Plans:
 
 **Goal:** Install @playwright/test in standalone package.json, restore regressed test files (playwright.config.ts, journey-build-and-start.spec.ts, journey-phase-14.spec.ts), and rewrite Phase 15 journey tests with real API endpoint assertions so all 12 journey tests pass
 **Depends on:** Phase 14
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 14.3-01-PLAN.md -- Install @playwright/test, restore regressed files, rewrite Phase 15 journey tests

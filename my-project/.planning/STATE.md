@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 14.2 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types)
+Phase: 14.3 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types - major)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 14.2-01 (diagnostic plugin, journey test rewrite) complete
+Last activity: 2026-03-17 — Plan 14.3-01 (install @playwright/test, restore regressed test files, rewrite Phase 15 journey tests) complete
 
-Progress: [████░░░░░░] 17% (v3.0: Phase 14.2 complete, 1/1 plans done)
+Progress: [████░░░░░░] 17% (v3.0: Phase 14.3 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -54,6 +54,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 14.1-01]: Playwright webServer reuseExistingServer: true — safe for local dev and CI environments
 - [Phase 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully]: diagnosticPlugin uses direct Drizzle calls — no repository abstraction needed for test-only diagnostic endpoints
 - [Phase 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully]: Journey tests use page.request against SERVER_URL (port 3100) — explicit constant prevents Vite port 5173 confusion
+- [Phase 14.3]: Standalone package.json in .auto-gsd/journey-tests/ with @playwright/test isolates Playwright from root pnpm workspace and auto-gsd regeneration
+- [Phase 14.3]: webServer.timeout=120s and build timeout=180s are locked overrides — accommodate TypeScript compilation cold start and slower machines
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T02:50:20.788Z
-**Stopped at:** Phase 14.3 context gathered
-**Resume file:** .planning/phases/14.3-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully-major/14.3-CONTEXT.md
+**Last session:** 2026-03-17T03:12:45.295Z
+**Stopped at:** Completed 14.3-01-PLAN.md
+**Resume file:** None

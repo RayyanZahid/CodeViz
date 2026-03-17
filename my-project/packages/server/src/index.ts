@@ -11,6 +11,8 @@ import { ComponentAggregator } from './graph/ComponentAggregator.js';
 import { Pipeline } from './pipeline/Pipeline.js';
 import { InferenceEngine } from './inference/InferenceEngine.js';
 import { SnapshotManager } from './snapshot/SnapshotManager.js';
+import { IntentAnalyzer } from './snapshot/IntentAnalyzer.js';
+import { timelinePlugin } from './plugins/timeline.js';
 import type { InferenceMessage, InferenceResult } from '@archlens/shared/types';
 
 // Reference db to trigger connection initialization and WAL mode setup
@@ -43,7 +45,11 @@ inferenceEngine.loadPersistedZones();
 
 // Initialize snapshot manager — subscribes to graph delta events for threshold-based snapshots
 let snapshotManager = new SnapshotManager(graph, randomUUID(), currentWatchRoot);
-console.log(`[ArchLens] Snapshot manager initialized (session: ${snapshotManager.getSessionId().slice(0, 8)}...)`)
+console.log(`[ArchLens] Snapshot manager initialized (session: ${snapshotManager.getSessionId().slice(0, 8)}...)`);
+
+// Initialize intent analyzer — subscribes to graph delta events for intent classification
+let intentAnalyzer = new IntentAnalyzer(graph, snapshotManager.getSessionId(), currentWatchRoot);
+console.log(`[ArchLens] Intent analyzer initialized`);
 
 // ---------------------------------------------------------------------------
 // Inference broadcast helper — wired on startup and re-wired on watch switch
@@ -104,6 +110,11 @@ fastify.register(websocketPlugin, { graph, aggregator });
 // Register snapshot REST endpoint for reconnect recovery
 fastify.register(snapshotPlugin, { graph, aggregator });
 
+// Register timeline REST endpoints for replay data
+fastify.register(timelinePlugin, {
+  getSessionId: () => snapshotManager.getSessionId(),
+});
+
 // Start pipeline — watches for file changes, parses, feeds into graph
 let pipeline = new Pipeline(
   currentWatchRoot,
@@ -129,6 +140,9 @@ async function switchWatchRoot(newDir: string): Promise<void> {
 
   // 2b. Destroy current snapshot manager (clears timer, removes graph delta listener)
   snapshotManager.destroy();
+
+  // 2c. Destroy current intent analyzer (closes active session, removes graph delta listener)
+  intentAnalyzer.destroy();
 
   // 3. Clear in-memory graph state
   graph.reset();
@@ -157,6 +171,10 @@ async function switchWatchRoot(newDir: string): Promise<void> {
   snapshotManager = new SnapshotManager(graph, randomUUID(), newDir);
   console.log(`[ArchLens] Snapshot manager initialized (session: ${snapshotManager.getSessionId().slice(0, 8)}...)`);
 
+  // 8c. Create new IntentAnalyzer for the new session
+  intentAnalyzer = new IntentAnalyzer(graph, snapshotManager.getSessionId(), newDir);
+  console.log(`[ArchLens] Intent analyzer initialized`);
+
   // 10. Create and start new Pipeline on the new directory
   pipeline = new Pipeline(newDir, (batch) => graph.onParseResult(batch));
   await pipeline.start();
@@ -177,6 +195,7 @@ fastify.register(watchRootPlugin, {
 
 // Graceful cleanup on server close — must be registered before listen()
 fastify.addHook('onClose', async () => {
+  intentAnalyzer.destroy();
   snapshotManager.destroy();
   inferenceEngine.destroy();
   await pipeline.stop();

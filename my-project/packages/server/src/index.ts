@@ -4,6 +4,7 @@ import { healthPlugin } from './plugins/health.js';
 import { websocketPlugin, broadcast, translateInferenceToComponentIds } from './plugins/websocket.js';
 import { snapshotPlugin } from './plugins/snapshot.js';
 import { watchRootPlugin } from './plugins/watchRoot.js';
+import { diagnosticPlugin } from './plugins/diagnostic.js';
 import { db } from './db/connection.js';
 import { graphNodes, graphEdges } from './db/schema.js';
 import { DependencyGraph } from './graph/DependencyGraph.js';
@@ -192,6 +193,11 @@ fastify.register(watchRootPlugin, {
   getWatchRoot: () => currentWatchRoot,
   setWatchRoot: switchWatchRoot,
 });
+
+// Register diagnostic REST endpoints (dev/test only — not available in production)
+if (process.env.NODE_ENV !== 'production') {
+  fastify.register(diagnosticPlugin);
+}
 
 // Graceful cleanup on server close — must be registered before listen()
 fastify.addHook('onClose', async () => {

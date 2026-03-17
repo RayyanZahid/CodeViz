@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** A developer supervising an AI coding agent can glance at the screen and instantly understand what the agent is building, where it's working, and how the architecture is evolving — without reading any code.
-**Current focus:** v3.0 Architecture Intelligence — Phase 17: Timeline Slider and Intent Panel UI
+**Current focus:** v3.0 Architecture Intelligence — Phase 18: Watch-Root Integration and End-to-End Validation
 
 ## Current Position
 
-Phase: 17 of 18 (Timeline Slider and Intent Panel UI)
-Plan: 5 of 6 completed in current phase
+Phase: 18 of 18 (Watch-Root Integration and End-to-End Validation)
+Plan: 1 of 1 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 17-05 (PlaybackController auto-play, keyboard shortcuts, diff overlay) complete
+Last activity: 2026-03-17 — Plan 18-01 (SQLite purge on watch-root switch + replay-exit toast) complete
 
-Progress: [█████████░] 85% (v3.0: Phase 17 in progress, 5/6 plans done)
+Progress: [██████████] 95% (v3.0: Phase 18 in progress, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -92,6 +92,10 @@ Key v3.0 decisions (pre-planning):
 - [Phase 17-05]: cancelAllTweens uses module-level activeTweens Set registered in morphNodesToPositions — simplest reliable approach without Konva internals
 - [Phase 17-05]: applyDiffTint stores original shadow AND group opacity in same OriginalShadowSettings — restoreDiffTint must restore both (removed nodes have opacity 0.4)
 - [Phase 17-05]: Diff overlay subscription: async IIFE inside replayStore.subscribe for diffBaseSnapshotId changes — avoids refactoring existing subscribe block structure
+- [Phase 18-01]: Zustand atom approach for replay-exit toast (replayExitedForSwitch in replayStore) — avoids WsClient callback wiring complexity, consistent with existing store patterns
+- [Phase 18-01]: setReplayExitedForSwitch only fires inside isReplay guard in watch_root_changed — toast must not appear on every root switch, only when user was in replay mode
+- [Phase 18-01]: changeEvents table has no watchRoot column — db.delete(changeEvents).run() clears all rows (session-scoped, no value after switch)
+- [Phase 18-01]: layoutPositions NOT deleted on watch-root switch — positions persist per watch root per CONTEXT.md design decision
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T10:29:34.887Z
-**Stopped at:** Phase 18 context gathered
-**Resume file:** .planning/phases/18-watch-root-integration-and-end-to-end-validation/18-CONTEXT.md
+**Last session:** 2026-03-17T10:47:14Z
+**Stopped at:** Completed 18-01-PLAN.md — Phase 18 Plan 01 (SQLite purge + replay-exit toast) complete
+**Resume file:** .planning/phases/18-watch-root-integration-and-end-to-end-validation/18-01-SUMMARY.md

@@ -36,7 +36,7 @@ Requirements for v3.0 Architecture Intelligence milestone. Each maps to roadmap 
 - [x] **INFRA-01**: Graph snapshots are persisted to SQLite with layout positions included
 - [x] **INFRA-02**: Snapshot storage uses delta-threshold triggering (not wall-clock) to control growth
 - [x] **INFRA-03**: Snapshot reconstruction uses checkpoints for O(50-max) performance
-- [ ] **INFRA-04**: Watch-root switching clears snapshot and intent data and recreates replay infrastructure
+- [x] **INFRA-04**: Watch-root switching clears snapshot and intent data and recreates replay infrastructure
 
 ## Future Requirements
 
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INTENT-06 | Phase 17 | Complete |
 | INTENT-07 | Phase 17 | Complete |
 | INTENT-08 | Phase 17 | Complete |
-| INFRA-04 | Phase 18 | Pending |
+| INFRA-04 | Phase 18 | Complete |
 
 **Coverage:**
 - v3.0 requirements: 22 total

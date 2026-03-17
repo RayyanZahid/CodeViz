@@ -83,12 +83,12 @@ Plans:
 
 ### Phase 14.3: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (major) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Install @playwright/test in standalone package.json, restore regressed test files (playwright.config.ts, journey-build-and-start.spec.ts, journey-phase-14.spec.ts), and rewrite Phase 15 journey tests with real API endpoint assertions so all 12 journey tests pass
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 14.3 to break down)
+- [ ] 14.3-01-PLAN.md -- Install @playwright/test, restore regressed files, rewrite Phase 15 journey tests
 
 ### Phase 14.2: Fix: Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
 
@@ -124,6 +124,33 @@ Plans:
 - [ ] 15-01-PLAN.md -- Checkpoint schema, repository layer, IntentCategory alignment, and repository extensions (INFRA-03)
 - [ ] 15-02-PLAN.md -- IntentAnalyzer heuristic classification engine and SnapshotManager checkpoint integration (INFRA-03)
 - [ ] 15-03-PLAN.md -- Timeline REST plugin and server lifecycle wiring for IntentAnalyzer (INFRA-03)
+
+### Phase 15.6: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.6 to break down)
+
+### Phase 15.5: Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.5 to break down)
+
+### Phase 15.4: Fix: Journey Build and Start completes successfully (blocker) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15.4 to break down)
 
 ### Phase 15.3: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
 

@@ -174,7 +174,7 @@ Plans:
 
 **Goal:** Restore all 4 auto-gsd-overwritten journey test files from git HEAD so all 12 journey tests (build-and-start, phase-14, phase-15) pass green end-to-end
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15.1-01-PLAN.md -- Restore journey test files from git HEAD and verify all 12 tests pass

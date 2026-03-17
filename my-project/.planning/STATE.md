@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 14.3 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types - major)
+Phase: 15.1 of 18 (Fix Journey Build and Start completes successfully - blocker)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 14.3-01 (install @playwright/test, restore regressed test files, rewrite Phase 15 journey tests) complete
+Last activity: 2026-03-17 — Plan 15.1-01 (restore auto-gsd regressed journey test files, fix IntentCategory case mismatch) complete
 
-Progress: [████░░░░░░] 17% (v3.0: Phase 14.3 complete, 1/1 plans done)
+Progress: [████░░░░░░] 17% (v3.0: Phase 15.1 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Key v3.0 decisions (pre-planning):
 - [Phase 14.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully]: Journey tests use page.request against SERVER_URL (port 3100) — explicit constant prevents Vite port 5173 confusion
 - [Phase 14.3]: Standalone package.json in .auto-gsd/journey-tests/ with @playwright/test isolates Playwright from root pnpm workspace and auto-gsd regeneration
 - [Phase 14.3]: webServer.timeout=120s and build timeout=180s are locked overrides — accommodate TypeScript compilation cold start and slower machines
+- [Phase 15.1]: IntentCategory validCategories in journey-phase-15.spec.ts must use lowercase snake_case (feature_building etc.) matching enum values — uppercase FEATURE_BUILDING caused test failure when sessions table had data
 
 ### Pending Todos
 
@@ -79,6 +80,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T03:30:47.190Z
-**Stopped at:** Phase 15.1 context gathered
-**Resume file:** .planning/phases/15.1-fix-journey-build-and-start-completes-successfully-blocker/15.1-CONTEXT.md
+**Last session:** 2026-03-17T03:56:53.091Z
+**Stopped at:** Completed 15.1-01-PLAN.md
+**Resume file:** None

@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 14 of 18 (Schema Foundation and Shared Types)
-Plan: 1 of 2 completed in current phase
-Status: In Progress
-Last activity: 2026-03-17 — Plan 14-01 (Schema Foundation and Shared Types) complete
+Plan: 2 of 2 completed in current phase
+Status: Phase Complete
+Last activity: 2026-03-17 — Plan 14-02 (SnapshotManager delta-threshold) complete
 
-Progress: [██░░░░░░░░] 10% (v3.0: Phase 14 in progress, 1/2 plans done)
+Progress: [███░░░░░░░] 11% (v3.0: Phase 14 complete, 2/2 plans done)
 
 ## Performance Metrics
 
@@ -37,6 +37,10 @@ Key v3.0 decisions (pre-planning):
 - [Research]: zundo@^2.3.0 required for Zustand v5 compatibility
 - [Phase 14]: No FK references on startSnapshotId/endSnapshotId in intent_sessions — foreign_keys=OFF in connection.ts; plain integers instead
 - [Phase 14]: getMetaBySession excludes graphJson column — avoids loading large JSON blobs when listing snapshots for timeline browsing
+- [Phase 14]: GraphDelta.addedNodes is string[] (file path IDs directly) — plan spec said "their id field" but strings ARE the IDs; no .id accessor needed in SnapshotManager
+- [Phase 14]: DependencyGraph.getSnapshot() returns {nodes, edges} only — positions field in graphJson snapshot set to {} as placeholder for Phase 6 layout persistence
+- [Phase 14]: GraphDelta.addedNodes is string[] (file path IDs directly) — plan spec said 'their id field' but strings ARE the IDs; adapted trigger file collection in SnapshotManager
+- [Phase 14]: DependencyGraph.getSnapshot() returns {nodes, edges} only — positions field in SnapshotManager graphJson set to {} as placeholder reserved for Phase 6 layout persistence
 
 ### Pending Todos
 
@@ -49,6 +53,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T00:17:19.258Z
-**Stopped at:** Completed 14-schema-foundation-and-shared-types/14-01-PLAN.md
+**Last session:** 2026-03-17T00:24:10.147Z
+**Stopped at:** Completed 14-schema-foundation-and-shared-types/14-02-PLAN.md
 **Resume file:** None

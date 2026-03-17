@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15.1 of 18 (Fix Journey Build and Start completes successfully - blocker)
+Phase: 15.2 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.1-01 (restore auto-gsd regressed journey test files, fix IntentCategory case mismatch) complete
+Last activity: 2026-03-17 — Plan 15.2-01 (rewrite journey-phase-14.spec.ts with real diagnostic assertions, restore 3 infra files, add NODE_ENV=development) complete
 
-Progress: [████░░░░░░] 17% (v3.0: Phase 15.1 complete, 1/1 plans done)
+Progress: [████░░░░░░] 19% (v3.0: Phase 15.2 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -57,6 +57,9 @@ Key v3.0 decisions (pre-planning):
 - [Phase 14.3]: Standalone package.json in .auto-gsd/journey-tests/ with @playwright/test isolates Playwright from root pnpm workspace and auto-gsd regeneration
 - [Phase 14.3]: webServer.timeout=120s and build timeout=180s are locked overrides — accommodate TypeScript compilation cold start and slower machines
 - [Phase 15.1]: IntentCategory validCategories in journey-phase-15.spec.ts must use lowercase snake_case (feature_building etc.) matching enum values — uppercase FEATURE_BUILDING caused test failure when sessions table had data
+- [Phase 15.2]: journey-phase-14.spec.ts rewritten fresh per CONTEXT.md — HEAD version had placeholder body-length checks; real diagnostic endpoint assertions required
+- [Phase 15.2]: NODE_ENV=development added to playwright.config.ts webServer.env — ensures diagnostic endpoints (/api/debug/*) are available during test runs
+- [Phase 15.2]: Delta-threshold test uses FILE_COUNT=18 and fixed 5s wait — files written before POST /api/watch so burst scan triggers threshold
 
 ### Pending Todos
 
@@ -80,6 +83,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T04:12:16.806Z
-**Stopped at:** Phase 15.2 context gathered
-**Resume file:** .planning/phases/15.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully/15.2-CONTEXT.md
+**Last session:** 2026-03-17T04:31:20Z
+**Stopped at:** Completed 15.2-01-PLAN.md
+**Resume file:** .planning/phases/15.2-fix-journey-phase-14-schema-foundation-and-shared-types-completes-successfully/15.2-01-SUMMARY.md

@@ -165,7 +165,7 @@ Plans:
 
 **Goal:** Restore 3 regressed journey test infrastructure files from git HEAD (with NODE_ENV=development addition), rewrite journey-phase-14.spec.ts per updated CONTEXT.md decisions (15-20 files, fixed 5s wait, hasIntentCategory check), and verify all 12 journey tests pass green
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15.2-01-PLAN.md -- Restore infrastructure files, rewrite Phase 14 journey tests per CONTEXT.md decisions

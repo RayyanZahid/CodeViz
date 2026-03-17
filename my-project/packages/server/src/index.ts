@@ -6,7 +6,10 @@ import { snapshotPlugin } from './plugins/snapshot.js';
 import { watchRootPlugin } from './plugins/watchRoot.js';
 import { diagnosticPlugin } from './plugins/diagnostic.js';
 import { db } from './db/connection.js';
-import { graphNodes, graphEdges } from './db/schema.js';
+import { graphNodes, graphEdges, changeEvents } from './db/schema.js';
+import { snapshotsRepository } from './db/repository/snapshots.js';
+import { intentSessionsRepository } from './db/repository/intentSessions.js';
+import { checkpointsRepository } from './db/repository/checkpoints.js';
 import { DependencyGraph } from './graph/DependencyGraph.js';
 import { ComponentAggregator } from './graph/ComponentAggregator.js';
 import { Pipeline } from './pipeline/Pipeline.js';
@@ -151,6 +154,15 @@ async function switchWatchRoot(newDir: string): Promise<void> {
   // 4. Purge SQLite graph tables — edges first due to FK constraint
   db.delete(graphEdges).run();
   db.delete(graphNodes).run();
+
+  // 4b. Purge replay/intent SQLite tables for the old watch root (synchronous/blocking)
+  //     Per CONTEXT.md: delete is synchronous to guarantee clean state before new pipeline starts
+  //     Note: layoutPositions is NOT deleted — positions persist per watch root (CONTEXT.md)
+  //     Note: currentWatchRoot still holds the OLD path here (updated at step 7)
+  snapshotsRepository.deleteByWatchRoot(currentWatchRoot);
+  intentSessionsRepository.deleteByWatchRoot(currentWatchRoot);
+  checkpointsRepository.deleteByWatchRoot(currentWatchRoot);
+  db.delete(changeEvents).run();
 
   // 5. Clear aggregator snapshot/map caches
   aggregator.resetCache();

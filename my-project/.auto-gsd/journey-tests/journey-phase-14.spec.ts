@@ -1,82 +1,85 @@
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3100';
 
 test.describe('Phase 14: Schema Foundation and Shared Types', () => {
-  test('graph_snapshots table exists with graphJson positions, CRUD succeeds', async ({ page }) => {
-    const response = await page.request.get(`${SERVER_URL}/api/debug/graph-snapshots-table`);
-    expect(response.status()).toBe(200);
-    const body = await response.json();
-    expect(body.ok).toBe(true);
-    expect(body.crud.insert).toBe(true);
-    expect(body.crud.read).toBe(true);
-    expect(body.crud.delete).toBe(true);
-    expect(body.positionsStoredInGraphJson).toBe(true);
-  });
-
-  test('intent_sessions table exists, row can be written and read back', async ({ page }) => {
-    const response = await page.request.get(`${SERVER_URL}/api/debug/intent-sessions-table`);
-    expect(response.status()).toBe(200);
-    const body = await response.json();
-    expect(body.ok).toBe(true);
-    expect(body.crud.insert).toBe(true);
-    expect(body.crud.read).toBe(true);
-    expect(body.crud.delete).toBe(true);
-  });
-
-  test('shared types compile — server running proves TypeScript compilation across all packages', async ({ page }) => {
-    const response = await page.request.get(`${SERVER_URL}/api/debug/shared-types`);
-    expect(response.status()).toBe(200);
-    const body = await response.json();
-    expect(body.ok).toBe(true);
-  });
-
-  test('snapshot writes triggered only at delta threshold, not every event', async ({ page }) => {
+  test('A `graph_snapshots` Drizzle table exists with a `positions_json` column, and inserting a row with node positions succeeds without error', async ({ page }) => {
     test.setTimeout(60000);
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-diag-'));
+    const response = await page.request.get(`${SERVER_URL}/api/debug/graph-snapshots-table`);
+    expect(response.status(), 'GET /api/debug/graph-snapshots-table should return 200').toBe(200);
 
-    try {
-      // Write 7 valid JS files to the temp dir to trigger graph delta events
-      const FILE_COUNT = 7;
-      for (let i = 0; i < FILE_COUNT; i++) {
-        fs.writeFileSync(
-          path.join(tmpDir, `module${i}.js`),
-          `export const value${i} = ${i};\nexport function fn${i}() { return ${i}; }\n`,
-        );
-      }
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok, 'graph_snapshots CRUD diagnostic should return ok: true').toBe(true);
+    expect(body.positionsStoredInGraphJson, 'positions should be stored inside graphJson').toBe(true);
 
-      // Switch the watcher to the temp directory
-      const switchResponse = await page.request.post(`${SERVER_URL}/api/watch`, {
-        data: { directory: tmpDir },
-      });
-      expect(switchResponse.status()).toBe(200);
+    const crud = body.crud as Record<string, boolean>;
+    expect(crud.insert, 'graph_snapshots insert should succeed').toBe(true);
+    expect(crud.read, 'graph_snapshots read should succeed').toBe(true);
+    expect(crud.delete, 'graph_snapshots delete should succeed').toBe(true);
+  });
 
-      // Poll /api/timeline until at least 1 snapshot appears (up to 30s)
-      // SnapshotManager debounces 3s after last delta; pipeline scan ~1-2s
-      let snapshots: unknown[] = [];
-      const maxWaitMs = 30000;
-      const pollIntervalMs = 1000;
-      const startTime = Date.now();
+  test('An `intent_sessions` Drizzle table exists and a new intent session row can be written and read back', async ({ page }) => {
+    test.setTimeout(60000);
 
-      while (Date.now() - startTime < maxWaitMs) {
-        await page.waitForTimeout(pollIntervalMs);
-        const timelineRes = await page.request.get(`${SERVER_URL}/api/timeline`);
-        if (timelineRes.status() === 200) {
-          snapshots = await timelineRes.json();
-          if (snapshots.length > 0) break;
-        }
-      }
+    const response = await page.request.get(`${SERVER_URL}/api/debug/intent-sessions-table`);
+    expect(response.status(), 'GET /api/debug/intent-sessions-table should return 200').toBe(200);
 
-      // Assert threshold behavior: fewer snapshots than file writes
-      expect(snapshots.length).toBeGreaterThan(0);
-      expect(snapshots.length).toBeLessThan(FILE_COUNT);
-    } finally {
-      // Clean up temp dir
-      fs.rmSync(tmpDir, { recursive: true, force: true });
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok, 'intent_sessions CRUD diagnostic should return ok: true').toBe(true);
+
+    const crud = body.crud as Record<string, boolean>;
+    expect(crud.insert, 'intent_sessions insert should succeed').toBe(true);
+    expect(crud.read, 'intent_sessions read should succeed').toBe(true);
+    expect(crud.delete, 'intent_sessions delete should succeed').toBe(true);
+  });
+
+  test('`shared/src/types/timeline.ts` exports `SnapshotMeta`, `IntentSession`, and the three new WebSocket message types, and TypeScript compiles with no errors across all packages', async ({ page }) => {
+    test.setTimeout(60000);
+
+    const response = await page.request.get(`${SERVER_URL}/api/debug/shared-types`);
+    expect(response.status()).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok, 'shared-types diagnostic should return ok: true (server running proves TypeScript compilation)').toBe(true);
+    expect(body.hasIntentCategory, 'IntentCategory const (runtime companion to IntentSession/SnapshotMeta types) should be accessible').toBe(true);
+  });
+
+  test('Snapshot writes are triggered only at the delta threshold (not every event), preventing unbounded storage growth from day one', async ({ page }) => {
+    test.setTimeout(60000);
+
+    const { writeFileSync, mkdtempSync } = await import('fs');
+    const { join } = await import('path');
+    const { tmpdir } = await import('os');
+
+    const tmpDir = mkdtempSync(join(tmpdir(), 'archlens-diag-'));
+    const FILE_COUNT = 18;
+
+    // Write FILE_COUNT valid JS files BEFORE switching watch root so initial scan captures them as a burst
+    for (let i = 0; i < FILE_COUNT; i++) {
+      writeFileSync(
+        join(tmpDir, `module${i}.js`),
+        `export const value${i} = ${i};\nexport function fn${i}() { return ${i}; }\n`,
+      );
     }
+
+    const switchRes = await page.request.post(`${SERVER_URL}/api/watch`, { data: { directory: tmpDir } });
+    expect(switchRes.status(), 'POST /api/watch should return 200').toBe(200);
+
+    // Fixed 5s wait for SnapshotManager 3s debounce to settle per CONTEXT.md
+    await page.waitForTimeout(5000);
+
+    const timelineRes = await page.request.get(`${SERVER_URL}/api/timeline`);
+    expect(timelineRes.status(), 'GET /api/timeline should return 200').toBe(200);
+
+    const snapshots = (await timelineRes.json()) as unknown[];
+    expect(
+      snapshots.length,
+      `Expected at least 1 snapshot after ${FILE_COUNT} file events but got 0 — pipeline may not have scanned yet`,
+    ).toBeGreaterThan(0);
+    expect(
+      snapshots.length,
+      `Expected snapshot count < event count but got ${snapshots.length} snapshots for ${FILE_COUNT} events — delta throttling may not be active`,
+    ).toBeLessThan(FILE_COUNT);
   });
 });

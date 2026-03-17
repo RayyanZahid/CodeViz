@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 14 of 18 (Schema Foundation and Shared Types)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-16 — v3.0 roadmap created; phases 14-18 defined
+Plan: 1 of 2 completed in current phase
+Status: In Progress
+Last activity: 2026-03-17 — Plan 14-01 (Schema Foundation and Shared Types) complete
 
-Progress: [░░░░░░░░░░] 0% (v3.0: 0/5 phases)
+Progress: [██░░░░░░░░] 10% (v3.0: Phase 14 in progress, 1/2 plans done)
 
 ## Performance Metrics
 
@@ -35,6 +35,8 @@ Key v3.0 decisions (pre-planning):
 - [Research]: Event-count axis on timeline slider (not wall-clock) to avoid dead zones
 - [Research]: 4-6 coarse intent categories only; "Uncertain" is a valid first-class output
 - [Research]: zundo@^2.3.0 required for Zustand v5 compatibility
+- [Phase 14]: No FK references on startSnapshotId/endSnapshotId in intent_sessions — foreign_keys=OFF in connection.ts; plain integers instead
+- [Phase 14]: getMetaBySession excludes graphJson column — avoids loading large JSON blobs when listing snapshots for timeline browsing
 
 ### Pending Todos
 
@@ -47,6 +49,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-16T23:55:22.189Z
-**Stopped at:** Phase 14 context gathered
-**Resume file:** .planning/phases/14-schema-foundation-and-shared-types/14-CONTEXT.md
+**Last session:** 2026-03-17T00:17:19.258Z
+**Stopped at:** Completed 14-schema-foundation-and-shared-types/14-01-PLAN.md
+**Resume file:** None

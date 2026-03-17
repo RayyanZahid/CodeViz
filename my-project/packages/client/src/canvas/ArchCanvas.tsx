@@ -15,6 +15,13 @@
 //   ViewportController — zoom-to-pointer, pan, fit-to-view, localStorage persistence
 //   CullingIndex   — quadtree viewport culling for 60fps at 300 nodes
 //
+// Replay mode integration (Plan 03):
+//   replayStore.subscribe orchestrates enter/exit transitions:
+//     - Enter: morph common nodes to historical positions, fade in/out historical/live-only nodes,
+//              apply blue tint, auto-zoom viewport
+//     - Exit: restore tint, re-sync live graph, morph back to live positions
+//   graphStore subscription guards against visual updates while isReplay=true.
+//
 // Imperative Zustand subscription (graphStore.subscribe) bypasses React re-renders.
 // No React.StrictMode — avoids Konva double-mount issues.
 // ---------------------------------------------------------------------------
@@ -23,6 +30,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { graphStore } from '../store/graphStore.js';
+import { replayStore, useReplayStore } from '../store/replayStore.js';
 import { NodeRenderer } from './NodeRenderer.js';
 import { EdgeRenderer } from './EdgeRenderer.js';
 import { ZoneRenderer } from './ZoneRenderer.js';
@@ -31,6 +39,13 @@ import { AnimationQueue } from './AnimationQueue.js';
 import { ViewportController } from './ViewportController.js';
 import { IncrementalPlacer } from '../layout/IncrementalPlacer.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../layout/ZoneConfig.js';
+import {
+  morphNodesToPositions,
+  fadeInNodes,
+  fadeOutNodes,
+  applyReplayTint,
+  restoreOriginalTint,
+} from './replayTransitions.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,6 +99,10 @@ export function ArchCanvas({
   const graphLayerRef = useRef<Konva.Layer>(null);
   const animLayerRef = useRef<Konva.Layer>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Replay state selectors — for empty graph message overlay
+  const isReplay = useReplayStore(s => s.isReplay);
+  const replayNodeCount = useReplayStore(s => s.replayNodes.size);
 
   const handleSelectNode = useCallback(
     (nodeId: string | null) => {
@@ -195,6 +214,12 @@ export function ArchCanvas({
     // Incremental updates — graphStore subscription
     // -------------------------------------------------------------------------
     const unsub = graphStore.subscribe((state, prev) => {
+      // Skip visual updates during replay — live graph store may be silently
+      // updated by initial_state but canvas must show historical data only.
+      if (replayStore.getState().isReplay) {
+        return;
+      }
+
       const addedNodeIds = [...state.nodes.keys()].filter((id) => !prev.nodes.has(id));
       const removedNodeIds = [...prev.nodes.keys()].filter((id) => !state.nodes.has(id));
       const updatedNodeIds = [...state.nodes.keys()].filter(
@@ -257,6 +282,141 @@ export function ArchCanvas({
 
       handleViewportChange();
       gl.batchDraw();
+    });
+
+    // -------------------------------------------------------------------------
+    // Replay mode transitions — replayStore subscription
+    // Handles enter/exit animations: morph, fade, tint, viewport zoom.
+    // -------------------------------------------------------------------------
+
+    // Track tinted fills for restore on exit (keyed by nodeId, value = JSON shadow settings)
+    const tintedFills = new Map<string, string>();
+    // Track whether a replay was entered (gate for exit logic)
+    let wasInReplay = false;
+
+    const replayUnsub = replayStore.subscribe((state, prev) => {
+      // --- ENTER REPLAY ---
+      if (state.isReplay && !prev.isReplay) {
+        wasInReplay = true;
+
+        // 1. Determine which nodes exist in both live and historical, which are new, which are removed
+        const liveNodeIds = new Set(graphStore.getState().nodes.keys());
+        const historicalNodeIds = new Set(state.replayNodes.keys());
+
+        const commonIds = [...liveNodeIds].filter(id => historicalNodeIds.has(id));
+        const addedInHistorical = [...historicalNodeIds].filter(id => !liveNodeIds.has(id));
+        const removedInHistorical = [...liveNodeIds].filter(id => !historicalNodeIds.has(id));
+
+        // 2. Create shapes for nodes that exist in historical but not live.
+        //    NodeRenderer.createShape is private — use syncAll with merged Map.
+        //    Build a combined nodes map: live nodes + historical-only nodes.
+        const liveState = graphStore.getState();
+        if (addedInHistorical.length > 0) {
+          const mergedNodes = new Map(liveState.nodes);
+          for (const id of addedInHistorical) {
+            const node = state.replayNodes.get(id);
+            if (node) mergedNodes.set(id, node);
+          }
+          nodeRenderer.syncAll(mergedNodes);
+        }
+
+        // 3. Compute target positions for historical nodes via IncrementalPlacer.
+        //    Historical-only nodes are not in placer positions yet — placeNewNodes will seat them.
+        placer.placeNewNodes(state.replayNodes, state.replayEdges);
+        const historicalPositions = new Map<string, { x: number; y: number }>();
+        for (const [id, pos] of placer.getPositions()) {
+          if (historicalNodeIds.has(id)) {
+            historicalPositions.set(id, pos);
+          }
+        }
+
+        // 4. Animate common nodes to historical positions (morph)
+        const commonPositions = new Map<string, { x: number; y: number }>();
+        for (const id of commonIds) {
+          const pos = historicalPositions.get(id);
+          if (pos) commonPositions.set(id, pos);
+        }
+        morphNodesToPositions(commonPositions, nodeRenderer, 0.5);
+
+        // 5. Position historical-only nodes at their computed positions, then fade in
+        for (const id of addedInHistorical) {
+          const pos = historicalPositions.get(id);
+          if (pos) nodeRenderer.setPosition(id, pos);
+        }
+        fadeInNodes(addedInHistorical, nodeRenderer, 0.5);
+
+        // 6. Fade out nodes that exist live but not in historical snapshot
+        fadeOutNodes(removedInHistorical, nodeRenderer, 0.5);
+
+        // 7. Sync edges to historical graph
+        edgeRenderer.syncAll(state.replayEdges);
+        edgeRenderer.updatePositions();
+
+        // 8. Apply cool blue tint (shadow glow) to all visible historical nodes
+        applyReplayTint(nodeRenderer, tintedFills);
+
+        // 9. Auto-zoom viewport to fit historical graph (~500ms per CONTEXT.md)
+        //    Small delay lets morph start before fitting
+        setTimeout(() => {
+          viewport.fitToView();
+        }, 100);
+
+        gl.batchDraw();
+      }
+
+      // --- EXIT REPLAY ---
+      if (!state.isReplay && prev.isReplay && wasInReplay) {
+        wasInReplay = false;
+
+        // 1. Restore original tint (remove blue glow)
+        restoreOriginalTint(nodeRenderer, tintedFills);
+
+        // 2. Re-sync the live graph state onto the canvas
+        const liveState = graphStore.getState();
+
+        // 3. Remove any historical-only shapes that were temporarily added
+        //    by the enter-replay syncAll merge. Use syncAll with live nodes
+        //    to reconcile (removes extras, preserves live nodes).
+        nodeRenderer.syncAll(liveState.nodes);
+
+        // 4. Re-seed placer with live nodes so new positions are computed correctly
+        placer.placeNewNodes(liveState.nodes, liveState.edges);
+
+        // 5. Morph existing nodes back to live positions
+        const livePositions = new Map<string, { x: number; y: number }>();
+        for (const [id, pos] of placer.getPositions()) {
+          livePositions.set(id, pos);
+        }
+        morphNodesToPositions(livePositions, nodeRenderer, 0.5);
+
+        // 6. Nodes that are live but were not in historical — fade them in
+        const historicalNodeIds = new Set(prev.replayNodes.keys());
+        const newInLive = [...liveState.nodes.keys()].filter(id => !historicalNodeIds.has(id));
+        for (const id of newInLive) {
+          const pos = livePositions.get(id);
+          if (pos) nodeRenderer.setPosition(id, pos);
+        }
+        fadeInNodes(newInLive, nodeRenderer, 0.5);
+
+        // 7. Sync edges back to live state
+        edgeRenderer.syncAll(liveState.edges);
+        edgeRenderer.updatePositions();
+
+        // 8. Update nodePositionsRef for cross-panel navigation
+        if (nodePositionsRef) {
+          nodePositionsRef.current = livePositions;
+        }
+
+        // 9. Rebuild culling index
+        cullingIndex.setEdges(liveState.edges);
+        cullingIndex.rebuild();
+        handleViewportChange();
+
+        // 10. Fit to view to restore live graph framing
+        setTimeout(() => viewport.fitToView(), 100);
+
+        gl.batchDraw();
+      }
     });
 
     // -------------------------------------------------------------------------
@@ -456,6 +616,7 @@ export function ArchCanvas({
     // -------------------------------------------------------------------------
     return () => {
       unsub();
+      replayUnsub();
       animQueue.destroy();
       stage.off('click tap');
       stage.off('wheel');
@@ -475,17 +636,39 @@ export function ArchCanvas({
   void selectedNodeId;
 
   return (
-    <Stage
-      ref={stageRef as React.RefObject<Konva.Stage>}
-      width={width}
-      height={height}
-      draggable
-    >
-      {/* Graph layer: zone backgrounds, node groups, edge arrows — listening=true for click-to-select */}
-      <Layer ref={graphLayerRef as React.RefObject<Konva.Layer>} id="graph-layer" />
-      {/* Animation layer: glow overlays — listening=false saves hit detection pass (REND-04) */}
-      <Layer ref={animLayerRef as React.RefObject<Konva.Layer>} id="anim-layer" listening={false} />
-    </Stage>
+    <div style={{ position: 'relative', width, height }}>
+      <Stage
+        ref={stageRef as React.RefObject<Konva.Stage>}
+        width={width}
+        height={height}
+        draggable
+      >
+        {/* Graph layer: zone backgrounds, node groups, edge arrows — listening=true for click-to-select */}
+        <Layer ref={graphLayerRef as React.RefObject<Konva.Layer>} id="graph-layer" />
+        {/* Animation layer: glow overlays — listening=false saves hit detection pass (REND-04) */}
+        <Layer ref={animLayerRef as React.RefObject<Konva.Layer>} id="anim-layer" listening={false} />
+      </Stage>
+
+      {/* Empty replay canvas message — shown when viewing a historical snapshot with 0 nodes */}
+      {isReplay && replayNodeCount === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: 14,
+            fontFamily: 'monospace',
+            textAlign: 'center',
+            zIndex: 200,
+            pointerEvents: 'none',
+          }}
+        >
+          No architecture at this point in time
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -526,4 +709,58 @@ function highlightDependency(nodeId: string, nodeRenderer: NodeRenderer): void {
     rect.strokeWidth(1.5);
   }
   shape.opacity(0.9);
+}
+
+// ---------------------------------------------------------------------------
+// loadSnapshotAndEnterReplay — Exported for Phase 17 timeline slider.
+// Fetches a historical snapshot and calls replayStore.enterReplay().
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch a historical snapshot from the server and enter replay mode.
+ * Phase 17 timeline slider calls this when the user scrubs to a snapshot.
+ * Can also be called programmatically for testing in Phase 16.
+ */
+export async function loadSnapshotAndEnterReplay(snapshotId: number): Promise<void> {
+  const res = await fetch(`/api/snapshot/${snapshotId}`);
+  if (!res.ok) throw new Error(`Snapshot ${snapshotId} not found (HTTP ${res.status})`);
+
+  const data = await res.json() as {
+    id: number;
+    timestamp: number;
+    graphJson: {
+      nodes: Array<{
+        id: string;
+        name: string;
+        nodeType: string;
+        zone: string | null;
+        fileList: string[];
+        incomingEdgeCount: number;
+        outgoingEdgeCount: number;
+        lastModified: string | number;
+        fileCount?: number;
+        keyExports?: string[];
+      }>;
+      edges: Array<{
+        id: string;
+        sourceId: string;
+        targetId: string;
+        edgeType: string;
+        dependencyCount?: number;
+      }>;
+      positions: Record<string, { x: number; y: number }>;
+    };
+  };
+
+  const nodes = data.graphJson.nodes;
+  const edges = data.graphJson.edges;
+
+  replayStore.getState().enterReplay(
+    data.id,
+    data.timestamp,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    nodes as any,  // Wire format matches GraphNode shape
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    edges as any,  // Wire format matches GraphEdge shape
+  );
 }

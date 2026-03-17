@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 15 of 18 (Server Replay Layer)
-Plan: 1 of 3 completed in current phase
+Plan: 2 of 3 completed in current phase
 Status: In Progress
-Last activity: 2026-03-17 — Plan 15-01 (Checkpoint schema, repository layer, type alignment) complete
+Last activity: 2026-03-17 — Plan 15-02 (IntentAnalyzer EWMA classification engine, SnapshotManager checkpoint logic) complete
 
-Progress: [████░░░░░░] 14% (v3.0: Phase 15 in progress, 1/3 plans done)
+Progress: [████░░░░░░] 14% (v3.0: Phase 15 in progress, 2/3 plans done)
 
 ## Performance Metrics
 
@@ -44,6 +44,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15-01]: IntentCategory updated to 6 user-specified categories — DEPENDENCY_UPDATE replaces INFRASTRUCTURE, CLEANUP replaces UNCERTAIN; backward-compatible (SQLite category column is plain text)
 - [Phase 15-01]: snapshotCheckpoints uses logical FK (no .references()) — consistent with intentSessions.startSnapshotId pattern; FK enforcement OFF in connection.ts
 - [Phase 15-01]: deleteOldestNonCheckpoint guards notInArray with cpIds.length > 0 to prevent invalid NOT IN () SQL
+- [Phase 15-02]: IntentAnalyzer re-broadcasts intent_updated only when confidence changes by >0.05 — prevents flooding during steady-state activity
+- [Phase 15-02]: Activity gap 90s threshold is implemented as the starting estimate; can be tuned in Phase 16+ based on real timing patterns
 
 ### Pending Todos
 
@@ -56,11 +58,10 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 15]: IntentAnalyzer 90-second activity-gap threshold is a starting estimate — inspect actual changeEvents timing patterns before committing to implementation
 - [Phase 17]: Konva auto-play frame budget needs measurement at 200+ nodes before building speed levels
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T01:00:50Z
-**Stopped at:** Completed 15-01-PLAN.md (Checkpoint schema, repository layer, type alignment)
-**Resume file:** .planning/phases/15-server-replay-layer/15-02-PLAN.md
+**Last session:** 2026-03-17T01:06:38Z
+**Stopped at:** Completed 15-02-PLAN.md (IntentAnalyzer EWMA classification engine, SnapshotManager checkpoint logic)
+**Resume file:** .planning/phases/15-server-replay-layer/15-03-PLAN.md

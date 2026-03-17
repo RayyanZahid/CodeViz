@@ -129,7 +129,7 @@ Plans:
 
 **Goal:** Restore 4 auto-gsd-overwritten journey test files from git HEAD, add a canary spec file that detects future placeholder overwrites, and verify all 13 tests pass green
 **Depends on:** Phase 15
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15.6-01-PLAN.md -- Restore 4 journey test files from git HEAD, create canary overwrite detector, verify 13/13 pass

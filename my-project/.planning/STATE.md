@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15.5 of 18 (Fix Journey Phase 14 Schema Foundation and Shared Types completes successfully)
+Phase: 15.6 of 18 (Fix Journey Phase 15 Server Replay Layer completes successfully — major)
 Plan: 1 of 1 completed in current phase
 Status: Phase Complete
-Last activity: 2026-03-17 — Plan 15.5-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, verify 12/12 Playwright tests pass, document root cause) complete
+Last activity: 2026-03-17 — Plan 15.6-01 (restore 4 auto-GSD-overwritten journey test files from git HEAD, create journey-canary.spec.ts, verify 13/13 Playwright tests pass) complete
 
-Progress: [████░░░░░░] 20% (v3.0: Phase 15.5 complete, 1/1 plans done)
+Progress: [████░░░░░░] 22% (v3.0: Phase 15.6 complete, 1/1 plans done)
 
 ## Performance Metrics
 
@@ -65,6 +65,8 @@ Key v3.0 decisions (pre-planning):
 - [Phase 15.4]: No regression prevention mechanism added — accept the auto-GSD overwrite pattern and follow the same restore-from-HEAD playbook each time
 - [Phase 15.4]: Restore playbook confirmed: git -C .. checkout HEAD -- my-project/<path> handles both staged and unstaged changes simultaneously
 - [Phase 15.5]: Restore-from-HEAD playbook confirmed as standard mitigation for auto-gsd journey test overwrites (4th occurrence); OttoGSD journey-test-generator.ts root cause documented; no prevention mechanism added as it requires OttoGSD binary changes
+- [Phase 15.6]: journey-canary.spec.ts added as overwrite detector — scans all sibling specs for bodyText.length and page.goto-without-SERVER_URL patterns; canary itself will be overwritten by auto-gsd (it is journey-*.spec.ts) but makes next overwrite immediately visible as test failure
+- [Phase 15.6]: journey-build-and-start.spec.ts exempted from page.goto-without-API check in canary — it legitimately uses BASE_URL browser navigation, not SERVER_URL API calls
 
 ### Pending Todos
 
@@ -88,6 +90,6 @@ None.
 
 ## Session Continuity
 
-**Last session:** 2026-03-17T06:35:11.126Z
-**Stopped at:** Phase 15.6 context gathered
-**Resume file:** .planning/phases/15.6-fix-journey-phase-15-server-replay-layer-completes-successfully-major/15.6-CONTEXT.md
+**Last session:** 2026-03-17T06:57:00Z
+**Stopped at:** Completed 15.6-01-PLAN.md — 13/13 Playwright tests passing, canary created
+**Resume file:** .planning/phases/15.6-fix-journey-phase-15-server-replay-layer-completes-successfully-major/15.6-01-SUMMARY.md

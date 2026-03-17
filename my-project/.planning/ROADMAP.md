@@ -145,12 +145,12 @@ Plans:
 
 ### Phase 15.4: Fix: Journey Build and Start completes successfully (blocker) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Restore 4 auto-GSD-overwritten journey test files from git HEAD and verify all 12 tests (build-and-start, phase-14, phase-15) pass green end-to-end
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15.4 to break down)
+- [ ] 15.4-01-PLAN.md -- Restore journey test files from git HEAD and run full Playwright suite
 
 ### Phase 15.3: Fix: Journey Phase 15: Server Replay Layer completes successfully (major) (INSERTED)
 

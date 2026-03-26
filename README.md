@@ -1,5 +1,9 @@
 # CodeViz (ArchLens)
 
+> "Real-time architecture visualization — see your codebase breathe"
+
+**Live Site:** [https://codeviz-iota.vercel.app](https://codeviz-iota.vercel.app)
+
 **Real-time architecture visualization for AI coding agents — like air traffic control for software architecture.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
